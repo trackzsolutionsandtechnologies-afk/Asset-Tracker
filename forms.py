@@ -645,8 +645,16 @@ def category_form():
             if categories_df.empty:
                 st.warning("Please add categories first before adding subcategories")
             else:
-                category_options = categories_df["Category ID"].tolist()
-                category_id = st.selectbox("Category *", ["Select category"] + category_options, key=f"subcat_cat_{st.session_state['subcategory_form_key']}")
+                # Show category names in dropdown but store category ID
+                category_options = categories_df["Category Name"].tolist()
+                category_names = ["Select category"] + category_options
+                selected_category_name = st.selectbox("Category *", category_names, key=f"subcat_cat_{st.session_state['subcategory_form_key']}")
+                
+                # Map selected category name back to category ID
+                if selected_category_name != "Select category":
+                    category_id = categories_df[categories_df["Category Name"] == selected_category_name]["Category ID"].iloc[0]
+                else:
+                    category_id = "Select category"
                 
                 auto_generate = st.checkbox("Auto-generate Sub Category ID", value=True, key=f"auto_gen_subcat_{st.session_state['subcategory_form_key']}")
                 if auto_generate:
@@ -664,7 +672,7 @@ def category_form():
                 submitted = st.form_submit_button("Add Sub Category", use_container_width=True, type="primary")
                 
                 if submitted:
-                    if category_id == "Select category" or not subcategory_id or not subcategory_name:
+                    if selected_category_name == "Select category" or not subcategory_id or not subcategory_name:
                         st.error("Please fill in all required fields")
                     elif not subcategories_df.empty and "SubCategory ID" in subcategories_df.columns and subcategory_id in subcategories_df["SubCategory ID"].values:
                         st.error("Sub Category ID already exists")
@@ -971,7 +979,7 @@ def category_form():
                         col1, col2 = st.columns(2)
                         with col1:
                             if st.form_submit_button("Update Sub Category", use_container_width=True):
-                                if new_category_id == "Select category":
+                                if selected_category_name == "Select category" or (selected_category_name is None and new_category_id == "Select category"):
                                     st.error("Please select a category")
                                 else:
                                     with st.spinner("Updating subcategory..."):
