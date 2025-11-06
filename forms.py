@@ -987,10 +987,14 @@ def category_form():
                             # Map selected category name back to category ID
                             if selected_category_name != "Select category":
                                 new_category_id = categories_df[categories_df["Category Name"] == selected_category_name]["Category ID"].iloc[0]
+                                new_category_name = selected_category_name
                             else:
                                 new_category_id = "Select category"
+                                new_category_name = ""
                         else:
                             new_category_id = st.text_input("Category ID *", value=subcategory.get("Category ID", ""))
+                            new_category_name = st.text_input("Category Name *", value=subcategory.get("Category Name", ""))
+                            selected_category_name = None
                         
                         new_subcategory_name = st.text_input("Sub Category Name", value=subcategory.get("SubCategory Name", ""))
                         
@@ -1001,7 +1005,8 @@ def category_form():
                                     st.error("Please select a category")
                                 else:
                                     with st.spinner("Updating subcategory..."):
-                                        if update_data(SHEETS["subcategories"], edit_idx, [new_subcategory_id, new_category_id, new_subcategory_name]):
+                                        # Update: SubCategory ID, Category ID, Category Name, SubCategory Name
+                                        if update_data(SHEETS["subcategories"], edit_idx, [new_subcategory_id, new_category_id, new_category_name, new_subcategory_name]):
                                             # Set success message
                                             st.session_state["subcategory_success_message"] = f"✅ Sub Category '{new_subcategory_name}' (ID: {new_subcategory_id}) updated successfully!"
                                             if "edit_subcategory_id" in st.session_state:
