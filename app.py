@@ -25,24 +25,33 @@ st.markdown("""
     /* Import Bootstrap Icons for navigation menu */
     @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css');
     
-    /* Apply DIN/Inter font to entire app */
-    * {
+    /* Apply DIN/Inter font to entire app, but exclude icon elements */
+    *:not([class*="bi-"]):not(.bi):not(i) {
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
     
-    /* Ensure Bootstrap Icons display properly */
-    .bi::before,
-    [class^="bi-"]::before,
-    [class*=" bi-"]::before {
+    /* Ensure Bootstrap Icons display properly and use their own font */
+    .bi,
+    [class^="bi-"],
+    [class*=" bi-"],
+    i[class*="bi-"],
+    span[class*="bi-"] {
         font-family: "bootstrap-icons" !important;
-        font-style: normal;
+        font-style: normal !important;
         font-weight: normal !important;
-        font-variant: normal;
-        text-transform: none;
-        line-height: 1;
-        vertical-align: -.125em;
+        font-variant: normal !important;
+        text-transform: none !important;
+        speak: none;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Fix for option menu icons */
+    .stOptionMenu [class*="bi-"],
+    .stOptionMenu i,
+    [data-testid="stSidebar"] [class*="bi-"],
+    [data-testid="stSidebar"] i {
+        font-family: "bootstrap-icons" !important;
     }
     
     .main-header {
