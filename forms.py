@@ -882,26 +882,30 @@ def category_form():
                 
                 # Table header - adjust columns based on admin status
                 if is_admin:
-                    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 3, 3, 1, 1])
+                    header_col1, header_col2, header_col3, header_col4, header_col5, header_col6 = st.columns([2, 2, 3, 3, 1, 1])
                     with header_col1:
                         st.write("**Sub Category ID**")
                     with header_col2:
                         st.write("**Category ID**")
                     with header_col3:
-                        st.write("**Sub Category Name**")
+                        st.write("**Category Name**")
                     with header_col4:
-                        st.write("**Edit**")
+                        st.write("**Sub Category Name**")
                     with header_col5:
+                        st.write("**Edit**")
+                    with header_col6:
                         st.write("**Delete**")
                 else:
-                    header_col1, header_col2, header_col3, header_col4 = st.columns([2, 3, 3, 1])
+                    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 2, 3, 3, 1])
                     with header_col1:
                         st.write("**Sub Category ID**")
                     with header_col2:
                         st.write("**Category ID**")
                     with header_col3:
-                        st.write("**Sub Category Name**")
+                        st.write("**Category Name**")
                     with header_col4:
+                        st.write("**Sub Category Name**")
+                    with header_col5:
                         st.write("**Edit**")
                 st.divider()
 
@@ -915,15 +919,17 @@ def category_form():
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
                     if is_admin:
-                        col1, col2, col3, col4, col5 = st.columns([2, 3, 3, 1, 1])
+                        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 3, 3, 1, 1])
                     else:
-                        col1, col2, col3, col4 = st.columns([2, 3, 3, 1])
+                        col1, col2, col3, col4, col5 = st.columns([2, 2, 3, 3, 1])
 
                     with col1:
                         st.write(row.get('SubCategory ID', 'N/A'))
                     with col2:
                         st.write(row.get('Category ID', 'N/A'))
                     with col3:
+                        st.write(row.get('Category Name', 'N/A'))
+                    with col4:
                         st.write(row.get('SubCategory Name', 'N/A'))
                     with col5:
                         edit_key = f"edit_subcat_{row.get('SubCategory ID', idx)}"
