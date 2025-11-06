@@ -1075,20 +1075,43 @@ def asset_master_form():
                 
                 if not categories_df.empty:
                     category_options = categories_df["Category Name"].tolist()
-                    category = st.selectbox("Category *", ["Select category"] + category_options)
+                    category = st.selectbox("Category *", ["Select category"] + category_options, key="asset_category_select")
                 else:
                     category = st.text_input("Category *")
                     st.warning("No categories found. Please add categories first.")
                 
-                if category != "Select category" and not subcategories_df.empty:
-                    category_id = categories_df[categories_df["Category Name"] == category]["Category ID"].iloc[0] if category in categories_df["Category Name"].values else None
-                    if category_id:
-                        subcat_options = subcategories_df[subcategories_df["Category ID"] == category_id]["SubCategory Name"].tolist()
-                        subcategory = st.selectbox("Sub Category", ["None"] + subcat_options)
+                # Sub Category dropdown - show based on selected category
+                if category != "Select category" and not categories_df.empty and not subcategories_df.empty:
+                    # Get category ID from selected category name
+                    category_row = categories_df[categories_df["Category Name"] == category]
+                    if not category_row.empty:
+                        category_id = category_row["Category ID"].iloc[0]
+                        
+                        # Filter subcategories by Category ID
+                        if "Category ID" in subcategories_df.columns:
+                            matching_subcats = subcategories_df[subcategories_df["Category ID"] == category_id]
+                        # Also try matching by Category Name if Category ID doesn't work
+                        elif "Category Name" in subcategories_df.columns:
+                            matching_subcats = subcategories_df[subcategories_df["Category Name"] == category]
+                        else:
+                            matching_subcats = pd.DataFrame()
+                        
+                        if not matching_subcats.empty and "SubCategory Name" in matching_subcats.columns:
+                            subcat_options = matching_subcats["SubCategory Name"].tolist()
+                            if subcat_options:
+                                subcategory = st.selectbox("Sub Category", ["None"] + subcat_options, key="asset_subcategory_select")
+                            else:
+                                subcategory = st.selectbox("Sub Category", ["None"], key="asset_subcategory_select", help="No subcategories available for this category")
+                        else:
+                            subcategory = st.selectbox("Sub Category", ["None"], key="asset_subcategory_select", help="No subcategories found for this category")
                     else:
-                        subcategory = st.text_input("Sub Category")
+                        subcategory = st.text_input("Sub Category", key="asset_subcategory_text")
                 else:
-                    subcategory = st.text_input("Sub Category")
+                    # Show text input if no category selected or no subcategories available
+                    if category == "Select category":
+                        subcategory = st.text_input("Sub Category", key="asset_subcategory_text", disabled=True, help="Please select a category first")
+                    else:
+                        subcategory = st.text_input("Sub Category", key="asset_subcategory_text")
                 
                 model_serial = st.text_input("Model / Serial No")
                 purchase_date = st.date_input("Purchase Date")
