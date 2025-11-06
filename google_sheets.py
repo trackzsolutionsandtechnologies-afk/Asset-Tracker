@@ -37,22 +37,29 @@ def get_google_client():
                 if "credentials_json" in st.secrets["google_sheets"]:
                     import json
                     creds_json = st.secrets["google_sheets"]["credentials_json"]
+                    
+                    # Debug: Log what we received (only once)
+                    if "creds_debug_logged" not in st.session_state:
+                        st.session_state["creds_debug_logged"] = True
+                        # Store debug info but don't show unless in debug mode
+                        st.session_state["creds_debug_type"] = type(creds_json).__name__
+                    
                     # Handle both string and dict formats (Streamlit Cloud may parse JSON)
                     if isinstance(creds_json, str):
                         try:
                             # Try to parse as JSON string
                             creds_dict = json.loads(creds_json)
-                        except json.JSONDecodeError:
+                        except json.JSONDecodeError as e:
                             # If parsing fails, it might be a multi-line string that needs processing
                             # Try to clean it up and parse again
                             try:
                                 # Remove extra whitespace and newlines
                                 cleaned = creds_json.strip()
                                 creds_dict = json.loads(cleaned)
-                            except:
+                            except json.JSONDecodeError as e2:
                                 # If still fails, log error but continue to file-based
-                                if "credentials_error_logged" not in st.session_state:
-                                    st.session_state["credentials_error_logged"] = True
+                                if "credentials_json_error" not in st.session_state:
+                                    st.session_state["credentials_json_error"] = f"JSON parse error: {str(e2)}"
                                 raise
                     else:
                         # Already a dict (Streamlit Cloud parsed it from TOML)
@@ -60,15 +67,44 @@ def get_google_client():
                     
                     # Validate that we have the required fields
                     if not isinstance(creds_dict, dict) or "type" not in creds_dict:
+                        if "credentials_json_error" not in st.session_state:
+                            st.session_state["credentials_json_error"] = "Invalid credentials format: missing 'type' field"
                         raise ValueError("Invalid credentials format")
+                    
+                    # Validate private_key is present and properly formatted
+                    if "private_key" not in creds_dict:
+                        if "credentials_json_error" not in st.session_state:
+                            st.session_state["credentials_json_error"] = "Invalid credentials format: missing 'private_key' field"
+                        raise ValueError("Missing private_key in credentials")
+                    
+                    # Fix private_key newlines if needed (replace \\n with actual newlines)
+                    if isinstance(creds_dict.get("private_key"), str):
+                        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
                     
                     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
                     client = gspread.authorize(creds)
                     # Clear any previous warnings since we found credentials
                     if "credentials_warning_shown" in st.session_state:
                         del st.session_state["credentials_warning_shown"]
+                    if "credentials_json_error" in st.session_state:
+                        del st.session_state["credentials_json_error"]
                     return client
+                else:
+                    # credentials_json not found in secrets
+                    if "creds_debug_logged" not in st.session_state:
+                        st.session_state["creds_debug_logged"] = True
+                        available_keys = list(st.secrets["google_sheets"].keys()) if hasattr(st.secrets["google_sheets"], 'keys') else []
+                        st.session_state["creds_available_keys"] = available_keys
+            else:
+                # google_sheets section not found in secrets
+                if "creds_debug_logged" not in st.session_state:
+                    st.session_state["creds_debug_logged"] = True
+                    available_sections = list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else []
+                    st.session_state["creds_available_sections"] = available_sections
         except Exception as e:
+            # Store error for debugging
+            if "credentials_json_error" not in st.session_state:
+                st.session_state["credentials_json_error"] = str(e)
             pass  # Fall through to file-based credentials
         
         # Get credentials file path - try from secrets first, then config
@@ -113,10 +149,27 @@ def get_google_client():
                 client = gspread.service_account()
                 return client
             except:
-                # If that fails, show warning only once
+                # If that fails, show warning only once with debug info
                 if "credentials_warning_shown" not in st.session_state:
                     st.warning(f"⚠️ Google Sheets credentials not found.")
-                    st.info(f"💡 **Options to fix:**\n1. Place `credentials.json` in the project root\n2. Update the path in `secrets.toml`\n3. Store credentials JSON directly in `secrets.toml` under `[google_sheets]` → `credentials_json`")
+                    
+                    # Show debug information if available
+                    debug_info = []
+                    if "creds_available_sections" in st.session_state:
+                        debug_info.append(f"Available secret sections: {st.session_state['creds_available_sections']}")
+                    if "creds_available_keys" in st.session_state:
+                        debug_info.append(f"Available keys in google_sheets: {st.session_state['creds_available_keys']}")
+                    if "credentials_json_error" in st.session_state:
+                        debug_info.append(f"Error: {st.session_state['credentials_json_error']}")
+                    if "creds_debug_type" in st.session_state:
+                        debug_info.append(f"credentials_json type: {st.session_state['creds_debug_type']}")
+                    
+                    if debug_info:
+                        with st.expander("🔍 Debug Information"):
+                            for info in debug_info:
+                                st.text(info)
+                    
+                    st.info(f"💡 **Options to fix:**\n1. Go to Streamlit Cloud → Settings → Secrets\n2. Add `[google_sheets]` section with `credentials_json`\n3. Make sure secrets are saved and app is redeployed")
                     st.session_state["credentials_warning_shown"] = True
                 return None
     except Exception as e:
