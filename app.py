@@ -20,15 +20,25 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
     <style>
+    /* Import DIN font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* Apply DIN/Inter font to entire app */
+    * {
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+    
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
         color: #1f77b4;
         text-align: center;
         padding: 1rem;
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
     .stButton>button {
         width: 100%;
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
     /* Hide loading indicators and status widgets */
     [data-testid="stStatusWidget"] {
@@ -45,6 +55,7 @@ st.markdown("""
     /* Sidebar background color - Red */
     [data-testid="stSidebar"] {
         background-color: #dc3545 !important;
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
     [data-testid="stSidebar"] > div:first-child {
         background-color: #dc3545 !important;
@@ -52,6 +63,7 @@ st.markdown("""
     /* Sidebar text color - White for better contrast */
     [data-testid="stSidebar"] * {
         color: #ffffff !important;
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
@@ -60,16 +72,22 @@ st.markdown("""
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] span {
         color: #ffffff !important;
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
     /* Sidebar button styling */
     [data-testid="stSidebar"] button {
         background-color: #c82333 !important;
         color: #ffffff !important;
         border-color: #bd2130 !important;
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
     [data-testid="stSidebar"] button:hover {
         background-color: #bd2130 !important;
         border-color: #a71e2a !important;
+    }
+    /* Apply font to all text elements */
+    body, html, .stApp, .main, .block-container {
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
     </style>
 """, unsafe_allow_html=True)
