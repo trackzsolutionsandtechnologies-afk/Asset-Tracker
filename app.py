@@ -42,6 +42,35 @@ st.markdown("""
     .stStatusWidget {
         display: none !important;
     }
+    /* Sidebar background color - Red */
+    [data-testid="stSidebar"] {
+        background-color: #dc3545 !important;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        background-color: #dc3545 !important;
+    }
+    /* Sidebar text color - White for better contrast */
+    [data-testid="stSidebar"] * {
+        color: #ffffff !important;
+    }
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] span {
+        color: #ffffff !important;
+    }
+    /* Sidebar button styling */
+    [data-testid="stSidebar"] button {
+        background-color: #c82333 !important;
+        color: #ffffff !important;
+        border-color: #bd2130 !important;
+    }
+    [data-testid="stSidebar"] button:hover {
+        background-color: #bd2130 !important;
+        border-color: #a71e2a !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
