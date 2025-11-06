@@ -653,8 +653,10 @@ def category_form():
                 # Map selected category name back to category ID
                 if selected_category_name != "Select category":
                     category_id = categories_df[categories_df["Category Name"] == selected_category_name]["Category ID"].iloc[0]
+                    category_name = selected_category_name
                 else:
                     category_id = "Select category"
+                    category_name = ""
                 
                 auto_generate = st.checkbox("Auto-generate Sub Category ID", value=True, key=f"auto_gen_subcat_{st.session_state['subcategory_form_key']}")
                 if auto_generate:
@@ -678,7 +680,8 @@ def category_form():
                         st.error("Sub Category ID already exists")
                     else:
                         with st.spinner("Adding sub category..."):
-                            if append_data(SHEETS["subcategories"], [subcategory_id, category_id, subcategory_name]):
+                            # Save: SubCategory ID, Category ID, Category Name, SubCategory Name
+                            if append_data(SHEETS["subcategories"], [subcategory_id, category_id, category_name, subcategory_name]):
                                 # Clear generated subcategory ID and reset form
                                 if "generated_subcategory_id" in st.session_state:
                                     del st.session_state["generated_subcategory_id"]
@@ -850,7 +853,7 @@ def category_form():
             st.subheader("All Sub Categories")
             
             # Search bar
-            search_term = st.text_input("🔍 Search Sub Categories", placeholder="Search by Sub Category ID, Name, or Category ID...", key="subcategory_search")
+            search_term = st.text_input("🔍 Search Sub Categories", placeholder="Search by Sub Category ID, Name, Category ID, or Category Name...", key="subcategory_search")
             
             # Filter data based on search
             if search_term:
@@ -859,6 +862,9 @@ def category_form():
                     subcategories_df["SubCategory Name"].astype(str).str.contains(search_term, case=False, na=False) |
                     subcategories_df["Category ID"].astype(str).str.contains(search_term, case=False, na=False)
                 )
+                # Add Category Name to search if column exists
+                if "Category Name" in subcategories_df.columns:
+                    mask = mask | subcategories_df["Category Name"].astype(str).str.contains(search_term, case=False, na=False)
                 filtered_df = subcategories_df[mask]
                 if filtered_df.empty:
                     st.info(f"No subcategories found matching '{search_term}'")
@@ -919,7 +925,7 @@ def category_form():
                         st.write(row.get('Category ID', 'N/A'))
                     with col3:
                         st.write(row.get('SubCategory Name', 'N/A'))
-                    with col4:
+                    with col5:
                         edit_key = f"edit_subcat_{row.get('SubCategory ID', idx)}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this subcategory"):
                             st.session_state["edit_subcategory_id"] = row.get('SubCategory ID', '')
@@ -927,7 +933,7 @@ def category_form():
                             st.rerun()
                     # Only show delete button for admin users
                     if is_admin:
-                        with col5:
+                        with col6:
                             delete_key = f"delete_subcat_{row.get('SubCategory ID', idx)}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this subcategory"):
                                 subcategory_name_to_delete = row.get('SubCategory Name', 'Unknown')
