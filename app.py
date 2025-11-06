@@ -186,15 +186,16 @@ def main():
             menu_icon="list",
             default_index=0,
             styles={
-                "container": {"padding": "5!important", "background-color": "#fafafa"},
-                "icon": {"color": "#1f77b4", "font-size": "18px"},
+                "container": {"padding": "5!important", "background-color": "#dc3545"},
+                "icon": {"color": "#ffffff", "font-size": "18px"},
                 "nav-link": {
                     "font-size": "16px",
                     "text-align": "left",
                     "margin": "0px",
-                    "--hover-color": "#eee",
+                    "color": "#ffffff",
+                    "--hover-color": "#c82333",
                 },
-                "nav-link-selected": {"background-color": "#1f77b4"},
+                "nav-link-selected": {"background-color": "#c82333", "color": "#ffffff"},
             }
         )
     
