@@ -1,87 +1,106 @@
 # Quick Start Guide
 
-## Step 1: Install Dependencies
+## Prerequisites
+- Python 3.8 or higher
+- Google Cloud account (for Google Sheets API access)
 
-Open your terminal/command prompt and run:
+## Installation Steps
 
+### 1. Install Python Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-## Step 2: Prepare Google Sheets
+### 2. Set Up Google Sheets Credentials
 
-1. **Create a Google Spreadsheet** with these exact sheet names:
-   - Users
-   - Locations
-   - Categories
-   - Subcategories
-   - AssetTypes
-   - Brands
-   - Assets
-   - AssetMovements
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the following APIs:
+   - Google Sheets API
+   - Google Drive API
+4. Create a Service Account:
+   - Go to "IAM & Admin" > "Service Accounts"
+   - Click "Create Service Account"
+   - Give it a name (e.g., "asset-tracker")
+   - Click "Create and Continue"
+   - Skip role assignment, click "Continue"
+   - Click "Done"
+5. Create a key for the service account:
+   - Click on the service account you just created
+   - Go to "Keys" tab
+   - Click "Add Key" > "Create new key"
+   - Select JSON format
+   - Download the JSON file
+6. Rename the downloaded file to `credentials.json` and place it in the project root
+7. Share your Google Sheet with the service account:
+   - Open your Google Sheet: https://docs.google.com/spreadsheets/d/1kFlJLYC6I7NojaXr2UUX68Al4SO76bDlr-ojBl1mvZo
+   - Click "Share" button
+   - Add the service account email (found in credentials.json as `client_email`)
+   - Give it "Editor" access
+   - Click "Send"
 
-2. **Share the spreadsheet** with your service account email:
-   - Open your spreadsheet
-   - Click "Share"
-   - Add the email from your `credentials.json` file (it looks like: `xxxxx@xxxxx.iam.gserviceaccount.com`)
-   - Give it "Editor" permissions
+### 3. Create Your First User
 
-## Step 3: Get Spreadsheet ID
-
-- Open your Google Spreadsheet
-- Look at the URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID_HERE/edit`
-- Copy the `SPREADSHEET_ID_HERE` part
-
-## Step 4: Run the Application
-
+Run the user creation script:
 ```bash
-streamlit run app.py
+python create_user.py
 ```
 
-The app will open in your browser automatically.
+Enter:
+- Username: (your choice)
+- Password: (your choice)
+- Email: (your email)
+- Role: admin (or leave blank for default)
 
-## Step 5: First Time Setup
+### 4. Run the Application
 
-1. **Register**: Click on "Register" tab and create your first admin account
-2. **Login**: Use your credentials to login
-3. **Connect Spreadsheet**: 
-   - In the sidebar, enter your Spreadsheet ID or Title
-   - Click "Connect"
-4. **Add Master Data** (in order):
-   - Add Locations first
-   - Add Categories
-   - Add Subcategories (linked to Categories)
-   - Add Asset Types
-   - Add Brands
-5. **Add Assets**: Now you can start adding assets!
+```bash
+streamlit run streamlit_app.py
+```
 
-## Tips
+The application will open in your default web browser at `http://localhost:8501`
 
-- Asset Codes are automatically generated as barcodes
-- Use the Barcode Scanner page to search assets by scanning
-- Select multiple assets in "Print Barcodes" to generate labels
-- Track all asset movements in the Asset Movements section
-- Dashboard shows real-time statistics and graphs
+### 5. Login
+
+Use the username and password you created in step 3 to log in.
+
+## First Steps After Login
+
+1. **Add Locations**: Go to "Location Form" and add your locations
+2. **Add Suppliers**: Go to "Supplier Form" and add suppliers
+3. **Add Categories**: Go to "Category Form" and add asset categories
+4. **Add Assets**: Go to "Asset Master" and start adding assets
+5. **View Dashboard**: Check the "Dashboard" for visualizations
+
+## Features Overview
+
+- **Dashboard**: View key metrics and charts
+- **Location Form**: Manage locations and departments
+- **Supplier Form**: Manage suppliers
+- **Category Form**: Organize assets by categories and subcategories
+- **Asset Master**: Add, edit, and manage assets with automatic barcode generation
+- **Asset Transfer**: Track asset transfers between locations
+- **Barcode Scanner**: Search assets by barcode or name
+- **Print Barcodes**: Generate printable barcode sheets for multiple assets
 
 ## Troubleshooting
 
-**"Error connecting to Google Sheets"**
-- Check that `credentials.json` is in the project folder
-- Verify the spreadsheet is shared with the service account email
+### "Credentials not found" error
+- Make sure `credentials.json` is in the project root directory
+- Verify the file name is exactly `credentials.json` (case-sensitive)
 
-**"Sheet not found"**
-- Make sure all sheet names match exactly (case-sensitive)
-- Create empty sheets with the exact names listed above
+### "Permission denied" error
+- Make sure you shared the Google Sheet with the service account email
+- Verify the service account has "Editor" access (not just "Viewer")
 
-**"Authentication failed"**
-- Make sure you've registered a user first
-- Check username/password spelling
+### "Sheet not found" error
+- The application will automatically create missing sheets
+- Make sure the service account has permission to create sheets
 
-**Barcode not generating**
-- Ensure `python-barcode` and `Pillow` are installed
-- Check that asset code is not empty
+### Import errors
+- Make sure all dependencies are installed: `pip install -r requirements.txt`
+- Try upgrading pip: `pip install --upgrade pip`
 
 ## Need Help?
 
-Check the main README.md for detailed documentation.
-
+Check the main README.md for more detailed information.

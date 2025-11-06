@@ -29,18 +29,6 @@ st.markdown("""
     .stButton>button {
         width: 100%;
     }
-    /* Hide loading indicators and status widgets */
-    [data-testid="stStatusWidget"] {
-        display: none !important;
-    }
-    /* Hide spinner containers but keep functionality */
-    div[data-testid="stSpinner"] {
-        display: none !important;
-    }
-    /* Hide "Running" text in status */
-    .stStatusWidget {
-        display: none !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -126,3 +114,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
