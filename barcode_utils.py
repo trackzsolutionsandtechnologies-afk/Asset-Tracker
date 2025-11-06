@@ -11,6 +11,19 @@ from barcode.writer import ImageWriter
 import uuid
 from google_sheets import read_data
 from config import SHEETS
+import numpy as np
+
+# Try to import barcode scanning libraries
+try:
+    from pyzbar import pyzbar
+    PYZBAR_AVAILABLE = True
+except ImportError:
+    PYZBAR_AVAILABLE = False
+    try:
+        import cv2
+        CV2_AVAILABLE = True
+    except ImportError:
+        CV2_AVAILABLE = False
 
 def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image.Image:
     """Generate a barcode image for an asset ID"""
