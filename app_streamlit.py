@@ -207,16 +207,16 @@ def register_user(username, email, password):
     """Register a new user"""
     worksheet = get_users_sheet()
     if worksheet is None:
-        return False
+        raise Exception("Cannot connect to Google Sheets. Please check your credentials.")
     
     try:
         # Check if username or email already exists
         records = worksheet.get_all_records()
         for record in records:
             if record.get('username', '').lower() == username.lower():
-                return False, "Username already exists"
+                raise Exception("Username already exists")
             if record.get('email', '').lower() == email.lower():
-                return False, "Email already exists"
+                raise Exception("Email already exists")
         
         # Hash password
         password_hash = hash_password(password)
@@ -227,7 +227,12 @@ def register_user(username, email, password):
         
         return True, "Signup successful!"
     except Exception as e:
-        return False, f"Signup failed: {str(e)}"
+        # Re-raise if it's already an Exception with a message
+        error_msg = str(e)
+        if "Cannot connect" in error_msg or "Username already" in error_msg or "Email already" in error_msg:
+            raise Exception(error_msg)
+        else:
+            raise Exception(f"Signup failed: {error_msg}")
 
 def authenticate_user(username, password):
     """Authenticate a user"""
@@ -315,6 +320,20 @@ def register_page():
     st.title("📝 Signup")
     st.markdown("---")
     
+    # Display error/success messages if any
+    if 'signup_error' in st.session_state and st.session_state['signup_error']:
+        st.error(st.session_state['signup_error'])
+        del st.session_state['signup_error']
+    
+    if 'signup_success' in st.session_state and st.session_state['signup_success']:
+        st.success(st.session_state['signup_success'])
+        st.info("You can now login with your credentials")
+        if st.button("Go to Login", use_container_width=True):
+            del st.session_state['signup_success']
+            st.session_state['page'] = 'login'
+            st.rerun()
+        return  # Return early to prevent form from showing
+    
     with st.form("register_form"):
         username = st.text_input("Username", placeholder="Choose a username")
         email = st.text_input("Email", placeholder="Enter your email address")
@@ -330,23 +349,23 @@ def register_page():
     if register_button:
         if username and email and password and confirm_password:
             if password != confirm_password:
-                st.error("Passwords do not match!")
+                st.session_state['signup_error'] = "Passwords do not match!"
+                st.rerun()
             elif len(password) < 6:
-                st.warning("Password must be at least 6 characters long")
+                st.session_state['signup_error'] = "Password must be at least 6 characters long"
+                st.rerun()
             else:
-                success, message = register_user(username, email, password)
-                if success:
-                    st.success(message)
-                    st.info("You can now login with your credentials")
-                    # Switch to login page after 2 seconds
-                    import time
-                    time.sleep(2)
-                    st.session_state['page'] = 'login'
+                try:
+                    success, message = register_user(username, email, password)
+                    if success:
+                        st.session_state['signup_success'] = message
+                        st.rerun()
+                except Exception as e:
+                    st.session_state['signup_error'] = str(e)
                     st.rerun()
-                else:
-                    st.error(message)
         else:
-            st.warning("Please fill in all fields")
+            st.session_state['signup_error'] = "Please fill in all fields"
+            st.rerun()
     
     if login_link:
         st.session_state['page'] = 'login'
