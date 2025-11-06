@@ -50,6 +50,33 @@ def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image
         st.error(f"Error generating barcode: {str(e)}")
         return None
 
+def decode_barcode_from_image(image):
+    """Decode barcode from image"""
+    try:
+        if PYZBAR_AVAILABLE:
+            # Convert PIL Image to numpy array
+            img_array = np.array(image)
+            # Decode barcodes
+            decoded_objects = pyzbar.decode(img_array)
+            if decoded_objects:
+                # Return the first decoded barcode
+                return decoded_objects[0].data.decode('utf-8')
+        elif CV2_AVAILABLE:
+            # Try using OpenCV with barcode detector
+            import cv2
+            img_array = np.array(image)
+            # Convert to grayscale if needed
+            if len(img_array.shape) == 3:
+                gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+            else:
+                gray = img_array
+            # Try to decode with OpenCV (basic implementation)
+            # Note: OpenCV doesn't have built-in barcode decoder, so we'd need additional library
+            pass
+    except Exception as e:
+        st.error(f"Error decoding barcode: {str(e)}")
+    return None
+
 def barcode_scanner_page():
     """Barcode scanner and search page"""
     st.header("🔍 Barcode Scanner & Search")
@@ -64,9 +91,55 @@ def barcode_scanner_page():
     
     with tab1:
         st.subheader("Scan Barcode")
-        st.info("Enter or scan a barcode to find the asset")
         
-        scanned_barcode = st.text_input("Barcode / Asset ID", key="scanned_barcode")
+        # Option to choose input method
+        input_method = st.radio(
+            "Input Method",
+            ["📷 Camera Scan (Mobile)", "⌨️ Manual Entry"],
+            horizontal=True,
+            key="barcode_input_method"
+        )
+        
+        scanned_barcode = None
+        
+        if input_method == "📷 Camera Scan (Mobile)":
+            st.info("📱 Use your mobile device camera to scan a barcode. Make sure to grant camera permissions when prompted.")
+            
+            if not PYZBAR_AVAILABLE:
+                st.warning("⚠️ Barcode scanning library (pyzbar) is not installed. Please install it using: `pip install pyzbar`")
+                st.info("You can still use manual entry below.")
+            else:
+                camera_image = st.camera_input("Scan Barcode", key="barcode_camera")
+                
+                if camera_image:
+                    # Convert camera image to PIL Image
+                    img = Image.open(camera_image)
+                    
+                    # Try to decode barcode
+                    with st.spinner("Decoding barcode..."):
+                        decoded_barcode = decode_barcode_from_image(img)
+                        
+                        if decoded_barcode:
+                            scanned_barcode = decoded_barcode
+                            st.success(f"✅ Barcode scanned: {decoded_barcode}")
+                            # Store in session state for persistence
+                            st.session_state["scanned_barcode"] = decoded_barcode
+                        else:
+                            st.warning("⚠️ Could not decode barcode. Please try again or use manual entry.")
+                            # Show the captured image for debugging
+                            st.image(img, caption="Captured Image - Try scanning again", use_container_width=True)
+        else:
+            # Manual entry
+            scanned_barcode = st.text_input(
+                "Barcode / Asset ID", 
+                value=st.session_state.get("scanned_barcode", ""),
+                key="scanned_barcode_manual",
+                help="Enter or paste the barcode/Asset ID"
+            )
+        
+        # Use scanned barcode from session state if available
+        if not scanned_barcode and "scanned_barcode" in st.session_state:
+            scanned_barcode = st.session_state["scanned_barcode"]
         
         if scanned_barcode:
             # Search for asset
