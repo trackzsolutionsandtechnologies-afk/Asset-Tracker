@@ -73,6 +73,31 @@ def main():
             forgot_password_page()
         else:
             login_page()
+            # Add temporary user creation option (only show if no users exist)
+            try:
+                from google_sheets import read_data
+                from config import SHEETS
+                import bcrypt
+                
+                df = read_data(SHEETS["users"])
+                if df.empty or len(df) == 0:
+                    st.divider()
+                    st.info("⚠️ No users found. Create an admin user to get started.")
+                    with st.expander("Create Admin User (One-time setup)"):
+                        if st.button("Create Default Admin User"):
+                            try:
+                                hashed_password = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                                from google_sheets import append_data
+                                if append_data(SHEETS["users"], ["admin", hashed_password, "admin@example.com", "admin"]):
+                                    st.success("✅ Admin user created! Username: `admin`, Password: `admin123`")
+                                    st.info("⚠️ Please change the password after first login!")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to create user. Check Google Sheets connection.")
+                            except Exception as e:
+                                st.error(f"Error creating user: {str(e)}")
+            except:
+                pass  # Silently fail if we can't check users
         return
     
     # User is authenticated - show main application

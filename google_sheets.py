@@ -40,14 +40,33 @@ def get_google_client():
                     # Handle both string and dict formats (Streamlit Cloud may parse JSON)
                     if isinstance(creds_json, str):
                         try:
+                            # Try to parse as JSON string
                             creds_dict = json.loads(creds_json)
-                        except:
-                            # If it's already a dict in TOML, use it directly
-                            creds_dict = creds_json
+                        except json.JSONDecodeError:
+                            # If parsing fails, it might be a multi-line string that needs processing
+                            # Try to clean it up and parse again
+                            try:
+                                # Remove extra whitespace and newlines
+                                cleaned = creds_json.strip()
+                                creds_dict = json.loads(cleaned)
+                            except:
+                                # If still fails, log error but continue to file-based
+                                if "credentials_error_logged" not in st.session_state:
+                                    st.session_state["credentials_error_logged"] = True
+                                raise
                     else:
+                        # Already a dict (Streamlit Cloud parsed it from TOML)
                         creds_dict = creds_json
+                    
+                    # Validate that we have the required fields
+                    if not isinstance(creds_dict, dict) or "type" not in creds_dict:
+                        raise ValueError("Invalid credentials format")
+                    
                     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
                     client = gspread.authorize(creds)
+                    # Clear any previous warnings since we found credentials
+                    if "credentials_warning_shown" in st.session_state:
+                        del st.session_state["credentials_warning_shown"]
                     return client
         except Exception as e:
             pass  # Fall through to file-based credentials
