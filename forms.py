@@ -962,15 +962,27 @@ def category_form():
                     with st.form("edit_subcategory_form"):
                         new_subcategory_id = st.text_input("Sub Category ID", value=subcategory.get("SubCategory ID", ""), disabled=True)
                         
-                        # Category dropdown for editing
+                        # Category dropdown for editing - show category names
+                        selected_category_name = None
                         if not categories_df.empty:
-                            category_options = categories_df["Category ID"].tolist()
-                            current_category = subcategory.get("Category ID", "")
-                            if current_category in category_options:
-                                default_index = category_options.index(current_category) + 1
+                            category_options = categories_df["Category Name"].tolist()
+                            current_category_id = subcategory.get("Category ID", "")
+                            # Find the category name for the current category ID
+                            if not categories_df[categories_df["Category ID"] == current_category_id].empty:
+                                current_category_name = categories_df[categories_df["Category ID"] == current_category_id]["Category Name"].iloc[0]
+                                if current_category_name in category_options:
+                                    default_index = category_options.index(current_category_name) + 1
+                                else:
+                                    default_index = 0
                             else:
                                 default_index = 0
-                            new_category_id = st.selectbox("Category *", ["Select category"] + category_options, index=default_index)
+                            selected_category_name = st.selectbox("Category *", ["Select category"] + category_options, index=default_index)
+                            
+                            # Map selected category name back to category ID
+                            if selected_category_name != "Select category":
+                                new_category_id = categories_df[categories_df["Category Name"] == selected_category_name]["Category ID"].iloc[0]
+                            else:
+                                new_category_id = "Select category"
                         else:
                             new_category_id = st.text_input("Category ID *", value=subcategory.get("Category ID", ""))
                         
