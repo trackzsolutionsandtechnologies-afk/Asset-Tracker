@@ -70,8 +70,19 @@ hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8
 ### 5. Run the Application
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run app.py
 ```
+
+## Streamlit Cloud Deployment
+
+For deploying to Streamlit Cloud, see `STREAMLIT_CLOUD_DEPLOY.md` for detailed instructions.
+
+**Quick Steps:**
+1. Push your code to GitHub
+2. Connect repository to Streamlit Cloud at https://share.streamlit.io/
+3. Set main file to `app.py`
+4. Add secrets in Streamlit Cloud dashboard (see `STREAMLIT_SECRETS_EXAMPLE.toml`)
+5. Deploy!
 
 ## Usage
 

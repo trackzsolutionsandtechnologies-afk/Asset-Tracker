@@ -29,7 +29,8 @@ wheels/
 
 # Google Credentials
 credentials.json
-*.json
+# Don't ignore all JSON files, just credentials
+# *.json
 
 # IDE
 .vscode/

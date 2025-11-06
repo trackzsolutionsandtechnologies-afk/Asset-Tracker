@@ -3,12 +3,13 @@ Main Streamlit Application for Asset Tracker
 """
 import streamlit as st
 from streamlit_option_menu import option_menu
+from config import get_config
 from auth import login_page, forgot_password_page, check_authentication, logout, SESSION_KEYS
 from dashboard import dashboard_page
 from forms import location_form, supplier_form, category_form, asset_master_form, asset_transfer_form
 from barcode_utils import barcode_scanner_page, barcode_print_page
 
-# Page configuration
+# Page configuration (must be first Streamlit command)
 st.set_page_config(
     page_title="Asset Tracker",
     page_icon="📦",
@@ -46,6 +47,12 @@ st.markdown("""
 
 def main():
     """Main application function"""
+    
+    # Initialize configuration from secrets (after Streamlit is initialized)
+    try:
+        get_config()
+    except:
+        pass
     
     # Clear cached credentials warning if credentials are found
     # This helps if the warning was shown before credentials were set up

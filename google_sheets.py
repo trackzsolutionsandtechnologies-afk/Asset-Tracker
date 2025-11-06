@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 from typing import List, Dict, Optional
 import streamlit as st
-from config import GOOGLE_SHEET_ID, GOOGLE_CREDENTIALS_FILE, SHEETS
+from config import GOOGLE_SHEET_ID, GOOGLE_CREDENTIALS_FILE, SHEETS, get_config
 
 # Define the scope
 SCOPE = [
@@ -23,6 +23,12 @@ _min_request_interval = 1.0  # Minimum 1 second between requests
 @st.cache_resource
 def get_google_client():
     """Initialize and return Google Sheets client"""
+    # Ensure config is loaded from secrets
+    try:
+        get_config()
+    except:
+        pass
+    
     try:
         # First, try to get credentials from secrets.toml (as JSON string)
         try:
@@ -30,7 +36,16 @@ def get_google_client():
                 # Check if credentials are stored directly in secrets
                 if "credentials_json" in st.secrets["google_sheets"]:
                     import json
-                    creds_dict = json.loads(st.secrets["google_sheets"]["credentials_json"])
+                    creds_json = st.secrets["google_sheets"]["credentials_json"]
+                    # Handle both string and dict formats (Streamlit Cloud may parse JSON)
+                    if isinstance(creds_json, str):
+                        try:
+                            creds_dict = json.loads(creds_json)
+                        except:
+                            # If it's already a dict in TOML, use it directly
+                            creds_dict = creds_json
+                    else:
+                        creds_dict = creds_json
                     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
                     client = gspread.authorize(creds)
                     return client
