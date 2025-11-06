@@ -17,12 +17,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - Load Bootstrap Icons first
 st.markdown("""
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
     /* Import DIN font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    /* Import Bootstrap Icons for navigation menu - MUST be loaded */
+    /* Import Bootstrap Icons for navigation menu - Alternative method */
     @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css');
     
     /* Apply DIN/Inter font to entire app, but exclude icon elements */
@@ -99,16 +100,18 @@ st.markdown("""
     .stStatusWidget {
         display: none !important;
     }
-    /* Sidebar background color - Red */
+    /* Sidebar styling - Attractive Red Gradient Design */
     [data-testid="stSidebar"] {
-        background-color: #dc3545 !important;
+        background: #000;
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
+        box-shadow: 2px 0 15px rgba(0, 0, 0, 0.15) !important;
     }
     [data-testid="stSidebar"] > div:first-child {
-        background-color: #dc3545 !important;
+        background:  #000;
+        padding: 1rem 0.5rem !important;
     }
-    /* Sidebar text color - White for better contrast */
-    [data-testid="stSidebar"] * {
+    /* Sidebar text color - White for better contrast (exclude icons) */
+    [data-testid="stSidebar"] *:not([class*="bi-"]):not(.bi):not(i):not([class*="icon"]) {
         color: #ffffff !important;
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
@@ -117,20 +120,50 @@ st.markdown("""
     [data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] span {
+    [data-testid="stSidebar"] span:not([class*="bi-"]):not(.bi):not([class*="icon"]) {
         color: #ffffff !important;
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     }
-    /* Sidebar button styling */
+    /* Sidebar title styling - Enhanced with glass effect */
+    [data-testid="stSidebar"] h1 {
+        background: rgba(255, 255, 255, 0.15) !important;
+        padding: 1rem !important;
+        border-radius: 12px !important;
+        margin: 0.5rem 0.5rem 1rem 0.5rem !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+    }
+    /* Sidebar divider styling */
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        margin: 1.5rem 0.5rem !important;
+        border-width: 1px !important;
+    }
+    /* Sidebar button styling - Enhanced with gradient and effects */
     [data-testid="stSidebar"] button {
-        background-color: #c82333 !important;
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%) !important;
         color: #ffffff !important;
-        border-color: #bd2130 !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 10px !important;
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
+        font-weight: 600 !important;
+        padding: 0.85rem 1.2rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
     }
     [data-testid="stSidebar"] button:hover {
-        background-color: #bd2130 !important;
-        border-color: #a71e2a !important;
+        background: linear-gradient(135deg, #bd2130 0%, #a71e2a 100%) !important;
+        border-color: rgba(255, 255, 255, 0.5) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35) !important;
+    }
+    [data-testid="stSidebar"] button:active {
+        transform: translateY(0) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25) !important;
     }
     /* Apply font to all text elements */
     body, html, .stApp, .main, .block-container {
