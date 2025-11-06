@@ -24,7 +24,8 @@ wheels/
 *.egg
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
+.streamlit/credentials.json
 
 # Google Credentials
 credentials.json

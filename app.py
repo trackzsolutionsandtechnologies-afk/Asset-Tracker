@@ -47,6 +47,18 @@ st.markdown("""
 def main():
     """Main application function"""
     
+    # Clear cached credentials warning if credentials are found
+    # This helps if the warning was shown before credentials were set up
+    try:
+        import os
+        if os.path.exists("credentials.json"):
+            if "credentials_warning_shown" in st.session_state:
+                del st.session_state["credentials_warning_shown"]
+            if "connection_error_shown" in st.session_state:
+                del st.session_state["connection_error_shown"]
+    except:
+        pass
+    
     # Check if user is authenticated
     if not check_authentication():
         # Show login or forgot password page

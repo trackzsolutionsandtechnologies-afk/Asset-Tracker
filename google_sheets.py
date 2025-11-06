@@ -24,22 +24,65 @@ _min_request_interval = 1.0  # Minimum 1 second between requests
 def get_google_client():
     """Initialize and return Google Sheets client"""
     try:
-        # Try to use service account credentials
-        if os.path.exists(GOOGLE_CREDENTIALS_FILE):
-            creds = Credentials.from_service_account_file(
-                GOOGLE_CREDENTIALS_FILE, scopes=SCOPE
-            )
-            client = gspread.authorize(creds)
-            return client
-        else:
-            # Try to access as public sheet (read-only)
+        # First, try to get credentials from secrets.toml (as JSON string)
+        try:
+            if hasattr(st, 'secrets') and "google_sheets" in st.secrets:
+                # Check if credentials are stored directly in secrets
+                if "credentials_json" in st.secrets["google_sheets"]:
+                    import json
+                    creds_dict = json.loads(st.secrets["google_sheets"]["credentials_json"])
+                    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+                    client = gspread.authorize(creds)
+                    return client
+        except Exception as e:
+            pass  # Fall through to file-based credentials
+        
+        # Get credentials file path - try from secrets first, then config
+        credentials_file = GOOGLE_CREDENTIALS_FILE
+        try:
+            if hasattr(st, 'secrets') and "google_sheets" in st.secrets:
+                credentials_file = st.secrets["google_sheets"].get("credentials_file", GOOGLE_CREDENTIALS_FILE)
+        except:
+            pass
+        
+        # Check if credentials file exists (try both relative and absolute paths)
+        possible_paths = [
+            credentials_file,
+            os.path.join(os.getcwd(), credentials_file),
+            os.path.join(os.path.dirname(__file__), credentials_file)
+        ]
+        
+        credentials_found = False
+        for cred_path in possible_paths:
+            if os.path.exists(cred_path) and os.path.isfile(cred_path):
+                try:
+                    creds = Credentials.from_service_account_file(
+                        cred_path, scopes=SCOPE
+                    )
+                    client = gspread.authorize(creds)
+                    # Clear any previous warnings since we found credentials
+                    if "credentials_warning_shown" in st.session_state:
+                        del st.session_state["credentials_warning_shown"]
+                    return client
+                except Exception as e:
+                    if "credentials_error_shown" not in st.session_state:
+                        st.error(f"Error loading credentials from {cred_path}: {str(e)}")
+                        st.info("Please check that your credentials.json file is valid and has the correct format.")
+                        st.session_state["credentials_error_shown"] = True
+                    return None
+                credentials_found = True
+                break
+        
+        if not credentials_found:
+            # Try to use gspread's default service account (if set up via environment)
             try:
                 client = gspread.service_account()
                 return client
             except:
-                # If that fails, return None - user needs to set up credentials
+                # If that fails, show warning only once
                 if "credentials_warning_shown" not in st.session_state:
-                    st.warning("⚠️ Google Sheets credentials not found. Please set up credentials.json for full functionality. See README for instructions.")
+                    st.warning(f"⚠️ Google Sheets credentials not found.")
+                    st.info(f"💡 **Options to fix:**\n1. Place `credentials.json` in the project root\n2. Update the path in `secrets.toml`\n3. Store credentials JSON directly in `secrets.toml` under `[google_sheets]` → `credentials_json`")
                     st.session_state["credentials_warning_shown"] = True
                 return None
     except Exception as e:
