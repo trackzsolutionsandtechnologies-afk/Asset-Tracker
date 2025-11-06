@@ -306,7 +306,7 @@ def main():
             styles={
                 "container": {
                     "padding": "10px 5px !important",
-                    "background": "transparent",
+                    "background": "#000000",
                     "border-radius": "10px",
                 },
                 "icon": {
