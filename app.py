@@ -22,20 +22,26 @@ st.markdown("""
     <style>
     /* Import DIN font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    /* Import Bootstrap Icons for navigation menu */
+    /* Import Bootstrap Icons for navigation menu - MUST be loaded */
     @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css');
     
     /* Apply DIN/Inter font to entire app, but exclude icon elements */
-    *:not([class*="bi-"]):not(.bi):not(i) {
+    body, html, .stApp, .main, .block-container, p, h1, h2, h3, h4, h5, h6, span, div, label, input, textarea, select {
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
     
-    /* Ensure Bootstrap Icons display properly and use their own font */
+    /* CRITICAL: Ensure Bootstrap Icons use their own font and are not overridden */
     .bi,
+    [class*="bi-"],
     [class^="bi-"],
-    [class*=" bi-"],
+    i.bi,
     i[class*="bi-"],
-    span[class*="bi-"] {
+    span[class*="bi-"],
+    .stOptionMenu .bi,
+    .stOptionMenu [class*="bi-"],
+    [data-testid="stSidebar"] .bi,
+    [data-testid="stSidebar"] [class*="bi-"],
+    [data-testid="stSidebar"] i {
         font-family: "bootstrap-icons" !important;
         font-style: normal !important;
         font-weight: normal !important;
@@ -44,13 +50,11 @@ st.markdown("""
         speak: none;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        display: inline-block;
     }
     
-    /* Fix for option menu icons */
-    .stOptionMenu [class*="bi-"],
-    .stOptionMenu i,
-    [data-testid="stSidebar"] [class*="bi-"],
-    [data-testid="stSidebar"] i {
+    /* Prevent text rendering for icon classes */
+    [class*="bi-"]:not([class*="text"]):not([class*="font"]) {
         font-family: "bootstrap-icons" !important;
     }
     
@@ -247,16 +251,44 @@ def main():
             menu_icon="list",
             default_index=0,
             styles={
-                "container": {"padding": "5!important", "background-color": "#dc3545"},
-                "icon": {"color": "#ffffff", "font-size": "18px"},
+                "container": {
+                    "padding": "10px 5px !important",
+                    "background": "transparent",
+                    "border-radius": "10px",
+                },
+                "icon": {
+                    "color": "#ffffff",
+                    "font-size": "20px",
+                    "margin-right": "10px",
+                },
                 "nav-link": {
                     "font-size": "16px",
                     "text-align": "left",
-                    "margin": "0px",
+                    "margin": "5px 0",
+                    "padding": "12px 15px",
                     "color": "#ffffff",
-                    "--hover-color": "#c82333",
+                    "border-radius": "8px",
+                    "background": "rgba(255, 255, 255, 0.05)",
+                    "transition": "all 0.3s ease",
+                    "--hover-color": "rgba(255, 255, 255, 0.15)",
                 },
-                "nav-link-selected": {"background-color": "#c82333", "color": "#ffffff"},
+                "nav-link-selected": {
+                    "background": "rgba(255, 255, 255, 0.2)",
+                    "color": "#ffffff",
+                    "font-weight": "600",
+                    "box-shadow": "0 2px 8px rgba(0, 0, 0, 0.2)",
+                    "border-left": "4px solid #ffffff",
+                },
+                "menu-title": {
+                    "color": "#ffffff",
+                    "font-size": "18px",
+                    "font-weight": "700",
+                    "margin-bottom": "15px",
+                    "padding": "10px",
+                    "background": "rgba(255, 255, 255, 0.1)",
+                    "border-radius": "8px",
+                    "text-align": "center",
+                },
             }
         )
     
