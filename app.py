@@ -40,6 +40,23 @@ st.markdown("""
         width: 100%;
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
     }
+    /* Button selected/active states */
+    .stButton>button:active,
+    .stButton>button:focus,
+    .stButton>button:focus:not(:active),
+    button[kind="primary"]:active,
+    button[kind="primary"]:focus,
+    button:active,
+    button:focus {
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
+    }
+    /* Form submit buttons */
+    form button,
+    form button:active,
+    form button:focus,
+    form button[type="submit"] {
+        font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
+    }
     /* Hide loading indicators and status widgets */
     [data-testid="stStatusWidget"] {
         display: none !important;
