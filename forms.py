@@ -19,6 +19,18 @@ def generate_supplier_id() -> str:
     # Generate a short unique ID
     return f"SUP-{uuid.uuid4().hex[:8].upper()}"
 
+def generate_category_id() -> str:
+    """Generate a unique Category ID"""
+    import uuid
+    # Generate a short unique ID
+    return f"CAT-{uuid.uuid4().hex[:8].upper()}"
+
+def generate_subcategory_id() -> str:
+    """Generate a unique Sub Category ID"""
+    import uuid
+    # Generate a short unique ID
+    return f"SUB-{uuid.uuid4().hex[:8].upper()}"
+
 def location_form():
     """Location Form"""
     st.header("📍 Location Management")
@@ -503,66 +515,490 @@ def category_form():
     categories_df = read_data(SHEETS["categories"])
     subcategories_df = read_data(SHEETS["subcategories"])
     
-    tab1, tab2, tab3 = st.tabs(["Add Category", "Add Sub Category", "View All"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Add Category", "Add Sub Category", "View/Edit Categories", "View/Edit Sub Categories"])
     
     with tab1:
-        with st.form("category_form"):
-            category_id = st.text_input("Category ID *", help="Unique identifier for the category")
-            category_name = st.text_input("Category Name *")
+        # Green Add Category button styling, white form background, and hide loading indicators
+        st.markdown("""
+            <style>
+            /* White background for Add Category form */
+            div[data-testid="stForm"] {
+                background-color: white !important;
+                padding: 20px !important;
+                border-radius: 10px !important;
+                border: 1px solid #e0e0e0 !important;
+            }
+            /* Target the primary button in the category form */
+            div[data-testid="stForm"] button[kind="primary"],
+            button.stButton > button[kind="primary"] {
+                background-color: #28a745 !important;
+                color: white !important;
+                border-color: #28a745 !important;
+            }
+            div[data-testid="stForm"] button[kind="primary"]:hover,
+            button.stButton > button[kind="primary"]:hover {
+                background-color: #218838 !important;
+                border-color: #1e7e34 !important;
+            }
+            /* Hide loading indicators */
+            [data-testid="stStatusWidget"] {
+                display: none !important;
+            }
+            .stSpinner {
+                display: none !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Show success message if exists
+        if "category_success_message" in st.session_state:
+            st.success(st.session_state["category_success_message"])
+            # Clear message after showing
+            del st.session_state["category_success_message"]
+        
+        # Initialize form key for reset
+        if "category_form_key" not in st.session_state:
+            st.session_state["category_form_key"] = 0
+        
+        with st.form(key=f"category_form_{st.session_state['category_form_key']}"):
+            auto_generate = st.checkbox("Auto-generate Category ID", value=True, key=f"auto_gen_cat_{st.session_state['category_form_key']}")
+            if auto_generate:
+                # Generate ID once and store in session state
+                if "generated_category_id" not in st.session_state:
+                    st.session_state["generated_category_id"] = generate_category_id()
+                category_id = st.text_input("Category ID *", value=st.session_state["generated_category_id"], disabled=True, help="Auto-generated unique identifier", key=f"cat_id_{st.session_state['category_form_key']}")
+            else:
+                category_id = st.text_input("Category ID *", help="Unique identifier for the category", key=f"cat_id_manual_{st.session_state['category_form_key']}")
+                if "generated_category_id" in st.session_state:
+                    del st.session_state["generated_category_id"]
             
-            submitted = st.form_submit_button("Add Category", use_container_width=True)
+            category_name = st.text_input("Category Name *", key=f"cat_name_{st.session_state['category_form_key']}")
+            
+            submitted = st.form_submit_button("Add Category", use_container_width=True, type="primary")
             
             if submitted:
                 if not category_id or not category_name:
                     st.error("Please fill in all required fields")
-                elif not categories_df.empty and category_id in categories_df["Category ID"].values:
+                elif not categories_df.empty and "Category ID" in categories_df.columns and category_id in categories_df["Category ID"].values:
                     st.error("Category ID already exists")
                 else:
-                    if append_data(SHEETS["categories"], [category_id, category_name]):
-                        st.success("Category added successfully!")
-                        st.rerun()
-                    else:
-                        st.error("Failed to add category")
+                    with st.spinner("Adding category..."):
+                        if append_data(SHEETS["categories"], [category_id, category_name]):
+                            # Clear generated category ID and reset form
+                            if "generated_category_id" in st.session_state:
+                                del st.session_state["generated_category_id"]
+                            # Clear search bar
+                            if "category_search" in st.session_state:
+                                del st.session_state["category_search"]
+                            # Set success message
+                            st.session_state["category_success_message"] = f"✅ Category '{category_name}' (ID: {category_id}) added successfully!"
+                            # Increment form key to reset form
+                            st.session_state["category_form_key"] += 1
+                            st.rerun()
+                        else:
+                            st.error("Failed to add category")
     
     with tab2:
-        with st.form("subcategory_form"):
+        # Green Add Sub Category button styling, white form background, and hide loading indicators
+        st.markdown("""
+            <style>
+            /* White background for Add Sub Category form */
+            div[data-testid="stForm"] {
+                background-color: white !important;
+                padding: 20px !important;
+                border-radius: 10px !important;
+                border: 1px solid #e0e0e0 !important;
+            }
+            /* Target the primary button in the subcategory form */
+            div[data-testid="stForm"] button[kind="primary"],
+            button.stButton > button[kind="primary"] {
+                background-color: #28a745 !important;
+                color: white !important;
+                border-color: #28a745 !important;
+            }
+            div[data-testid="stForm"] button[kind="primary"]:hover,
+            button.stButton > button[kind="primary"]:hover {
+                background-color: #218838 !important;
+                border-color: #1e7e34 !important;
+            }
+            /* Hide loading indicators */
+            [data-testid="stStatusWidget"] {
+                display: none !important;
+            }
+            .stSpinner {
+                display: none !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Show success message if exists
+        if "subcategory_success_message" in st.session_state:
+            st.success(st.session_state["subcategory_success_message"])
+            # Clear message after showing
+            del st.session_state["subcategory_success_message"]
+        
+        # Initialize form key for reset
+        if "subcategory_form_key" not in st.session_state:
+            st.session_state["subcategory_form_key"] = 0
+        
+        with st.form(key=f"subcategory_form_{st.session_state['subcategory_form_key']}"):
             if categories_df.empty:
                 st.warning("Please add categories first before adding subcategories")
             else:
                 category_options = categories_df["Category ID"].tolist()
-                category_id = st.selectbox("Category *", ["Select category"] + category_options)
-                subcategory_id = st.text_input("Sub Category ID *", help="Unique identifier for the subcategory")
-                subcategory_name = st.text_input("Sub Category Name *")
+                category_id = st.selectbox("Category *", ["Select category"] + category_options, key=f"subcat_cat_{st.session_state['subcategory_form_key']}")
                 
-                submitted = st.form_submit_button("Add Sub Category", use_container_width=True)
+                auto_generate = st.checkbox("Auto-generate Sub Category ID", value=True, key=f"auto_gen_subcat_{st.session_state['subcategory_form_key']}")
+                if auto_generate:
+                    # Generate ID once and store in session state
+                    if "generated_subcategory_id" not in st.session_state:
+                        st.session_state["generated_subcategory_id"] = generate_subcategory_id()
+                    subcategory_id = st.text_input("Sub Category ID *", value=st.session_state["generated_subcategory_id"], disabled=True, help="Auto-generated unique identifier", key=f"subcat_id_{st.session_state['subcategory_form_key']}")
+                else:
+                    subcategory_id = st.text_input("Sub Category ID *", help="Unique identifier for the subcategory", key=f"subcat_id_manual_{st.session_state['subcategory_form_key']}")
+                    if "generated_subcategory_id" in st.session_state:
+                        del st.session_state["generated_subcategory_id"]
+                
+                subcategory_name = st.text_input("Sub Category Name *", key=f"subcat_name_{st.session_state['subcategory_form_key']}")
+                
+                submitted = st.form_submit_button("Add Sub Category", use_container_width=True, type="primary")
                 
                 if submitted:
                     if category_id == "Select category" or not subcategory_id or not subcategory_name:
                         st.error("Please fill in all required fields")
-                    elif not subcategories_df.empty and subcategory_id in subcategories_df["SubCategory ID"].values:
+                    elif not subcategories_df.empty and "SubCategory ID" in subcategories_df.columns and subcategory_id in subcategories_df["SubCategory ID"].values:
                         st.error("Sub Category ID already exists")
                     else:
-                        if append_data(SHEETS["subcategories"], [subcategory_id, category_id, subcategory_name]):
-                            st.success("Sub Category added successfully!")
-                            st.rerun()
-                        else:
-                            st.error("Failed to add sub category")
+                        with st.spinner("Adding sub category..."):
+                            if append_data(SHEETS["subcategories"], [subcategory_id, category_id, subcategory_name]):
+                                # Clear generated subcategory ID and reset form
+                                if "generated_subcategory_id" in st.session_state:
+                                    del st.session_state["generated_subcategory_id"]
+                                # Clear search bar
+                                if "subcategory_search" in st.session_state:
+                                    del st.session_state["subcategory_search"]
+                                # Set success message
+                                st.session_state["subcategory_success_message"] = f"✅ Sub Category '{subcategory_name}' (ID: {subcategory_id}) added successfully!"
+                                # Increment form key to reset form
+                                st.session_state["subcategory_form_key"] += 1
+                                st.rerun()
+                            else:
+                                st.error("Failed to add sub category")
     
     with tab3:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("Categories")
-            if not categories_df.empty:
-                st.dataframe(categories_df, use_container_width=True)
-            else:
-                st.info("No categories found")
+        # Show success message if exists
+        if "category_success_message" in st.session_state:
+            st.success(st.session_state["category_success_message"])
+            # Clear message after showing
+            del st.session_state["category_success_message"]
         
-        with col2:
-            st.subheader("Sub Categories")
-            if not subcategories_df.empty:
-                st.dataframe(subcategories_df, use_container_width=True)
+        if not categories_df.empty and "Category ID" in categories_df.columns:
+            st.subheader("All Categories")
+            
+            # Search bar
+            search_term = st.text_input("🔍 Search Categories", placeholder="Search by Category ID or Name...", key="category_search")
+            
+            # Filter data based on search
+            if search_term:
+                mask = (
+                    categories_df["Category ID"].astype(str).str.contains(search_term, case=False, na=False) |
+                    categories_df["Category Name"].astype(str).str.contains(search_term, case=False, na=False)
+                )
+                filtered_df = categories_df[mask]
+                if filtered_df.empty:
+                    st.info(f"No categories found matching '{search_term}'")
+                    filtered_df = pd.DataFrame()
             else:
-                st.info("No subcategories found")
+                filtered_df = categories_df
+            
+            if not filtered_df.empty:
+                # Show count
+                st.caption(f"Showing {len(filtered_df)} of {len(categories_df)} category(ies)")
+                
+                # Check if user is admin
+                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+                is_admin = user_role.lower() == "admin"
+                
+                # Table header - adjust columns based on admin status
+                if is_admin:
+                    header_col1, header_col2, header_col3, header_col4 = st.columns([3, 4, 1, 1])
+                    with header_col1:
+                        st.write("**Category ID**")
+                    with header_col2:
+                        st.write("**Category Name**")
+                    with header_col3:
+                        st.write("**Edit**")
+                    with header_col4:
+                        st.write("**Delete**")
+                else:
+                    header_col1, header_col2, header_col3 = st.columns([3, 4, 1])
+                    with header_col1:
+                        st.write("**Category ID**")
+                    with header_col2:
+                        st.write("**Category Name**")
+                    with header_col3:
+                        st.write("**Edit**")
+                st.divider()
+
+                # Display table with edit/delete buttons
+                for idx, row in filtered_df.iterrows():
+                    # Get original index from df for delete/update operations
+                    # Convert to Python int to avoid JSON serialization issues
+                    if not categories_df[categories_df["Category ID"] == row.get('Category ID', '')].empty:
+                        original_idx = int(categories_df[categories_df["Category ID"] == row.get('Category ID', '')].index[0])
+                    else:
+                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
+
+                    if is_admin:
+                        col1, col2, col3, col4 = st.columns([3, 4, 1, 1])
+                    else:
+                        col1, col2, col3 = st.columns([3, 4, 1])
+
+                    with col1:
+                        st.write(row.get('Category ID', 'N/A'))
+                    with col2:
+                        st.write(row.get('Category Name', 'N/A'))
+                    with col3:
+                        edit_key = f"edit_cat_{row.get('Category ID', idx)}"
+                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this category"):
+                            st.session_state["edit_category_id"] = row.get('Category ID', '')
+                            st.session_state["edit_category_idx"] = int(original_idx)  # Ensure it's a Python int
+                            st.rerun()
+                    # Only show delete button for admin users
+                    if is_admin:
+                        with col4:
+                            delete_key = f"delete_cat_{row.get('Category ID', idx)}"
+                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this category"):
+                                category_name_to_delete = row.get('Category Name', 'Unknown')
+                                category_id_to_delete = row.get('Category ID', 'Unknown')
+                                if delete_data(SHEETS["categories"], original_idx):
+                                    # Set success message
+                                    st.session_state["category_success_message"] = f"✅ Category '{category_name_to_delete}' (ID: {category_id_to_delete}) deleted successfully!"
+                                    # Clear search bar
+                                    if "category_search" in st.session_state:
+                                        del st.session_state["category_search"]
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete category")
+                    
+                    st.divider()
+            elif search_term:
+                # Search returned no results, but search was performed
+                pass
+            else:
+                st.info("No categories found. Add a new category using the 'Add Category' tab.")
+
+            # Edit form (shown when edit button is clicked)
+            if "edit_category_id" in st.session_state and st.session_state["edit_category_id"]:
+                st.subheader("Edit Category")
+                edit_id = st.session_state["edit_category_id"]
+                edit_idx = st.session_state.get("edit_category_idx", 0)
+                
+                category_rows = categories_df[categories_df["Category ID"] == edit_id]
+                if not category_rows.empty:
+                    category = category_rows.iloc[0]
+                    
+                    with st.form("edit_category_form"):
+                        new_category_id = st.text_input("Category ID", value=category.get("Category ID", ""), disabled=True)
+                        new_category_name = st.text_input("Category Name", value=category.get("Category Name", ""))
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("Update Category", use_container_width=True):
+                                with st.spinner("Updating category..."):
+                                    if update_data(SHEETS["categories"], edit_idx, [new_category_id, new_category_name]):
+                                        # Set success message
+                                        st.session_state["category_success_message"] = f"✅ Category '{new_category_name}' (ID: {new_category_id}) updated successfully!"
+                                        if "edit_category_id" in st.session_state:
+                                            del st.session_state["edit_category_id"]
+                                        if "edit_category_idx" in st.session_state:
+                                            del st.session_state["edit_category_idx"]
+                                        # Clear search bar
+                                        if "category_search" in st.session_state:
+                                            del st.session_state["category_search"]
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to update category")
+                        with col2:
+                            if st.form_submit_button("Cancel", use_container_width=True):
+                                if "edit_category_id" in st.session_state:
+                                    del st.session_state["edit_category_id"]
+                                if "edit_category_idx" in st.session_state:
+                                    del st.session_state["edit_category_idx"]
+                                st.rerun()
+                else:
+                    st.warning("Selected category not found in data.")
+        else:
+            st.info("No categories found. Add a new category using the 'Add Category' tab.")
+    
+    with tab4:
+        # Show success message if exists
+        if "subcategory_success_message" in st.session_state:
+            st.success(st.session_state["subcategory_success_message"])
+            # Clear message after showing
+            del st.session_state["subcategory_success_message"]
+        
+        if not subcategories_df.empty and "SubCategory ID" in subcategories_df.columns:
+            st.subheader("All Sub Categories")
+            
+            # Search bar
+            search_term = st.text_input("🔍 Search Sub Categories", placeholder="Search by Sub Category ID, Name, or Category ID...", key="subcategory_search")
+            
+            # Filter data based on search
+            if search_term:
+                mask = (
+                    subcategories_df["SubCategory ID"].astype(str).str.contains(search_term, case=False, na=False) |
+                    subcategories_df["SubCategory Name"].astype(str).str.contains(search_term, case=False, na=False) |
+                    subcategories_df["Category ID"].astype(str).str.contains(search_term, case=False, na=False)
+                )
+                filtered_df = subcategories_df[mask]
+                if filtered_df.empty:
+                    st.info(f"No subcategories found matching '{search_term}'")
+                    filtered_df = pd.DataFrame()
+            else:
+                filtered_df = subcategories_df
+            
+            if not filtered_df.empty:
+                # Show count
+                st.caption(f"Showing {len(filtered_df)} of {len(subcategories_df)} subcategory(ies)")
+                
+                # Check if user is admin
+                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+                is_admin = user_role.lower() == "admin"
+                
+                # Table header - adjust columns based on admin status
+                if is_admin:
+                    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 3, 3, 1, 1])
+                    with header_col1:
+                        st.write("**Sub Category ID**")
+                    with header_col2:
+                        st.write("**Category ID**")
+                    with header_col3:
+                        st.write("**Sub Category Name**")
+                    with header_col4:
+                        st.write("**Edit**")
+                    with header_col5:
+                        st.write("**Delete**")
+                else:
+                    header_col1, header_col2, header_col3, header_col4 = st.columns([2, 3, 3, 1])
+                    with header_col1:
+                        st.write("**Sub Category ID**")
+                    with header_col2:
+                        st.write("**Category ID**")
+                    with header_col3:
+                        st.write("**Sub Category Name**")
+                    with header_col4:
+                        st.write("**Edit**")
+                st.divider()
+
+                # Display table with edit/delete buttons
+                for idx, row in filtered_df.iterrows():
+                    # Get original index from df for delete/update operations
+                    # Convert to Python int to avoid JSON serialization issues
+                    if not subcategories_df[subcategories_df["SubCategory ID"] == row.get('SubCategory ID', '')].empty:
+                        original_idx = int(subcategories_df[subcategories_df["SubCategory ID"] == row.get('SubCategory ID', '')].index[0])
+                    else:
+                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
+
+                    if is_admin:
+                        col1, col2, col3, col4, col5 = st.columns([2, 3, 3, 1, 1])
+                    else:
+                        col1, col2, col3, col4 = st.columns([2, 3, 3, 1])
+
+                    with col1:
+                        st.write(row.get('SubCategory ID', 'N/A'))
+                    with col2:
+                        st.write(row.get('Category ID', 'N/A'))
+                    with col3:
+                        st.write(row.get('SubCategory Name', 'N/A'))
+                    with col4:
+                        edit_key = f"edit_subcat_{row.get('SubCategory ID', idx)}"
+                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this subcategory"):
+                            st.session_state["edit_subcategory_id"] = row.get('SubCategory ID', '')
+                            st.session_state["edit_subcategory_idx"] = int(original_idx)  # Ensure it's a Python int
+                            st.rerun()
+                    # Only show delete button for admin users
+                    if is_admin:
+                        with col5:
+                            delete_key = f"delete_subcat_{row.get('SubCategory ID', idx)}"
+                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this subcategory"):
+                                subcategory_name_to_delete = row.get('SubCategory Name', 'Unknown')
+                                subcategory_id_to_delete = row.get('SubCategory ID', 'Unknown')
+                                if delete_data(SHEETS["subcategories"], original_idx):
+                                    # Set success message
+                                    st.session_state["subcategory_success_message"] = f"✅ Sub Category '{subcategory_name_to_delete}' (ID: {subcategory_id_to_delete}) deleted successfully!"
+                                    # Clear search bar
+                                    if "subcategory_search" in st.session_state:
+                                        del st.session_state["subcategory_search"]
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete subcategory")
+                    
+                    st.divider()
+            elif search_term:
+                # Search returned no results, but search was performed
+                pass
+            else:
+                st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
+
+            # Edit form (shown when edit button is clicked)
+            if "edit_subcategory_id" in st.session_state and st.session_state["edit_subcategory_id"]:
+                st.subheader("Edit Sub Category")
+                edit_id = st.session_state["edit_subcategory_id"]
+                edit_idx = st.session_state.get("edit_subcategory_idx", 0)
+                
+                subcategory_rows = subcategories_df[subcategories_df["SubCategory ID"] == edit_id]
+                if not subcategory_rows.empty:
+                    subcategory = subcategory_rows.iloc[0]
+                    
+                    with st.form("edit_subcategory_form"):
+                        new_subcategory_id = st.text_input("Sub Category ID", value=subcategory.get("SubCategory ID", ""), disabled=True)
+                        
+                        # Category dropdown for editing
+                        if not categories_df.empty:
+                            category_options = categories_df["Category ID"].tolist()
+                            current_category = subcategory.get("Category ID", "")
+                            if current_category in category_options:
+                                default_index = category_options.index(current_category) + 1
+                            else:
+                                default_index = 0
+                            new_category_id = st.selectbox("Category *", ["Select category"] + category_options, index=default_index)
+                        else:
+                            new_category_id = st.text_input("Category ID *", value=subcategory.get("Category ID", ""))
+                        
+                        new_subcategory_name = st.text_input("Sub Category Name", value=subcategory.get("SubCategory Name", ""))
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("Update Sub Category", use_container_width=True):
+                                if new_category_id == "Select category":
+                                    st.error("Please select a category")
+                                else:
+                                    with st.spinner("Updating subcategory..."):
+                                        if update_data(SHEETS["subcategories"], edit_idx, [new_subcategory_id, new_category_id, new_subcategory_name]):
+                                            # Set success message
+                                            st.session_state["subcategory_success_message"] = f"✅ Sub Category '{new_subcategory_name}' (ID: {new_subcategory_id}) updated successfully!"
+                                            if "edit_subcategory_id" in st.session_state:
+                                                del st.session_state["edit_subcategory_id"]
+                                            if "edit_subcategory_idx" in st.session_state:
+                                                del st.session_state["edit_subcategory_idx"]
+                                            # Clear search bar
+                                            if "subcategory_search" in st.session_state:
+                                                del st.session_state["subcategory_search"]
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to update subcategory")
+                        with col2:
+                            if st.form_submit_button("Cancel", use_container_width=True):
+                                if "edit_subcategory_id" in st.session_state:
+                                    del st.session_state["edit_subcategory_id"]
+                                if "edit_subcategory_idx" in st.session_state:
+                                    del st.session_state["edit_subcategory_idx"]
+                                st.rerun()
+                else:
+                    st.warning("Selected subcategory not found in data.")
+        else:
+            st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
 
 def generate_asset_id() -> str:
     """Generate a unique Asset ID/Barcode"""
