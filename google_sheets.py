@@ -308,6 +308,8 @@ def update_data(sheet_name: str, row_index: int, data: List) -> bool:
         return False
     
     try:
+        # Ensure row_index is a Python int (not numpy int64)
+        row_index = int(row_index)
         # Get all data to find the correct row
         all_values = worksheet.get_all_values()
         if len(all_values) <= row_index + 1:
@@ -351,7 +353,9 @@ def delete_data(sheet_name: str, row_index: int) -> bool:
         return False
     
     try:
-        # row_index is 1-based, add 2 to account for header row
+        # Ensure row_index is a Python int (not numpy int64)
+        row_index = int(row_index)
+        # row_index is 0-based, add 2 to account for header row (1) and 1-based indexing (1)
         worksheet.delete_rows(row_index + 2)
         # Clear cache after write operation
         read_data.clear()

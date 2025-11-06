@@ -166,7 +166,11 @@ def location_form():
                 # Display table with edit/delete buttons
                 for idx, row in filtered_df.iterrows():
                     # Get original index from df for delete/update operations
-                    original_idx = df[df["Location ID"] == row.get('Location ID', '')].index[0] if not df[df["Location ID"] == row.get('Location ID', '')].empty else idx
+                    # Convert to Python int to avoid JSON serialization issues
+                    if not df[df["Location ID"] == row.get('Location ID', '')].empty:
+                        original_idx = int(df[df["Location ID"] == row.get('Location ID', '')].index[0])
+                    else:
+                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
                     if is_admin:
                         col1, col2, col3, col4, col5 = st.columns([2, 3, 3, 1, 1])
@@ -180,11 +184,11 @@ def location_form():
                     with col3:
                         st.write(row.get('Department', 'N/A'))
                     with col4:
-                        edit_key = f"edit_loc_{row.get('Location ID', idx)}"
-                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
-                            st.session_state["edit_location_id"] = row.get('Location ID', '')
-                            st.session_state["edit_location_idx"] = original_idx
-                            st.rerun()
+                                edit_key = f"edit_loc_{row.get('Location ID', idx)}"
+                                if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
+                                    st.session_state["edit_location_id"] = row.get('Location ID', '')
+                                    st.session_state["edit_location_idx"] = int(original_idx)  # Ensure it's a Python int
+                                    st.rerun()
                     # Only show delete button for admin users
                     if is_admin:
                         with col5:
