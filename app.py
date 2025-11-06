@@ -22,10 +22,27 @@ st.markdown("""
     <style>
     /* Import DIN font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    /* Import Bootstrap Icons for navigation menu */
+    @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css');
     
     /* Apply DIN/Inter font to entire app */
     * {
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+    
+    /* Ensure Bootstrap Icons display properly */
+    .bi::before,
+    [class^="bi-"]::before,
+    [class*=" bi-"]::before {
+        font-family: "bootstrap-icons" !important;
+        font-style: normal;
+        font-weight: normal !important;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        vertical-align: -.125em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
     
     .main-header {
