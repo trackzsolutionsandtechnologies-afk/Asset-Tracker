@@ -134,73 +134,73 @@ def location_form():
                 # Show count
                 st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
                 
-                        # Check if user is admin
-                        user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-                        is_admin = user_role.lower() == "admin"
-                        
-                        # Table header - adjust columns based on admin status
-                        if is_admin:
-                            header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 3, 3, 1, 1])
-                            with header_col1:
-                                st.write("**Location ID**")
-                            with header_col2:
-                                st.write("**Location Name**")
-                            with header_col3:
-                                st.write("**Department**")
-                            with header_col4:
-                                st.write("**Edit**")
-                            with header_col5:
-                                st.write("**Delete**")
-                        else:
-                            header_col1, header_col2, header_col3, header_col4 = st.columns([2, 3, 3, 1])
-                            with header_col1:
-                                st.write("**Location ID**")
-                            with header_col2:
-                                st.write("**Location Name**")
-                            with header_col3:
-                                st.write("**Department**")
-                            with header_col4:
-                                st.write("**Edit**")
-                        st.divider()
+                # Check if user is admin
+                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+                is_admin = user_role.lower() == "admin"
+                
+                # Table header - adjust columns based on admin status
+                if is_admin:
+                    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 3, 3, 1, 1])
+                    with header_col1:
+                        st.write("**Location ID**")
+                    with header_col2:
+                        st.write("**Location Name**")
+                    with header_col3:
+                        st.write("**Department**")
+                    with header_col4:
+                        st.write("**Edit**")
+                    with header_col5:
+                        st.write("**Delete**")
+                else:
+                    header_col1, header_col2, header_col3, header_col4 = st.columns([2, 3, 3, 1])
+                    with header_col1:
+                        st.write("**Location ID**")
+                    with header_col2:
+                        st.write("**Location Name**")
+                    with header_col3:
+                        st.write("**Department**")
+                    with header_col4:
+                        st.write("**Edit**")
+                st.divider()
 
-                        # Display table with edit/delete buttons
-                        for idx, row in filtered_df.iterrows():
-                            # Get original index from df for delete/update operations
-                            original_idx = df[df["Location ID"] == row.get('Location ID', '')].index[0] if not df[df["Location ID"] == row.get('Location ID', '')].empty else idx
+                # Display table with edit/delete buttons
+                for idx, row in filtered_df.iterrows():
+                    # Get original index from df for delete/update operations
+                    original_idx = df[df["Location ID"] == row.get('Location ID', '')].index[0] if not df[df["Location ID"] == row.get('Location ID', '')].empty else idx
 
-                            if is_admin:
-                                col1, col2, col3, col4, col5 = st.columns([2, 3, 3, 1, 1])
-                            else:
-                                col1, col2, col3, col4 = st.columns([2, 3, 3, 1])
+                    if is_admin:
+                        col1, col2, col3, col4, col5 = st.columns([2, 3, 3, 1, 1])
+                    else:
+                        col1, col2, col3, col4 = st.columns([2, 3, 3, 1])
 
-                            with col1:
-                                st.write(row.get('Location ID', 'N/A'))
-                            with col2:
-                                st.write(row.get('Location Name', 'N/A'))
-                            with col3:
-                                st.write(row.get('Department', 'N/A'))
-                            with col4:
-                                edit_key = f"edit_loc_{row.get('Location ID', idx)}"
-                                if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
-                                    st.session_state["edit_location_id"] = row.get('Location ID', '')
-                                    st.session_state["edit_location_idx"] = original_idx
+                    with col1:
+                        st.write(row.get('Location ID', 'N/A'))
+                    with col2:
+                        st.write(row.get('Location Name', 'N/A'))
+                    with col3:
+                        st.write(row.get('Department', 'N/A'))
+                    with col4:
+                        edit_key = f"edit_loc_{row.get('Location ID', idx)}"
+                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
+                            st.session_state["edit_location_id"] = row.get('Location ID', '')
+                            st.session_state["edit_location_idx"] = original_idx
+                            st.rerun()
+                    # Only show delete button for admin users
+                    if is_admin:
+                        with col5:
+                            delete_key = f"delete_loc_{row.get('Location ID', idx)}"
+                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
+                                location_name_to_delete = row.get('Location Name', 'Unknown')
+                                location_id_to_delete = row.get('Location ID', 'Unknown')
+                                if delete_data(SHEETS["locations"], original_idx):
+                                    # Set success message
+                                    st.session_state["location_success_message"] = f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
+                                    # Clear search bar
+                                    if "location_search" in st.session_state:
+                                        del st.session_state["location_search"]
                                     st.rerun()
-                            # Only show delete button for admin users
-                            if is_admin:
-                                with col5:
-                                    delete_key = f"delete_loc_{row.get('Location ID', idx)}"
-                                    if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
-                                        location_name_to_delete = row.get('Location Name', 'Unknown')
-                                        location_id_to_delete = row.get('Location ID', 'Unknown')
-                                        if delete_data(SHEETS["locations"], original_idx):
-                                            # Set success message
-                                            st.session_state["location_success_message"] = f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
-                                            # Clear search bar
-                                            if "location_search" in st.session_state:
-                                                del st.session_state["location_search"]
-                                            st.rerun()
-                                        else:
-                                            st.error("Failed to delete location")
+                                else:
+                                    st.error("Failed to delete location")
                     
                     st.divider()
             elif search_term:
