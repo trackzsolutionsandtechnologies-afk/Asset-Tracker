@@ -9,9 +9,10 @@ import pandas as pd
 import barcode
 from barcode.writer import ImageWriter
 import uuid
-from google_sheets import read_data
+from google_sheets import read_data, update_data
 from config import SHEETS
 import numpy as np
+from datetime import datetime
 
 # Try to import barcode scanning libraries
 try:
@@ -150,26 +151,196 @@ def barcode_scanner_page():
             if not matching_assets.empty:
                 st.success(f"Found {len(matching_assets)} matching asset(s)")
                 
-                for idx, asset in matching_assets.iterrows():
-                    with st.expander(f"Asset: {asset['Asset ID']} - {asset.get('Asset Name', 'N/A')}"):
+                for idx, asset_row in matching_assets.iterrows():
+                    asset_id = asset_row['Asset ID']
+                    edit_key = f"edit_asset_{asset_id}_{idx}"
+                    
+                    with st.expander(f"Asset: {asset_id} - {asset_row.get('Asset Name', 'N/A')}"):
                         col1, col2 = st.columns([2, 1])
                         
                         with col1:
                             st.write("**Asset Details:**")
-                            st.write(f"**Asset ID:** {asset['Asset ID']}")
-                            st.write(f"**Asset Name:** {asset.get('Asset Name', 'N/A')}")
-                            st.write(f"**Category:** {asset.get('Category', 'N/A')}")
-                            st.write(f"**Sub Category:** {asset.get('Sub Category', 'N/A')}")
-                            st.write(f"**Location:** {asset.get('Location', 'N/A')}")
-                            st.write(f"**Status:** {asset.get('Status', 'N/A')}")
-                            st.write(f"**Condition:** {asset.get('Condition', 'N/A')}")
-                            st.write(f"**Assigned To:** {asset.get('Assigned To', 'N/A')}")
+                            st.write(f"**Asset ID:** {asset_id}")
+                            st.write(f"**Asset Name:** {asset_row.get('Asset Name', 'N/A')}")
+                            st.write(f"**Category:** {asset_row.get('Category', 'N/A')}")
+                            st.write(f"**Sub Category:** {asset_row.get('Sub Category', 'N/A')}")
+                            st.write(f"**Location:** {asset_row.get('Location', 'N/A')}")
+                            st.write(f"**Status:** {asset_row.get('Status', 'N/A')}")
+                            st.write(f"**Condition:** {asset_row.get('Condition', 'N/A')}")
+                            st.write(f"**Assigned To:** {asset_row.get('Assigned To', 'N/A')}")
+                            
+                            # Edit button
+                            if st.button("✏️ Edit Asset", key=edit_key, use_container_width=True):
+                                st.session_state["edit_asset_id"] = asset_id
+                                st.session_state["edit_asset_idx"] = int(idx)
+                                st.rerun()
                         
                         with col2:
                             # Display barcode
-                            barcode_img = generate_barcode_image(asset['Asset ID'])
+                            barcode_img = generate_barcode_image(asset_id)
                             if barcode_img:
-                                st.image(barcode_img, caption=f"Barcode: {asset['Asset ID']}", use_container_width=True)
+                                st.image(barcode_img, caption=f"Barcode: {asset_id}", use_container_width=True)
+                
+                # Show edit form if an asset is selected for editing
+                if "edit_asset_id" in st.session_state and st.session_state["edit_asset_id"]:
+                    edit_asset_id = st.session_state["edit_asset_id"]
+                    edit_asset_idx = st.session_state.get("edit_asset_idx", 0)
+                    
+                    # Find the asset in the dataframe
+                    asset_to_edit = assets_df[assets_df["Asset ID"] == edit_asset_id]
+                    if not asset_to_edit.empty:
+                        asset = asset_to_edit.iloc[0]
+                        st.divider()
+                        st.subheader(f"✏️ Edit Asset: {edit_asset_id}")
+                        
+                        # Load reference data
+                        locations_df = read_data(SHEETS["locations"])
+                        suppliers_df = read_data(SHEETS["suppliers"])
+                        categories_df = read_data(SHEETS["categories"])
+                        subcategories_df = read_data(SHEETS["subcategories"])
+                        
+                        with st.form("edit_asset_form_scanner"):
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                # Asset ID is read-only
+                                st.text_input("Asset ID / Barcode", value=asset.get('Asset ID', ''), disabled=True)
+                                asset_name = st.text_input("Asset Name *", value=asset.get('Asset Name', ''))
+                                
+                                # Category dropdown
+                                if not categories_df.empty:
+                                    category_options = categories_df["Category Name"].tolist()
+                                    current_category = asset.get('Category', '')
+                                    if current_category in category_options:
+                                        default_cat_idx = category_options.index(current_category) + 1
+                                    else:
+                                        default_cat_idx = 0
+                                    category = st.selectbox("Category *", ["Select category"] + category_options, index=default_cat_idx)
+                                else:
+                                    category = st.text_input("Category *", value=asset.get('Category', ''))
+                                
+                                # Sub Category dropdown
+                                if category != "Select category" and not subcategories_df.empty and not categories_df.empty:
+                                    category_id = categories_df[categories_df["Category Name"] == category]["Category ID"].iloc[0] if category in categories_df["Category Name"].values else None
+                                    if category_id:
+                                        subcat_options = subcategories_df[subcategories_df["Category ID"] == category_id]["SubCategory Name"].tolist()
+                                        current_subcat = asset.get('Sub Category', '')
+                                        if current_subcat in subcat_options:
+                                            default_subcat_idx = subcat_options.index(current_subcat) + 1
+                                        else:
+                                            default_subcat_idx = 0
+                                        subcategory = st.selectbox("Sub Category", ["None"] + subcat_options, index=default_subcat_idx)
+                                    else:
+                                        subcategory = st.text_input("Sub Category", value=asset.get('Sub Category', ''))
+                                else:
+                                    subcategory = st.text_input("Sub Category", value=asset.get('Sub Category', ''))
+                                
+                                model_serial = st.text_input("Model / Serial No", value=asset.get('Model/Serial No', ''))
+                                
+                                # Purchase Date
+                                purchase_date_str = asset.get('Purchase Date', '')
+                                if purchase_date_str:
+                                    try:
+                                        purchase_date = st.date_input("Purchase Date", value=datetime.strptime(purchase_date_str, "%Y-%m-%d").date())
+                                    except:
+                                        purchase_date = st.date_input("Purchase Date")
+                                else:
+                                    purchase_date = st.date_input("Purchase Date")
+                            
+                            with col2:
+                                purchase_cost = st.number_input("Purchase Cost", min_value=0.0, value=float(asset.get('Purchase Cost', 0) or 0), step=0.01)
+                                
+                                # Supplier dropdown
+                                if not suppliers_df.empty:
+                                    supplier_options = suppliers_df["Supplier Name"].tolist()
+                                    current_supplier = asset.get('Supplier', '')
+                                    if current_supplier in supplier_options:
+                                        default_supplier_idx = supplier_options.index(current_supplier) + 1
+                                    else:
+                                        default_supplier_idx = 0
+                                    supplier = st.selectbox("Supplier", ["None"] + supplier_options, index=default_supplier_idx)
+                                else:
+                                    supplier = st.text_input("Supplier", value=asset.get('Supplier', ''))
+                                
+                                # Location dropdown
+                                if not locations_df.empty:
+                                    location_options = locations_df["Location Name"].tolist()
+                                    current_location = asset.get('Location', '')
+                                    if current_location in location_options:
+                                        default_location_idx = location_options.index(current_location) + 1
+                                    else:
+                                        default_location_idx = 0
+                                    location = st.selectbox("Location", ["None"] + location_options, index=default_location_idx)
+                                else:
+                                    location = st.text_input("Location", value=asset.get('Location', ''))
+                                
+                                assigned_to = st.text_input("Assigned To", value=asset.get('Assigned To', ''))
+                                
+                                # Condition dropdown
+                                condition_options = ["Excellent", "Good", "Fair", "Poor", "Damaged"]
+                                current_condition = asset.get('Condition', 'Good')
+                                if current_condition in condition_options:
+                                    default_condition_idx = condition_options.index(current_condition)
+                                else:
+                                    default_condition_idx = 1
+                                condition = st.selectbox("Condition", condition_options, index=default_condition_idx)
+                                
+                                # Status dropdown
+                                status_options = ["Active", "Inactive", "Maintenance", "Retired"]
+                                current_status = asset.get('Status', 'Active')
+                                if current_status in status_options:
+                                    default_status_idx = status_options.index(current_status)
+                                else:
+                                    default_status_idx = 0
+                                status = st.selectbox("Status", status_options, index=default_status_idx)
+                                
+                                remarks = st.text_area("Remarks", value=asset.get('Remarks', ''))
+                                attachment = st.text_input("Attachment URL", value=asset.get('Attachment', ''))
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.form_submit_button("💾 Update Asset", use_container_width=True, type="primary"):
+                                    if not asset_name:
+                                        st.error("Asset Name is required")
+                                    else:
+                                        # Prepare data for update
+                                        data = [
+                                            asset_id, asset_name, category if category != "Select category" else "",
+                                            subcategory if subcategory != "None" else "", model_serial,
+                                            purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
+                                            purchase_cost, supplier if supplier != "None" else "",
+                                            location if location != "None" else "", assigned_to,
+                                            condition, status, remarks, attachment
+                                        ]
+                                        
+                                        # Get the original row index from the full assets_df
+                                        original_row = assets_df[assets_df["Asset ID"] == edit_asset_id]
+                                        if not original_row.empty:
+                                            original_idx = int(original_row.index[0])
+                                            
+                                            with st.spinner("Updating asset..."):
+                                                if update_data(SHEETS["assets"], original_idx, data):
+                                                    st.success(f"✅ Asset '{asset_name}' (ID: {edit_asset_id}) updated successfully!")
+                                                    # Clear edit state
+                                                    if "edit_asset_id" in st.session_state:
+                                                        del st.session_state["edit_asset_id"]
+                                                    if "edit_asset_idx" in st.session_state:
+                                                        del st.session_state["edit_asset_idx"]
+                                                    # Clear scanned barcode to refresh
+                                                    if "scanned_barcode" in st.session_state:
+                                                        del st.session_state["scanned_barcode"]
+                                                    st.rerun()
+                                                else:
+                                                    st.error("Failed to update asset")
+                            with col2:
+                                if st.form_submit_button("❌ Cancel", use_container_width=True):
+                                    if "edit_asset_id" in st.session_state:
+                                        del st.session_state["edit_asset_id"]
+                                    if "edit_asset_idx" in st.session_state:
+                                        del st.session_state["edit_asset_idx"]
+                                    st.rerun()
+                    else:
+                        st.warning("Selected asset not found in data.")
             else:
                 st.error("No asset found with this barcode/ID")
     
@@ -196,18 +367,198 @@ def barcode_scanner_page():
             
             if not results.empty:
                 st.success(f"Found {len(results)} matching asset(s)")
-                st.dataframe(results, use_container_width=True)
                 
-                # Option to view barcode for each result
-                selected_asset_id = st.selectbox(
-                    "Select Asset to View Barcode",
-                    ["Select an asset"] + results["Asset ID"].tolist()
-                )
+                # Display results with edit option
+                for idx, asset_row in results.iterrows():
+                    asset_id = asset_row['Asset ID']
+                    edit_key_search = f"edit_asset_search_{asset_id}_{idx}"
+                    
+                    with st.expander(f"Asset: {asset_id} - {asset_row.get('Asset Name', 'N/A')}"):
+                        col1, col2 = st.columns([2, 1])
+                        
+                        with col1:
+                            st.write("**Asset Details:**")
+                            st.write(f"**Asset ID:** {asset_id}")
+                            st.write(f"**Asset Name:** {asset_row.get('Asset Name', 'N/A')}")
+                            st.write(f"**Category:** {asset_row.get('Category', 'N/A')}")
+                            st.write(f"**Sub Category:** {asset_row.get('Sub Category', 'N/A')}")
+                            st.write(f"**Location:** {asset_row.get('Location', 'N/A')}")
+                            st.write(f"**Status:** {asset_row.get('Status', 'N/A')}")
+                            st.write(f"**Condition:** {asset_row.get('Condition', 'N/A')}")
+                            st.write(f"**Assigned To:** {asset_row.get('Assigned To', 'N/A')}")
+                            
+                            # Edit button
+                            if st.button("✏️ Edit Asset", key=edit_key_search, use_container_width=True):
+                                st.session_state["edit_asset_id"] = asset_id
+                                st.session_state["edit_asset_idx"] = int(idx)
+                                st.rerun()
+                        
+                        with col2:
+                            # Display barcode
+                            barcode_img = generate_barcode_image(asset_id)
+                            if barcode_img:
+                                st.image(barcode_img, caption=f"Barcode: {asset_id}", use_container_width=True)
                 
-                if selected_asset_id != "Select an asset":
-                    barcode_img = generate_barcode_image(selected_asset_id)
-                    if barcode_img:
-                        st.image(barcode_img, caption=f"Barcode: {selected_asset_id}", use_container_width=True)
+                # Show edit form if an asset is selected for editing (same form as in scan tab)
+                if "edit_asset_id" in st.session_state and st.session_state["edit_asset_id"]:
+                    edit_asset_id = st.session_state["edit_asset_id"]
+                    edit_asset_idx = st.session_state.get("edit_asset_idx", 0)
+                    
+                    # Find the asset in the full assets_df
+                    asset_to_edit = assets_df[assets_df["Asset ID"] == edit_asset_id]
+                    if not asset_to_edit.empty:
+                        asset = asset_to_edit.iloc[0]
+                        st.divider()
+                        st.subheader(f"✏️ Edit Asset: {edit_asset_id}")
+                        
+                        # Load reference data
+                        locations_df = read_data(SHEETS["locations"])
+                        suppliers_df = read_data(SHEETS["suppliers"])
+                        categories_df = read_data(SHEETS["categories"])
+                        subcategories_df = read_data(SHEETS["subcategories"])
+                        
+                        with st.form("edit_asset_form_search"):
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                # Asset ID is read-only
+                                st.text_input("Asset ID / Barcode", value=asset.get('Asset ID', ''), disabled=True)
+                                asset_name = st.text_input("Asset Name *", value=asset.get('Asset Name', ''))
+                                
+                                # Category dropdown
+                                if not categories_df.empty:
+                                    category_options = categories_df["Category Name"].tolist()
+                                    current_category = asset.get('Category', '')
+                                    if current_category in category_options:
+                                        default_cat_idx = category_options.index(current_category) + 1
+                                    else:
+                                        default_cat_idx = 0
+                                    category = st.selectbox("Category *", ["Select category"] + category_options, index=default_cat_idx)
+                                else:
+                                    category = st.text_input("Category *", value=asset.get('Category', ''))
+                                
+                                # Sub Category dropdown
+                                if category != "Select category" and not subcategories_df.empty and not categories_df.empty:
+                                    category_id = categories_df[categories_df["Category Name"] == category]["Category ID"].iloc[0] if category in categories_df["Category Name"].values else None
+                                    if category_id:
+                                        subcat_options = subcategories_df[subcategories_df["Category ID"] == category_id]["SubCategory Name"].tolist()
+                                        current_subcat = asset.get('Sub Category', '')
+                                        if current_subcat in subcat_options:
+                                            default_subcat_idx = subcat_options.index(current_subcat) + 1
+                                        else:
+                                            default_subcat_idx = 0
+                                        subcategory = st.selectbox("Sub Category", ["None"] + subcat_options, index=default_subcat_idx)
+                                    else:
+                                        subcategory = st.text_input("Sub Category", value=asset.get('Sub Category', ''))
+                                else:
+                                    subcategory = st.text_input("Sub Category", value=asset.get('Sub Category', ''))
+                                
+                                model_serial = st.text_input("Model / Serial No", value=asset.get('Model/Serial No', ''))
+                                
+                                # Purchase Date
+                                purchase_date_str = asset.get('Purchase Date', '')
+                                if purchase_date_str:
+                                    try:
+                                        purchase_date = st.date_input("Purchase Date", value=datetime.strptime(purchase_date_str, "%Y-%m-%d").date())
+                                    except:
+                                        purchase_date = st.date_input("Purchase Date")
+                                else:
+                                    purchase_date = st.date_input("Purchase Date")
+                            
+                            with col2:
+                                purchase_cost = st.number_input("Purchase Cost", min_value=0.0, value=float(asset.get('Purchase Cost', 0) or 0), step=0.01)
+                                
+                                # Supplier dropdown
+                                if not suppliers_df.empty:
+                                    supplier_options = suppliers_df["Supplier Name"].tolist()
+                                    current_supplier = asset.get('Supplier', '')
+                                    if current_supplier in supplier_options:
+                                        default_supplier_idx = supplier_options.index(current_supplier) + 1
+                                    else:
+                                        default_supplier_idx = 0
+                                    supplier = st.selectbox("Supplier", ["None"] + supplier_options, index=default_supplier_idx)
+                                else:
+                                    supplier = st.text_input("Supplier", value=asset.get('Supplier', ''))
+                                
+                                # Location dropdown
+                                if not locations_df.empty:
+                                    location_options = locations_df["Location Name"].tolist()
+                                    current_location = asset.get('Location', '')
+                                    if current_location in location_options:
+                                        default_location_idx = location_options.index(current_location) + 1
+                                    else:
+                                        default_location_idx = 0
+                                    location = st.selectbox("Location", ["None"] + location_options, index=default_location_idx)
+                                else:
+                                    location = st.text_input("Location", value=asset.get('Location', ''))
+                                
+                                assigned_to = st.text_input("Assigned To", value=asset.get('Assigned To', ''))
+                                
+                                # Condition dropdown
+                                condition_options = ["Excellent", "Good", "Fair", "Poor", "Damaged"]
+                                current_condition = asset.get('Condition', 'Good')
+                                if current_condition in condition_options:
+                                    default_condition_idx = condition_options.index(current_condition)
+                                else:
+                                    default_condition_idx = 1
+                                condition = st.selectbox("Condition", condition_options, index=default_condition_idx)
+                                
+                                # Status dropdown
+                                status_options = ["Active", "Inactive", "Maintenance", "Retired"]
+                                current_status = asset.get('Status', 'Active')
+                                if current_status in status_options:
+                                    default_status_idx = status_options.index(current_status)
+                                else:
+                                    default_status_idx = 0
+                                status = st.selectbox("Status", status_options, index=default_status_idx)
+                                
+                                remarks = st.text_area("Remarks", value=asset.get('Remarks', ''))
+                                attachment = st.text_input("Attachment URL", value=asset.get('Attachment', ''))
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.form_submit_button("💾 Update Asset", use_container_width=True, type="primary"):
+                                    if not asset_name:
+                                        st.error("Asset Name is required")
+                                    else:
+                                        # Prepare data for update
+                                        data = [
+                                            edit_asset_id, asset_name, category if category != "Select category" else "",
+                                            subcategory if subcategory != "None" else "", model_serial,
+                                            purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
+                                            purchase_cost, supplier if supplier != "None" else "",
+                                            location if location != "None" else "", assigned_to,
+                                            condition, status, remarks, attachment
+                                        ]
+                                        
+                                        # Get the original row index from the full assets_df
+                                        original_row = assets_df[assets_df["Asset ID"] == edit_asset_id]
+                                        if not original_row.empty:
+                                            original_idx = int(original_row.index[0])
+                                            
+                                            with st.spinner("Updating asset..."):
+                                                if update_data(SHEETS["assets"], original_idx, data):
+                                                    st.success(f"✅ Asset '{asset_name}' (ID: {edit_asset_id}) updated successfully!")
+                                                    # Clear edit state
+                                                    if "edit_asset_id" in st.session_state:
+                                                        del st.session_state["edit_asset_id"]
+                                                    if "edit_asset_idx" in st.session_state:
+                                                        del st.session_state["edit_asset_idx"]
+                                                    # Clear search to refresh
+                                                    if "search_term" in st.session_state:
+                                                        del st.session_state["search_term"]
+                                                    st.rerun()
+                                                else:
+                                                    st.error("Failed to update asset")
+                            with col2:
+                                if st.form_submit_button("❌ Cancel", use_container_width=True):
+                                    if "edit_asset_id" in st.session_state:
+                                        del st.session_state["edit_asset_id"]
+                                    if "edit_asset_idx" in st.session_state:
+                                        del st.session_state["edit_asset_idx"]
+                                    st.rerun()
+                    else:
+                        st.warning("Selected asset not found in data.")
             else:
                 st.info("No matching assets found")
 
