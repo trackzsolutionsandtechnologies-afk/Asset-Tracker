@@ -32,14 +32,43 @@ def authenticate_user(username: str, password: str) -> bool:
         if df.empty:
             return False
         
-        user = df[df["Username"] == username]
+        # Clean username (remove whitespace, case-insensitive matching)
+        username_clean = username.strip().lower()
+        
+        # Try to find user - check both exact match and case-insensitive
+        user = None
+        if "Username" in df.columns:
+            # Try exact match first
+            user = df[df["Username"].str.strip().str.lower() == username_clean]
+            if user.empty:
+                # Try case-insensitive
+                user = df[df["Username"].astype(str).str.strip().str.lower() == username_clean]
+        
         if user.empty:
             return False
         
-        hashed_password = user.iloc[0]["Password"]
-        return verify_password(password, hashed_password)
+        # Get password - handle different column name variations
+        hashed_password = None
+        if "Password" in user.columns:
+            hashed_password = user.iloc[0]["Password"]
+        elif "password" in user.columns:
+            hashed_password = user.iloc[0]["password"]
+        else:
+            # Try to get second column (assuming: Username, Password, Email, Role)
+            if len(user.columns) >= 2:
+                hashed_password = user.iloc[0].iloc[1]  # Second column
+        
+        if not hashed_password:
+            return False
+        
+        # Verify password
+        return verify_password(password, str(hashed_password))
     except Exception as e:
-        st.error(f"Authentication error: {str(e)}")
+        # Show more detailed error for debugging
+        if "auth_debug" in st.session_state and st.session_state["auth_debug"]:
+            st.error(f"Authentication error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
         return False
 
 def get_user_role(username: str) -> str:

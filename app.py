@@ -73,30 +73,49 @@ def main():
             forgot_password_page()
         else:
             login_page()
-            # Add temporary user creation option (only show if no users exist)
+            # Add user management options
             try:
                 from google_sheets import read_data
                 from config import SHEETS
                 import bcrypt
                 
-                df = read_data(SHEETS["users"])
-                if df.empty or len(df) == 0:
-                    st.divider()
-                    st.info("⚠️ No users found. Create an admin user to get started.")
-                    with st.expander("Create Admin User (One-time setup)"):
-                        if st.button("Create Default Admin User"):
-                            try:
-                                hashed_password = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                                from google_sheets import append_data
-                                if append_data(SHEETS["users"], ["admin", hashed_password, "admin@example.com", "admin"]):
-                                    st.success("✅ Admin user created! Username: `admin`, Password: `admin123`")
-                                    st.info("⚠️ Please change the password after first login!")
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to create user. Check Google Sheets connection.")
-                            except Exception as e:
-                                st.error(f"Error creating user: {str(e)}")
-            except:
+                st.divider()
+                with st.expander("🔧 User Management & Diagnostics"):
+                    # Check if users exist
+                    try:
+                        df = read_data(SHEETS["users"])
+                        if df.empty or len(df) == 0:
+                            st.info("⚠️ No users found. Create an admin user to get started.")
+                        else:
+                            st.success(f"✅ Found {len(df)} user(s) in the system")
+                            if st.checkbox("Show users (for debugging)"):
+                                st.dataframe(df[["Username", "Email", "Role"]], use_container_width=True)
+                    except Exception as e:
+                        st.warning(f"Could not read users: {str(e)}")
+                    
+                    # Create admin user option
+                    st.subheader("Create Admin User")
+                    if st.button("Create Default Admin User"):
+                        try:
+                            hashed_password = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                            from google_sheets import append_data
+                            if append_data(SHEETS["users"], ["admin", hashed_password, "admin@example.com", "admin"]):
+                                st.success("✅ Admin user created! Username: `admin`, Password: `admin123`")
+                                st.info("⚠️ Please change the password after first login!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to create user. Check Google Sheets connection.")
+                        except Exception as e:
+                            st.error(f"Error creating user: {str(e)}")
+                    
+                    # Debug mode
+                    if st.checkbox("Enable debug mode (shows detailed errors)"):
+                        st.session_state["auth_debug"] = True
+                    else:
+                        st.session_state["auth_debug"] = False
+            except Exception as e:
+                if "auth_debug" in st.session_state and st.session_state.get("auth_debug"):
+                    st.error(f"Error in user management: {str(e)}")
                 pass  # Silently fail if we can't check users
         return
     
