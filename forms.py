@@ -263,7 +263,7 @@ def location_form():
 
 def supplier_form():
     """Supplier Form"""
-    st.header(" Supplier Management")
+    st.header("🚚 Supplier Management")
     
     df = read_data(SHEETS["suppliers"])
     
@@ -493,14 +493,6 @@ def supplier_form():
                                 st.rerun()
                 else:
                     st.warning("Selected supplier not found in data.")
-        else:
-            st.info("No suppliers found. Add a new supplier using the 'Add New Supplier' tab.")
-                            if update_data(SHEETS["suppliers"], row_index, [new_supplier_id, new_supplier_name]):
-                                st.success("Supplier updated successfully!")
-                                st.session_state["edit_supplier"] = None
-                                st.rerun()
-                            else:
-                                st.error("Failed to update supplier")
         else:
             st.info("No suppliers found. Add a new supplier using the 'Add New Supplier' tab.")
 
