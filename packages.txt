@@ -1,4 +1,0 @@
-# Python packages for Streamlit Cloud
-# This file is optional but can help with deployment
-# Streamlit Cloud will use requirements.txt by default
-
