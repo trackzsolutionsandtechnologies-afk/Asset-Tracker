@@ -17,6 +17,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Hide sidebar collapse button
+st.markdown("""
+    <style>
+    /* Hide sidebar collapse button */
+    button[data-testid="baseButton-header"] {
+        display: none !important;
+    }
+    [data-testid="stHeader"] button {
+        display: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Custom CSS - Load Bootstrap Icons first
 st.markdown("""
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -125,45 +138,44 @@ st.markdown("""
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     }
-    /* Sidebar title styling - Enhanced with glass effect */
+    /* Sidebar title styling - Black background with white text */
     [data-testid="stSidebar"] h1 {
-        background: rgba(255, 255, 255, 0.15) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
         padding: 1rem !important;
         border-radius: 12px !important;
         margin: 0.5rem 0.5rem 1rem 0.5rem !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-        backdrop-filter: blur(10px) !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
     }
     /* Sidebar divider styling */
     [data-testid="stSidebar"] hr {
-        border-color: rgba(255, 255, 255, 0.3) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
         margin: 1.5rem 0.5rem !important;
         border-width: 1px !important;
     }
-    /* Sidebar button styling - Enhanced with gradient and effects */
+    /* Sidebar button styling - Black theme */
     [data-testid="stSidebar"] button {
-        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
         color: #ffffff !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 10px !important;
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
         font-weight: 600 !important;
         padding: 0.85rem 1.2rem !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25) !important;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
     }
     [data-testid="stSidebar"] button:hover {
-        background: linear-gradient(135deg, #bd2130 0%, #a71e2a 100%) !important;
-        border-color: rgba(255, 255, 255, 0.5) !important;
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35) !important;
+        box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4) !important;
     }
     [data-testid="stSidebar"] button:active {
         transform: translateY(0) !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
     }
     /* Apply font to all text elements */
     body, html, .stApp, .main, .block-container {
