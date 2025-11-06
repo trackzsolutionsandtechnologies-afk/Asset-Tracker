@@ -113,15 +113,23 @@ st.markdown("""
     .stStatusWidget {
         display: none !important;
     }
-    /* Sidebar styling - Attractive Red Gradient Design */
+    /* Sidebar styling - Black Background */
     [data-testid="stSidebar"] {
-        background: #000;
+        background: #000000 !important;
         font-family: 'Inter', 'DIN', 'DIN Alternate', 'DIN Condensed', sans-serif !important;
-        box-shadow: 2px 0 15px rgba(0, 0, 0, 0.15) !important;
+        box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3) !important;
     }
     [data-testid="stSidebar"] > div:first-child {
-        background:  #000;
+        background: #000000 !important;
         padding: 1rem 0.5rem !important;
+    }
+    /* Hide sidebar collapse button */
+    [data-testid="stSidebar"] [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+    button[data-testid="baseButton-header"][aria-label*="Close"],
+    button[data-testid="baseButton-header"][aria-label*="close"] {
+        display: none !important;
     }
     /* Sidebar text color - White for better contrast (exclude icons) */
     [data-testid="stSidebar"] *:not([class*="bi-"]):not(.bi):not(i):not([class*="icon"]) {
