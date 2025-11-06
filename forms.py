@@ -184,11 +184,11 @@ def location_form():
                     with col3:
                         st.write(row.get('Department', 'N/A'))
                     with col4:
-                                edit_key = f"edit_loc_{row.get('Location ID', idx)}"
-                                if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
-                                    st.session_state["edit_location_id"] = row.get('Location ID', '')
-                                    st.session_state["edit_location_idx"] = int(original_idx)  # Ensure it's a Python int
-                                    st.rerun()
+                        edit_key = f"edit_loc_{row.get('Location ID', idx)}"
+                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
+                            st.session_state["edit_location_id"] = row.get('Location ID', '')
+                            st.session_state["edit_location_idx"] = int(original_idx)  # Ensure it's a Python int
+                            st.rerun()
                     # Only show delete button for admin users
                     if is_admin:
                         with col5:
