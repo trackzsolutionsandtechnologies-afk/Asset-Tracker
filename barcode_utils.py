@@ -15,7 +15,7 @@ import numpy as np
 
 # Try to import barcode scanning libraries
 try:
-    from pyzbar import pyzbar
+    from pyzbar.pyzbar import decode as pyzbar_decode
     PYZBAR_AVAILABLE = True
 except ImportError:
     PYZBAR_AVAILABLE = False
@@ -57,7 +57,7 @@ def decode_barcode_from_image(image):
             # Convert PIL Image to numpy array
             img_array = np.array(image)
             # Decode barcodes
-            decoded_objects = pyzbar.decode(img_array)
+            decoded_objects = pyzbar_decode(img_array)
             if decoded_objects:
                 # Return the first decoded barcode
                 return decoded_objects[0].data.decode('utf-8')
