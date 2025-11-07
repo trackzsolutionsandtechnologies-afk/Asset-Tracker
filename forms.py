@@ -1072,6 +1072,18 @@ def asset_master_form():
     subcat_cat_name_col = find_column(subcategories_df, ["category name", "category"])
     user_username_col = find_column(users_df, ["username", "user name", "name"])
 
+    category_norm_series = None
+    if not categories_df.empty and category_name_col:
+        category_norm_series = categories_df[category_name_col].astype(str).str.strip().str.lower()
+
+    subcat_name_norm_series = None
+    if not subcategories_df.empty and subcat_name_col:
+        subcat_name_norm_series = subcategories_df[subcat_name_col].astype(str).str.strip().str.lower()
+
+    subcat_cat_name_norm_series = None
+    if not subcategories_df.empty and subcat_cat_name_col:
+        subcat_cat_name_norm_series = subcategories_df[subcat_cat_name_col].astype(str).str.strip().str.lower()
+
     tab1, tab2 = st.tabs(["Add New Asset", "View/Edit Assets"])
     
     with tab1:
@@ -1109,20 +1121,27 @@ def asset_master_form():
                     and not subcategories_df.empty
                     and (subcat_name_col or subcat_cat_id_col or subcat_cat_name_col)
                 ):
-                    category_row = categories_df[categories_df[category_name_col].astype(str) == str(category)]
-                    if not category_row.empty:
+                    category_norm = str(category).strip().lower()
+                    matching_categories = categories_df[category_norm_series == category_norm] if category_norm_series is not None else pd.DataFrame()
+                    if not matching_categories.empty:
+                        category_row = matching_categories
                         category_id_value = category_row[category_id_col].iloc[0] if category_id_col and category_id_col in category_row else None
 
                         matching_subcats = subcategories_df.copy()
                         if subcat_cat_id_col and category_id_value is not None:
-                            matching_subcats = matching_subcats[matching_subcats[subcat_cat_id_col].astype(str) == str(category_id_value)]
-                        elif subcat_cat_name_col:
-                            matching_subcats = matching_subcats[matching_subcats[subcat_cat_name_col].astype(str) == str(category)]
+                            matching_subcats = matching_subcats[
+                                matching_subcats[subcat_cat_id_col].astype(str).str.strip().str.lower()
+                                == str(category_id_value).strip().lower()
+                            ]
+                        elif subcat_cat_name_norm_series is not None:
+                            matching_subcats = matching_subcats[
+                                subcat_cat_name_norm_series == category_norm
+                            ]
                         else:
                             matching_subcats = pd.DataFrame()
 
                         if not matching_subcats.empty and subcat_name_col:
-                            available_subcategories += matching_subcats[subcat_name_col].dropna().astype(str).tolist()
+                            available_subcategories += matching_subcats[subcat_name_col].dropna().astype(str).str.strip().tolist()
 
                 subcategory_help = None
                 if available_subcategories == ["None"]:
@@ -1294,7 +1313,7 @@ def asset_master_form():
 
                             edit_subcategory_name_options = []
                             if not subcategories_df.empty and subcat_name_col:
-                                edit_subcategory_name_options.extend(subcategories_df[subcat_name_col].dropna().astype(str).tolist())
+                                edit_subcategory_name_options.extend(subcategories_df[subcat_name_col].dropna().astype(str).str.strip().tolist())
                             current_category_value = row.get("Category", row.get("Category Name", ""))
                             if current_category_value and current_category_value not in edit_subcategory_name_options:
                                 edit_subcategory_name_options.append(current_category_value)
@@ -1317,9 +1336,9 @@ def asset_master_form():
 
                             edit_category_name_options = []
                             if not categories_df.empty and category_name_col:
-                                edit_category_name_options.extend(categories_df[category_name_col].dropna().astype(str).tolist())
+                                edit_category_name_options.extend(categories_df[category_name_col].dropna().astype(str).str.strip().tolist())
                             if subcat_cat_name_col and not subcategories_df.empty:
-                                edit_category_name_options.extend(subcategories_df[subcat_cat_name_col].dropna().astype(str).tolist())
+                                edit_category_name_options.extend(subcategories_df[subcat_cat_name_col].dropna().astype(str).str.strip().tolist())
                             current_subcat_value = row.get(
                                 "Sub Category",
                                 row.get("SubCategory Name", row.get("Sub Category Name", "")),
