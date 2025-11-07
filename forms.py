@@ -1165,38 +1165,119 @@ def asset_master_form():
     
     with tab2:
         if not assets_df.empty:
-            # Search functionality
-            search_term = st.text_input("Search Assets (by ID, Name, or Barcode)")
+            st.subheader("All Assets")
+
+            search_term = st.text_input(
+                "🔍 Search Assets",
+                placeholder="Search by Asset ID, Name, or Location...",
+                key="asset_search",
+            )
+
             if search_term:
-                filtered_df = assets_df[
-                    assets_df["Asset ID"].str.contains(search_term, case=False, na=False) |
-                    assets_df["Asset Name"].str.contains(search_term, case=False, na=False)
-                ]
-                st.dataframe(filtered_df, use_container_width=True)
+                mask = (
+                    assets_df["Asset ID"].astype(str).str.contains(search_term, case=False, na=False)
+                    | assets_df["Asset Name"].astype(str).str.contains(search_term, case=False, na=False)
+                    | assets_df.get("Location", pd.Series(dtype=str)).astype(str).str.contains(search_term, case=False, na=False)
+                )
+                filtered_df = assets_df[mask]
+                if filtered_df.empty:
+                    st.info(f"No assets found matching '{search_term}'")
+                    return
             else:
-                st.dataframe(assets_df, use_container_width=True)
-            
-            # Edit/Delete functionality
-            st.subheader("Edit/Delete Asset")
-            asset_ids = ["Select an asset"] + assets_df["Asset ID"].tolist()
-            selected_id = st.selectbox("Select Asset", asset_ids)
-            
-            if selected_id != "Select an asset":
-                asset = assets_df[assets_df["Asset ID"] == selected_id].iloc[0]
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Edit", use_container_width=True):
-                        st.session_state["edit_asset"] = selected_id
-                
-                with col2:
-                    if st.button("Delete", use_container_width=True):
-                        row_index = assets_df[assets_df["Asset ID"] == selected_id].index[0]
-                        if delete_data(SHEETS["assets"], row_index):
-                            st.success("Asset deleted successfully!")
+                filtered_df = assets_df
+
+            st.caption(f"Showing {len(filtered_df)} of {len(assets_df)} asset(s)")
+
+            user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+            is_admin = str(user_role).lower() == "admin"
+
+            if is_admin:
+                header_cols = st.columns([2, 3, 2, 2, 1, 1])
+                labels = ["Asset ID", "Name", "Category", "Location", "Edit", "Delete"]
+            else:
+                header_cols = st.columns([2, 3, 2, 2, 1])
+                labels = ["Asset ID", "Name", "Category", "Location", "Edit"]
+
+            for col, label in zip(header_cols, labels):
+                with col:
+                    st.write(f"**{label}**")
+
+            st.divider()
+
+            for idx, row in filtered_df.iterrows():
+                asset_id_value = row.get("Asset ID")
+                matching_rows = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id_value)]
+                original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
+
+                if is_admin:
+                    cols = st.columns([2, 3, 2, 2, 1, 1])
+                else:
+                    cols = st.columns([2, 3, 2, 2, 1])
+
+                with cols[0]:
+                    st.write(asset_id_value or "-")
+                with cols[1]:
+                    st.write(row.get("Asset Name", "-"))
+                with cols[2]:
+                    st.write(row.get("Category", "-"))
+                with cols[3]:
+                    st.write(row.get("Location", "-"))
+
+                if st.session_state.get("edit_asset_id") == asset_id_value:
+                    cols_edit = st.columns([1, 1])
+                    with cols_edit[0]:
+                        edit_form_key = f"asset_edit_form_{asset_id_value}"
+                        with st.form(edit_form_key):
+                            st.text_input("Asset ID", value=asset_id_value, disabled=True)
+                            new_name = st.text_input("Asset Name", value=row.get("Asset Name", ""))
+                            new_category = st.text_input("Category", value=row.get("Category", ""))
+                            new_location = st.text_input("Location", value=row.get("Location", ""))
+                            new_status = st.text_input("Status", value=row.get("Status", ""))
+                            new_condition = st.text_input("Condition", value=row.get("Condition", ""))
+
+                            if st.form_submit_button("Update Asset", use_container_width=True):
+                                updated_row = row.tolist()
+                                try:
+                                    updated_row[assets_df.columns.get_loc("Asset Name")] = new_name
+                                    updated_row[assets_df.columns.get_loc("Category")] = new_category
+                                    updated_row[assets_df.columns.get_loc("Location")] = new_location
+                                    if "Status" in assets_df.columns:
+                                        updated_row[assets_df.columns.get_loc("Status")] = new_status
+                                    if "Condition" in assets_df.columns:
+                                        updated_row[assets_df.columns.get_loc("Condition")] = new_condition
+                                except Exception:
+                                    pass
+
+                                if update_data(SHEETS["assets"], original_idx, updated_row):
+                                    st.session_state["asset_success_message"] = f"✅ Asset '{asset_id_value}' updated successfully!"
+                                    st.session_state.pop("edit_asset_id", None)
+                                    if "asset_search" in st.session_state:
+                                        del st.session_state["asset_search"]
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to update asset")
+
+                    with cols_edit[1]:
+                        if st.button("Cancel", key=f"asset_cancel_{asset_id_value}", use_container_width=True):
+                            st.session_state.pop("edit_asset_id", None)
                             st.rerun()
-                        else:
-                            st.error("Failed to delete asset")
+                else:
+                    with cols[4]:
+                        if st.button("✏️", key=f"asset_edit_{asset_id_value}", use_container_width=True, help="Edit this asset"):
+                            st.session_state["edit_asset_id"] = asset_id_value
+                            st.session_state["edit_asset_idx"] = original_idx
+                            st.rerun()
+                    if is_admin:
+                        with cols[5]:
+                            if st.button("🗑️", key=f"asset_delete_{asset_id_value}", use_container_width=True, help="Delete this asset"):
+                                if delete_data(SHEETS["assets"], original_idx):
+                                    st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete asset")
+
+                st.divider()
+
         else:
             st.info("No assets found. Add a new asset using the 'Add New Asset' tab.")
 
