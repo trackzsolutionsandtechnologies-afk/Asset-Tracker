@@ -64,26 +64,17 @@ def main():
         selected = option_menu(
             menu_title="Navigation",
             options=[
-                "Dashboard",
-                "Location Form",
-                "Supplier Form",
-                "Category Form",
-                "Asset Master",
-                "Asset Transfer",
-                "Barcode Scanner",
-                "Print Barcodes"
+                "🏠 Dashboard",
+        "📍 Location Form",
+        "🚚 Supplier Form",
+        "📁 Category Form",
+        "📦 Asset Master",
+        "🔄 Asset Transfer",
+        "📷 Barcode Scanner",
+        "🖨️ Print Barcodes"
             ],
-            icons=[
-                "speedometer2",
-                "geo-alt",
-                "building",
-                "folder",
-                "box-seam",
-                "arrow-left-right",
-                "search",
-                "printer"
-            ],
-            menu_icon="list",
+            icons=[""] * 8,  # no Bootstrap icons needed
+            menu_icon="💼",
             default_index=0,
             styles={
                 "container": {
