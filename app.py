@@ -9,8 +9,6 @@ from dashboard import dashboard_page
 from forms import location_form, supplier_form, category_form, asset_master_form, asset_transfer_form
 from barcode_utils import barcode_scanner_page, barcode_print_page
 
-import streamlit as st
-
 st.markdown("""
     <style>
     /* Import DIN font */
@@ -18,7 +16,7 @@ st.markdown("""
 
     html, body, [class*="css"] {
         font-family: 'DIN', sans-serif !important;
-        background-color: #000000 !important;
+        background-color: #ffffff !important;
         color: #262730 !important;
     }
 

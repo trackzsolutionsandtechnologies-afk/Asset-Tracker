@@ -156,6 +156,51 @@ def reset_password(username: str, token: str, new_password: str) -> bool:
 
 def login_page():
     """Display login page"""
+    st.markdown(
+        """
+        <style>
+        [data-testid="stAppViewContainer"] {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] {
+            background-color: transparent !important;
+        }
+        .login-form-container label,
+        .login-form-container span,
+        .login-form-container p,
+        .login-form-container h1 {
+            color: #ffffff !important;
+        }
+        .login-form-container .stTextInput > div > div > input {
+            background-color: #111111 !important;
+            color: #ffffff !important;
+            border: 1px solid #444444 !important;
+        }
+        .login-form-container button[kind="primary"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ffffff !important;
+        }
+        .login-form-container button[kind="primary"]:hover {
+            background-color: #e0e0e0 !important;
+            color: #000000 !important;
+        }
+        .login-form-container button[kind="secondary"] {
+            background-color: transparent !important;
+            color: #ffffff !important;
+            border: 1px solid #ffffff !important;
+        }
+        .login-form-container button[kind="secondary"]:hover {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown('<div class="login-form-container">', unsafe_allow_html=True)
     st.title("🔐 Asset Tracker - Sign In")
 
     with st.form("login_form"):
@@ -183,6 +228,8 @@ def login_page():
         if forgot_password:
             st.session_state["show_forgot_password"] = True
             st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def forgot_password_page():
