@@ -64,7 +64,7 @@ def main():
         selected = option_menu(
             menu_title="Navigation",
             options=[
-                "🏠Dashboard",
+                "Dashboard",
                 "Location Form",
                 "Supplier Form",
                 "Category Form",
@@ -74,7 +74,7 @@ def main():
                 "Print Barcodes"
             ],
             icons=[
-                "speedometer2",
+                "🏠",
                 "geo-alt",
                 "building",
                 "folder",
