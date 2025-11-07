@@ -49,6 +49,23 @@ try:
 except ImportError:
     CV2_AVAILABLE = False
 
+try:
+    from streamlit_webrtc import webrtc_streamer, WebRtcMode
+    import av
+    WEBRTC_AVAILABLE = True
+except ImportError:
+    WEBRTC_AVAILABLE = False
+class BarcodeStreamProcessor:
+    def __init__(self) -> None:
+        self.latest_result: str | None = None
+
+    def recv(self, frame: "av.VideoFrame") -> "av.VideoFrame":  # type: ignore[name-defined]
+        img = frame.to_ndarray(format="bgr24")
+        result = decode_barcode_from_array(img)
+        if result:
+            self.latest_result = result
+        return frame
+
 def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image.Image:
     """Generate a barcode image for an asset ID"""
     try:
@@ -165,6 +182,18 @@ def decode_barcode_from_image(image):
         st.error(f"Error decoding barcode: {str(e)}")
     return None
 
+
+def decode_barcode_from_array(array: np.ndarray):
+    try:
+        if array.ndim == 3:
+            pil_image = Image.fromarray(array[:, :, ::-1])  # BGR -> RGB
+        else:
+            pil_image = Image.fromarray(array)
+        return decode_barcode_from_image(pil_image)
+    except Exception as e:
+        st.error(f"Error decoding barcode frame: {str(e)}")
+        return None
+
 def barcode_scanner_page():
     """Scan Barcode and search page"""
     st.header("🔍 Scan Barcode & Search")
@@ -183,14 +212,37 @@ def barcode_scanner_page():
         # Option to choose input method
         input_method = st.radio(
             "Input Method",
-            ["📷 Camera Scan", "🖼️ Upload Barcode Image", "⌨️ Manual Entry"],
+            ["📱 Live Mobile Scanner", "📷 Camera Scan", "🖼️ Upload Barcode Image", "⌨️ Manual Entry"],
             horizontal=True,
             key="barcode_input_method"
         )
         
         scanned_barcode = None
         
-        if input_method == "📷 Camera Scan":
+        if input_method == "📱 Live Mobile Scanner":
+            if not WEBRTC_AVAILABLE:
+                st.warning("⚠️ Live camera scanning requires `streamlit-webrtc`. Please install dependencies: `pip install streamlit-webrtc av`.")
+            elif not PYZBAR_AVAILABLE and not CV2_AVAILABLE:
+                st.warning("⚠️ Barcode decoding libraries are not available. Please install `pyzbar` or `opencv-contrib-python-headless` on the server.")
+                if PYZBAR_IMPORT_ERROR:
+                    st.caption(f"pyzbar import error: {PYZBAR_IMPORT_ERROR}")
+            else:
+                st.info("Allow camera access. Position the barcode within the frame; scanning is continuous and the first successful decode will auto-fill the result.")
+                ctx = webrtc_streamer(
+                    key="barcode-live-scanner",
+                    mode=WebRtcMode.SENDRECV,
+                    media_stream_constraints={"video": True, "audio": False},
+                    video_processor_factory=BarcodeStreamProcessor,
+                    async_processing=False,
+                )
+
+                if ctx and ctx.video_processor:
+                    latest = ctx.video_processor.latest_result
+                    if latest:
+                        scanned_barcode = latest
+                        st.success(f"✅ Barcode scanned: {latest}")
+                        st.session_state["scanned_barcode"] = latest
+        elif input_method == "📷 Camera Scan":
             st.info("📷 Use your device camera to capture the barcode. Make sure to grant camera permissions when prompted.")
             
             if not PYZBAR_AVAILABLE and not CV2_AVAILABLE:

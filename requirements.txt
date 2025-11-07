@@ -14,3 +14,5 @@ streamlit-option-menu>=0.3.6
 pyzbar>=0.1.9
 numpy>=1.26.0
 opencv-contrib-python-headless>=4.8.0.74
+streamlit-webrtc>=0.47.0
+av>=10.0.0
