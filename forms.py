@@ -2,7 +2,6 @@
 Forms module for Asset Tracker
 """
 import base64
-from io import BytesIO
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -1983,19 +1982,6 @@ def asset_transfer_form():
                         "No transfers found. Create a new transfer using the 'New Transfer' tab."
                     )
             else:
-                export_buffer = BytesIO()
-                export_df = filtered_df.copy()
-                export_df.to_excel(export_buffer, index=False, sheet_name="Transfers")
-                export_buffer.seek(0)
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                st.download_button(
-                    label=f"📥 Download {len(export_df)} transfer{'s' if len(export_df) != 1 else ''} (Excel)",
-                    data=export_buffer,
-                    file_name=f"transfers_{timestamp}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="transfer_download_button",
-                )
-
                 header_cols = st.columns([2, 2, 2, 2, 2, 2])
                 headers = [
                     "**Transfer ID**",
