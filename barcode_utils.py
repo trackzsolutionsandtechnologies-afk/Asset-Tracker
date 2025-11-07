@@ -1,9 +1,10 @@
 """
 Barcode utilities for scanning and printing
 """
+import base64
 import streamlit as st
 import qrcode
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import io
 import pandas as pd
 import barcode
@@ -573,21 +574,44 @@ def barcode_print_page():
         return
     
     st.subheader("Select Assets to Print Barcodes")
-    
-    # Multi-select assets
-    asset_options = assets_df.apply(
-        lambda x: f"{x['Asset ID']} - {x.get('Asset Name', 'N/A')}", axis=1
-    ).tolist()
-    
+
+    asset_id_col = None
+    asset_name_col = None
+    for col in assets_df.columns:
+        col_norm = str(col).strip().lower()
+        if col_norm in {"asset id", "asset id / barcode", "asset id/barcode", "asset id barcode", "assetid", "barcode"}:
+            asset_id_col = col
+        elif col_norm in {"asset name", "name"}:
+            asset_name_col = col
+    if asset_id_col is None:
+        st.error("Unable to identify the Asset ID column in the Assets sheet.")
+        return
+
+    assets_df = assets_df.copy()
+    assets_df[asset_id_col] = assets_df[asset_id_col].astype(str).str.strip()
+    if asset_name_col:
+        assets_df[asset_name_col] = assets_df[asset_name_col].fillna("").astype(str).str.strip()
+    else:
+        assets_df["__asset_name_placeholder__"] = ""
+        asset_name_col = "__asset_name_placeholder__"
+
+    asset_option_map = {}
+    asset_options = []
+    for _, row in assets_df.iterrows():
+        asset_id_value = row[asset_id_col]
+        asset_name_value = row[asset_name_col]
+        label = asset_id_value if not asset_name_value else f"{asset_id_value} - {asset_name_value}"
+        asset_options.append(label)
+        asset_option_map[label] = (asset_id_value, asset_name_value)
+
     selected_assets = st.multiselect(
         "Select Assets",
         asset_options,
-        help="Select multiple assets to generate barcodes for printing"
+        help="Select multiple assets to generate barcodes for printing",
     )
     
     if selected_assets:
-        # Extract Asset IDs
-        asset_ids = [asset.split(" - ")[0] for asset in selected_assets]
+        selected_records = [asset_option_map[label] for label in selected_assets if label in asset_option_map]
         
         col1, col2 = st.columns(2)
         with col1:
@@ -598,10 +622,10 @@ def barcode_print_page():
         if st.button("Generate Barcodes for Printing", use_container_width=True):
             # Generate barcodes
             barcode_images = []
-            for asset_id in asset_ids:
+            for asset_id, asset_name in selected_records:
                 img = generate_barcode_image(asset_id, "qr" if barcode_format == "QR Code" else "code128")
                 if img:
-                    barcode_images.append((asset_id, img))
+                    barcode_images.append((asset_id, asset_name, img))
             
             if barcode_images:
                 st.success(f"Generated {len(barcode_images)} barcode(s)")
@@ -616,9 +640,10 @@ def barcode_print_page():
                     for col_idx in range(barcodes_per_row):
                         idx = row * barcodes_per_row + col_idx
                         if idx < num_barcodes:
-                            asset_id, img = barcode_images[idx]
+                            asset_id, asset_name, img = barcode_images[idx]
+                            caption = asset_id if not asset_name else f"{asset_id} - {asset_name}"
                             with cols[col_idx]:
-                                st.image(img, caption=asset_id, use_container_width=True)
+                                st.image(img, caption=caption, use_container_width=True)
                 
                 # Download option
                 st.subheader("Download Barcodes")
@@ -628,33 +653,50 @@ def barcode_print_page():
                 if st.button("Create Print Layout", use_container_width=True):
                     # Create a combined image
                     img_width = 400
-                    img_height = 200
+                    img_height = 240
                     combined_width = img_width * barcodes_per_row
                     combined_height = img_height * rows
                     
                     combined_img = Image.new('RGB', (combined_width, combined_height), 'white')
-                    
-                    for idx, (asset_id, img) in enumerate(barcode_images):
+                    draw = ImageDraw.Draw(combined_img)
+                    font = ImageFont.load_default()
+
+                    for idx, (asset_id, asset_name, img) in enumerate(barcode_images):
                         row = idx // barcodes_per_row
                         col = idx % barcodes_per_row
                         
                         # Resize image
-                        img_resized = img.resize((img_width - 20, img_height - 40))
+                        img_resized = img.resize((img_width - 20, img_height - 80))
                         
                         # Paste image
                         x_offset = col * img_width + 10
                         y_offset = row * img_height + 20
                         combined_img.paste(img_resized, (x_offset, y_offset))
+
+                        label_text = asset_id if not asset_name else f"{asset_id} - {asset_name}"
+                        text_width, text_height = draw.textsize(label_text, font=font)
+                        text_x = x_offset + (img_resized.width - text_width) // 2
+                        text_y = y_offset + img_resized.height + 10
+                        draw.text((text_x, text_y), label_text, fill="black", font=font)
                     
                     # Convert to bytes for download
                     img_buffer = io.BytesIO()
                     combined_img.save(img_buffer, format='PNG')
                     img_buffer.seek(0)
-                    
+                    layout_bytes = img_buffer.getvalue()
+
+                    st.image(combined_img, caption="Print Layout Preview", use_container_width=True)
                     st.download_button(
                         label="Download Combined Barcode Sheet",
-                        data=img_buffer,
+                        data=layout_bytes,
                         file_name="barcodes_print_sheet.png",
                         mime="image/png",
-                        use_container_width=True
+                        use_container_width=True,
                     )
+
+                    encoded = base64.b64encode(layout_bytes).decode()
+                    st.markdown(
+                        f'<a href="data:image/png;base64,{encoded}" target="_blank">Open Print Layout in New Tab</a>',
+                        unsafe_allow_html=True,
+                    )
+                    st.info("Open the layout in a new tab and use your browser's print dialog (Ctrl+P / Cmd+P).")
