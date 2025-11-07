@@ -9,6 +9,17 @@ from dashboard import dashboard_page
 from forms import location_form, supplier_form, category_form, asset_master_form, asset_transfer_form
 from barcode_utils import barcode_scanner_page, barcode_print_page
 
+st.markdown("""
+    <style>
+    @import url('https://fonts.cdnfonts.com/css/din-regular');
+    html, body, [class*="css"]  {
+        font-family: 'DIN', sans-serif !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+
 # Page configuration (must be first Streamlit command)
 st.set_page_config(
     page_title="Asset Tracker",
