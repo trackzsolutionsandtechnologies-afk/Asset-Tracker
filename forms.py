@@ -2514,6 +2514,61 @@ def employee_assignment_form():
             *assets_df["Asset ID"].dropna().astype(str).str.strip().tolist(),
         ]
 
+    asset_id_col = None
+    asset_assigned_col = None
+    if not assets_df.empty:
+        for col in assets_df.columns:
+            col_norm = str(col).strip().lower()
+            if col_norm in {
+                "asset id",
+                "asset id / barcode",
+                "asset id/barcode",
+                "asset id barcode",
+                "assetid",
+                "barcode",
+            } and asset_id_col is None:
+                asset_id_col = col
+            elif col_norm in {"assigned to", "assigned_to", "assignedto"} and asset_assigned_col is None:
+                asset_assigned_col = col
+
+    def update_asset_assignee(asset_value: str, assignee_value: str) -> None:
+        nonlocal assets_df
+        if not asset_value:
+            return
+        if assets_df.empty:
+            return
+        if asset_id_col is None or asset_assigned_col is None:
+            return
+        try:
+            match = assets_df[
+                assets_df[asset_id_col].astype(str).str.strip().str.lower()
+                == str(asset_value).strip().lower()
+            ]
+            if match.empty:
+                return
+            row_index = int(match.index[0])
+            column_order = list(assets_df.columns)
+            asset_series = match.iloc[0].copy()
+            asset_series.loc[asset_assigned_col] = assignee_value
+            asset_series = asset_series.reindex(column_order, fill_value="")
+
+            row_data: list[str] = []
+            for val in asset_series.tolist():
+                if pd.isna(val):
+                    row_data.append("")
+                else:
+                    if hasattr(val, "item"):
+                        try:
+                            val = val.item()
+                        except Exception:
+                            val = str(val)
+                    row_data.append(val)
+
+            if update_data(SHEETS["assets"], row_index, row_data):
+                assets_df.at[row_index, asset_assigned_col] = assignee_value
+        except Exception as err:
+            st.warning(f"Unable to update asset assignment: {err}")
+
     with tab1:
         st.markdown(style_block, unsafe_allow_html=True)
 
@@ -2632,6 +2687,7 @@ def employee_assignment_form():
                             st.session_state["assignment_success_message"] = (
                                 f"✅ Assignment '{assignment_id}' added successfully!"
                             )
+                            update_asset_assignee(asset_id, username)
                             st.session_state["refresh_asset_users"] = True
                             st.session_state["assignment_form_key"] += 1
                             if "assignment_search" in st.session_state:
@@ -2733,6 +2789,7 @@ def employee_assignment_form():
                                     st.session_state["assignment_success_message"] = (
                                         f"🗑️ Assignment '{row.get('Assignment ID', '')}' deleted."
                                     )
+                                    update_asset_assignee(row.get("Asset ID", ""), "")
                                     st.session_state["refresh_asset_users"] = True
                                     st.rerun()
                                 else:
@@ -2827,6 +2884,9 @@ def employee_assignment_form():
                                     st.session_state["assignment_success_message"] = (
                                         f"✅ Assignment '{edit_id}' updated successfully!"
                                     )
+                                    update_asset_assignee(asset_id_new, username_new)
+                                    if asset_id_new != record.get("Asset ID", ""):
+                                        update_asset_assignee(record.get("Asset ID", ""), "")
                                     st.session_state["refresh_asset_users"] = True
                                     st.session_state.pop("edit_assignment_id", None)
                                     st.session_state.pop("edit_assignment_idx", None)
