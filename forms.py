@@ -1,6 +1,7 @@
 """
 Forms module for Asset Tracker
 """
+import base64
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -1053,6 +1054,7 @@ def asset_master_form():
     suppliers_df = read_data(SHEETS["suppliers"])
     categories_df = read_data(SHEETS["categories"])
     subcategories_df = read_data(SHEETS["subcategories"])
+    users_df = read_data(SHEETS["users"])
     
     tab1, tab2 = st.tabs(["Add New Asset", "View/Edit Assets"])
     
@@ -1076,43 +1078,46 @@ def asset_master_form():
                 
                 if not categories_df.empty:
                     category_options = categories_df["Category Name"].tolist()
-                    category = st.selectbox("Category *", ["Select category"] + category_options, key="asset_category_select")
+                    category_list = ["Select category"] + category_options
+                    category = st.selectbox("Category *", category_list, key="asset_category_select")
                 else:
                     category = st.text_input("Category *")
                     st.warning("No categories found. Please add categories first.")
                 
                 # Sub Category dropdown - show based on selected category
-                if category != "Select category" and not categories_df.empty and not subcategories_df.empty:
-                    # Get category ID from selected category name
+                available_subcategories = ["None"]
+                if (
+                    category
+                    and category not in ("Select category", "")
+                    and not categories_df.empty
+                    and not subcategories_df.empty
+                ):
                     category_row = categories_df[categories_df["Category Name"] == category]
                     if not category_row.empty:
                         category_id = category_row["Category ID"].iloc[0]
-                        
-                        # Filter subcategories by Category ID
-                        if "Category ID" in subcategories_df.columns:
-                            matching_subcats = subcategories_df[subcategories_df["Category ID"] == category_id]
-                        # Also try matching by Category Name if Category ID doesn't work
-                        elif "Category Name" in subcategories_df.columns:
-                            matching_subcats = subcategories_df[subcategories_df["Category Name"] == category]
-                        else:
-                            matching_subcats = pd.DataFrame()
-                        
+                        matching_subcats = subcategories_df[
+                            (subcategories_df.get("Category ID", pd.Series(dtype=str)).astype(str) == str(category_id))
+                            | (subcategories_df.get("Category Name", pd.Series(dtype=str)).astype(str) == str(category))
+                        ]
                         if not matching_subcats.empty and "SubCategory Name" in matching_subcats.columns:
-                            subcat_options = matching_subcats["SubCategory Name"].tolist()
-                            if subcat_options:
-                                subcategory = st.selectbox("Sub Category", ["None"] + subcat_options, key="asset_subcategory_select")
-                            else:
-                                subcategory = st.selectbox("Sub Category", ["None"], key="asset_subcategory_select", help="No subcategories available for this category")
-                        else:
-                            subcategory = st.selectbox("Sub Category", ["None"], key="asset_subcategory_select", help="No subcategories found for this category")
-                    else:
-                        subcategory = st.text_input("Sub Category", key="asset_subcategory_text")
+                            available_subcategories += (
+                                matching_subcats["SubCategory Name"].dropna().astype(str).tolist()
+                            )
+
+                if available_subcategories == ["None"] and category in ("Select category", ""):
+                    subcategory = st.selectbox(
+                        "Sub Category",
+                        available_subcategories,
+                        disabled=True,
+                        help="Please select a category first",
+                        key="asset_subcategory_select",
+                    )
                 else:
-                    # Show text input if no category selected or no subcategories available
-                    if category == "Select category":
-                        subcategory = st.text_input("Sub Category", key="asset_subcategory_text", disabled=True, help="Please select a category first")
-                    else:
-                        subcategory = st.text_input("Sub Category", key="asset_subcategory_text")
+                    subcategory = st.selectbox(
+                        "Sub Category",
+                        available_subcategories,
+                        key="asset_subcategory_select",
+                    )
                 
                 model_serial = st.text_input("Model / Serial No")
                 purchase_date = st.date_input("Purchase Date")
@@ -1132,11 +1137,24 @@ def asset_master_form():
                 else:
                     location = st.text_input("Location")
                 
-                assigned_to = st.text_input("Assigned To")
+                if not users_df.empty and "Username" in users_df.columns:
+                    user_options = ["None"] + users_df["Username"].dropna().astype(str).tolist()
+                    assigned_to = st.selectbox("Assigned To", user_options)
+                else:
+                    assigned_to = st.text_input("Assigned To")
                 condition = st.selectbox("Condition", ["Excellent", "Good", "Fair", "Poor", "Damaged"])
                 status = st.selectbox("Status", ["Active", "Inactive", "Maintenance", "Retired"])
                 remarks = st.text_area("Remarks")
-                attachment = st.text_input("Attachment URL")
+                attachment_file = st.file_uploader(
+                    "Attachment (Image or File)",
+                    type=None,
+                    help="Upload related documents or images.",
+                )
+                attachment = ""
+                if attachment_file is not None:
+                    file_content = attachment_file.getvalue()
+                    encoded = base64.b64encode(file_content).decode("utf-8")
+                    attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
             
             submitted = st.form_submit_button("Add Asset", use_container_width=True)
             
@@ -1151,7 +1169,8 @@ def asset_master_form():
                         subcategory if subcategory != "None" else "", model_serial,
                         purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
                         purchase_cost, supplier if supplier != "None" else "",
-                        location if location != "None" else "", assigned_to,
+                        location if location != "None" else "",
+                        assigned_to if assigned_to != "None" else "",
                         condition, status, remarks, attachment
                     ]
                     if append_data(SHEETS["assets"], data):
@@ -1312,7 +1331,15 @@ def asset_master_form():
                             else:
                                 new_location = st.text_input("Location", value=row.get("Location", ""))
 
-                            assigned_to = st.text_input("Assigned To", value=row.get("Assigned To", ""))
+                            if not users_df.empty and "Username" in users_df.columns:
+                                user_options_edit = ["None"] + users_df["Username"].dropna().astype(str).tolist()
+                                try:
+                                    assigned_default = user_options_edit.index(str(row.get("Assigned To", "None")))
+                                except ValueError:
+                                    assigned_default = 0
+                                assigned_to = st.selectbox("Assigned To", user_options_edit, index=assigned_default)
+                            else:
+                                assigned_to = st.text_input("Assigned To", value=row.get("Assigned To", ""))
                             condition = st.selectbox(
                                 "Condition",
                                 condition_options,
@@ -1324,7 +1351,18 @@ def asset_master_form():
                                 index=status_options.index(str(row.get("Status", "Active"))) if str(row.get("Status", "Active")) in status_options else 0,
                             )
                             remarks = st.text_area("Remarks", value=row.get("Remarks", ""))
-                            attachment = st.text_input("Attachment URL", value=row.get("Attachment", ""))
+                            existing_attachment = row.get("Attachment", "")
+                            if existing_attachment:
+                                st.caption("Existing attachment on file. Upload a new one to replace it.")
+                            attachment_upload = st.file_uploader(
+                                "Attachment (Image or File)",
+                                type=None,
+                                key=f"asset_attachment_{asset_id_value}",
+                            )
+                            attachment_value = existing_attachment
+                            if attachment_upload is not None:
+                                encoded_edit = base64.b64encode(attachment_upload.getvalue()).decode("utf-8")
+                                attachment_value = f"data:{attachment_upload.type};name={attachment_upload.name};base64,{encoded_edit}"
 
                         col_save, col_cancel = st.columns(2)
                         with col_save:
@@ -1339,11 +1377,11 @@ def asset_master_form():
                                     purchase_cost,
                                     new_supplier if new_supplier != "None" else "",
                                     new_location if new_location != "None" else "",
-                                    assigned_to,
+                                    assigned_to if assigned_to != "None" else "",
                                     condition,
                                     status,
                                     remarks,
-                                    attachment,
+                                    attachment_value,
                                 ]
 
                                 if update_data(SHEETS["assets"], original_idx, updated_data):
