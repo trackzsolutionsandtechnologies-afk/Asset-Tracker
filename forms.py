@@ -1354,80 +1354,95 @@ def user_management_form():
 
         st.caption(f"Showing {len(filtered_df)} of {len(users_df)} user(s)")
 
+        header_username, header_email, header_role, header_edit, header_delete = st.columns([2, 3, 2, 1, 1])
+        with header_username:
+            st.write("**Username**")
+        with header_email:
+            st.write("**Email**")
+        with header_role:
+            st.write("**Role**")
+        with header_edit:
+            st.write("**Edit**")
+        with header_delete:
+            st.write("**Delete**")
+
         st.divider()
 
         for idx, row in filtered_df.iterrows():
-            original_idx = int(users_df[users_df["Username"] == row.get("Username")].index[0])
+            user_name = row.get("Username")
+            matching_rows = users_df[users_df["Username"].astype(str) == str(user_name)]
+            original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
 
-            is_editing = st.session_state.get("edit_user", "") == row.get("Username")
+            col_username, col_email, col_role, col_edit, col_delete = st.columns([2, 3, 2, 1, 1])
+            with col_username:
+                st.write(user_name or "-")
+            with col_email:
+                st.write(row.get("Email", "-"))
+            with col_role:
+                st.write(row.get("Role", "-"))
+            with col_edit:
+                if st.button("✏️", key=f"user_edit_{user_name}", use_container_width=True, help="Edit this user"):
+                    st.session_state["edit_user_username"] = user_name
+                    st.session_state["edit_user_idx"] = original_idx
+                    st.rerun()
+            with col_delete:
+                if st.button("🗑️", key=f"user_delete_{user_name}", use_container_width=True, help="Delete this user"):
+                    if delete_data(SHEETS["users"], original_idx):
+                        st.session_state["user_success_message"] = f"🗑️ User '{user_name}' deleted."
+                        if "user_search" in st.session_state:
+                            del st.session_state["user_search"]
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete user")
+            st.divider()
 
-            if is_editing:
-                email = st.text_input(
-                    "Email",
-                    value=row.get("Email", ""),
-                    key=f"user_email_{row.get('Username')}"
-                )
-                role = st.selectbox(
-                    "Role",
-                    ["admin", "user"],
-                    index=0 if str(row.get("Role", "user")).lower() == "admin" else 1,
-                    key=f"user_role_{row.get('Username')}"
-                )
-                new_password = st.text_input(
-                    "New Password (leave blank to keep current)",
-                    type="password",
-                    key=f"user_new_password_{row.get('Username')}"
-                )
-                confirm_password = st.text_input(
-                    "Confirm New Password",
-                    type="password",
-                    key=f"user_confirm_password_{row.get('Username')}"
-                )
+        if "edit_user_username" in st.session_state and st.session_state["edit_user_username"]:
+            edit_username = st.session_state["edit_user_username"]
+            edit_idx = st.session_state.get("edit_user_idx", 0)
 
-                col_save, col_cancel = st.columns(2)
-                with col_save:
-                    if st.button("Save", key=f"user_save_{row.get('Username')}"):
-                        if new_password and new_password != confirm_password:
-                            st.error("Passwords do not match")
-                        else:
-                            hashed = row.get("Password", "")
-                            if new_password:
-                                hashed = hash_password(new_password)
-                            updated_data = [
-                                row.get("Username"),
-                                hashed,
-                                email,
-                                role,
-                            ]
-                            if update_data(SHEETS["users"], original_idx, updated_data):
-                                st.session_state["user_success_message"] = f"✅ User '{row.get('Username')}' updated successfully!"
-                                st.session_state.pop("edit_user", None)
-                                st.rerun()
+            user_rows = users_df[users_df["Username"] == edit_username]
+            if not user_rows.empty:
+                user_row = user_rows.iloc[0]
+
+                st.subheader(f"Edit User: {edit_username}")
+                with st.form("edit_user_form"):
+                    st.text_input("Username", value=edit_username, disabled=True)
+                    new_email = st.text_input("Email", value=user_row.get("Email", ""))
+                    new_role = st.selectbox(
+                        "Role",
+                        ["admin", "user"],
+                        index=0 if str(user_row.get("Role", "user")).lower() == "admin" else 1,
+                    )
+                    new_password = st.text_input("New Password", type="password")
+                    confirm_password = st.text_input("Confirm Password", type="password")
+
+                    col_save, col_cancel = st.columns(2)
+                    with col_save:
+                        if st.form_submit_button("Update User", use_container_width=True):
+                            if new_password and new_password != confirm_password:
+                                st.error("Passwords do not match")
                             else:
-                                st.error("Failed to update user")
-                with col_cancel:
-                    if st.button("Cancel", key=f"user_cancel_{row.get('Username')}"):
-                        st.session_state.pop("edit_user", None)
-                        st.rerun()
-                st.divider()
-            else:
-                col_username, col_email, col_role, col_edit, col_delete = st.columns([2, 3, 2, 1, 1])
-                with col_username:
-                    st.write(row.get("Username", "-"))
-                with col_email:
-                    st.write(row.get("Email", "-"))
-                with col_role:
-                    st.write(row.get("Role", "-"))
-                with col_edit:
-                    if st.button("Edit", key=f"user_edit_{row.get('Username')}"):
-                        st.session_state["edit_user"] = row.get("Username")
-                        st.rerun()
-                with col_delete:
-                    if st.button("Delete", key=f"user_delete_{row.get('Username')}"):
-                        if delete_data(SHEETS["users"], original_idx):
-                            st.session_state["user_success_message"] = f"🗑️ User '{row.get('Username')}' deleted."
+                                hashed = user_row.get("Password", "")
+                                if new_password:
+                                    hashed = hash_password(new_password)
+                                updated_data = [
+                                    edit_username,
+                                    hashed,
+                                    new_email,
+                                    new_role,
+                                ]
+                                if update_data(SHEETS["users"], edit_idx, updated_data):
+                                    st.session_state["user_success_message"] = f"✅ User '{edit_username}' updated successfully!"
+                                    st.session_state.pop("edit_user_username", None)
+                                    st.session_state.pop("edit_user_idx", None)
+                                    if "user_search" in st.session_state:
+                                        del st.session_state["user_search"]
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to update user")
+                    with col_cancel:
+                        if st.form_submit_button("Cancel", use_container_width=True):
+                            st.session_state.pop("edit_user_username", None)
+                            st.session_state.pop("edit_user_idx", None)
                             st.rerun()
-                        else:
-                            st.error("Failed to delete user")
-                st.divider()
 
