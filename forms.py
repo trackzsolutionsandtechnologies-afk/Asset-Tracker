@@ -1209,7 +1209,10 @@ def asset_master_form():
                 else:
                     location = st.text_input("Location")
                 
-                if not users_df.empty and user_username_col:
+                refresh_key = st.session_state.pop("refresh_asset_users", False)
+                if refresh_key:
+                    users_df = read_data(SHEETS["users"])
+                if not users_df.empty and user_username_col and user_username_col in users_df.columns:
                     user_options = ["None"] + users_df[user_username_col].dropna().astype(str).tolist()
                     assigned_to = st.selectbox("Assigned To", user_options)
                 else:
@@ -2629,6 +2632,7 @@ def employee_assignment_form():
                             st.session_state["assignment_success_message"] = (
                                 f"✅ Assignment '{assignment_id}' added successfully!"
                             )
+                            st.session_state["refresh_asset_users"] = True
                             st.session_state["assignment_form_key"] += 1
                             if "assignment_search" in st.session_state:
                                 del st.session_state["assignment_search"]
@@ -2729,6 +2733,7 @@ def employee_assignment_form():
                                     st.session_state["assignment_success_message"] = (
                                         f"🗑️ Assignment '{row.get('Assignment ID', '')}' deleted."
                                     )
+                                    st.session_state["refresh_asset_users"] = True
                                     st.rerun()
                                 else:
                                     st.error("Failed to delete assignment")
@@ -2822,6 +2827,7 @@ def employee_assignment_form():
                                     st.session_state["assignment_success_message"] = (
                                         f"✅ Assignment '{edit_id}' updated successfully!"
                                     )
+                                    st.session_state["refresh_asset_users"] = True
                                     st.session_state.pop("edit_assignment_id", None)
                                     st.session_state.pop("edit_assignment_idx", None)
                                     st.rerun()
