@@ -1124,20 +1124,19 @@ def asset_master_form():
                         if not matching_subcats.empty and subcat_name_col:
                             available_subcategories += matching_subcats[subcat_name_col].dropna().astype(str).tolist()
 
-                if available_subcategories == ["None"] and category in ("Select category", ""):
-                    subcategory = st.selectbox(
-                        "Sub Category",
-                        available_subcategories,
-                        disabled=True,
-                        help="Please select a category first",
-                        key="asset_subcategory_select",
-                    )
-                else:
-                    subcategory = st.selectbox(
-                        "Sub Category",
-                        available_subcategories,
-                        key="asset_subcategory_select",
-                    )
+                subcategory_help = None
+                if available_subcategories == ["None"]:
+                    if category in ("Select category", ""):
+                        subcategory_help = "Please select a category first."
+                    else:
+                        subcategory_help = "No subcategories found for the selected category."
+
+                subcategory = st.selectbox(
+                    "Sub Category",
+                    available_subcategories,
+                    key="asset_subcategory_select",
+                    help=subcategory_help,
+                )
                 
                 model_serial = st.text_input("Model / Serial No")
                 purchase_date = st.date_input("Purchase Date")
@@ -1356,10 +1355,18 @@ def asset_master_form():
                                 default_subcat_index = subcat_list.index(current_subcat_value) if current_subcat_value in subcat_list else 0
                             except ValueError:
                                 default_subcat_index = 0
+                            subcategory_help_edit_final = None
+                            if subcat_list == ["None"]:
+                                if selected_category in ("Select category", ""):
+                                    subcategory_help_edit_final = "Please select a category first."
+                                else:
+                                    subcategory_help_edit_final = "No subcategories found for the selected category."
                             selected_subcategory = st.selectbox(
                                 "Sub Category",
                                 subcat_list,
                                 index=default_subcat_index,
+                                key=f"asset_edit_subcategory_final_{asset_id_value}",
+                                help=subcategory_help_edit_final,
                             )
 
                             model_serial = st.text_input(
