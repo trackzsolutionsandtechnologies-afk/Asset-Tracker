@@ -93,3 +93,4 @@ After saving secrets:
 - Verify the service account email has access to the Google Sheet
 - Ensure Google Sheets API and Drive API are enabled
 
+

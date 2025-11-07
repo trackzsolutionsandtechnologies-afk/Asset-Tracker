@@ -28,3 +28,4 @@ def create_first_user():
 if __name__ == "__main__":
     create_first_user()
 
+

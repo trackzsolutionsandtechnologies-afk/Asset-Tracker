@@ -71,3 +71,4 @@ After fixing:
 2. If it still doesn't work, check the Streamlit Cloud logs for errors
 3. Make sure the service account has access to the Google Sheet
 
+

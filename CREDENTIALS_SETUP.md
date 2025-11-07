@@ -38,3 +38,4 @@ Your `.gitignore` already excludes `credentials.json`, so if you add it locally 
 1. **For local testing**: Place `credentials.json` in project root (optional)
 2. **For Streamlit Cloud**: Use secrets (required) - see `STREAMLIT_CLOUD_DEPLOY.md`
 
+

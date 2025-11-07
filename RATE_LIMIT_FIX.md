@@ -54,3 +54,4 @@ if st.button("Clear Cache"):
 
 The application should now handle rate limits gracefully and reduce API calls significantly through caching.
 
+

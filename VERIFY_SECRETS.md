@@ -42,3 +42,4 @@ After saving and redeploying:
 3. Make sure Google Sheets API and Drive API are enabled
 4. Try the debug mode in the app to see detailed errors
 
+
