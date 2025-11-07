@@ -166,39 +166,21 @@ def login_page():
         [data-testid="stSidebar"] {
             background-color: transparent !important;
         }
-        .login-form-container label,
-        .login-form-container span,
-        .login-form-container p,
-        .login-form-container h1 {
-            color: #5C3E94 !important;
-        }
-        .login-form-container .stTextInput > div > div > input {
-            background-color: ##5C3E94 !important;
-            color:#5C3E94 !important;
-            border: 1px solid #444444 !important;
-            height: 48px !important;
-            padding: 0 16px !important;
-            width: 50% !important;
-        }
-        .login-form-container button[kind="primary"] {
-            background-color: #5C3E94 !important;
-            color: #5C3E94 !important;
-            border: 1px solid #ffffff !important;
-        }
-        .login-form-container button[kind="primary"]:hover {
-            background-color: #5C3E94 !important;
-            color: #5C3E94 !important;
-        }
-        .login-form-container button[kind="secondary"] {
-            background-color: #5C3E94 !important;
-            color: #5C3E94 !important;
-            border: 1px solid #ffffff !important;
-        }
-        .login-form-container button[kind="secondary"]:hover {
-            background-color: #5C3E94 !important;
-            color: #5C3E94 !important;
-        }
-        </style>
+        /* Label and text colors inside form */
+.login-form-container label,
+.login-form-container span,
+.login-form-container p,
+.login-form-container h1 {
+    color: #ffffff !important;
+}
+        
+        
+        
+        
+        
+        
+        
+                </style>
         """,
         unsafe_allow_html=True,
     )
