@@ -87,42 +87,46 @@ def main():
             default_index=0,
             styles={
                 "container": {
-                    "padding": "10px 5px !important",
-                    "background": "#000000",
-                    "border-radius": "10px",
+                    "padding": "5px",
+                    "background": "#f8f9fa",
+                    "border-radius": "8px",
+                    "box-shadow": "0 0 8px rgba(0, 0, 0, 0.1)"
                 },
                 "icon": {
-                    "color": "#ffffff",
+                    "color": "#6c757d",
                     "font-size": "20px",
-                    "margin-right": "10px",
+                    
                 },
                 "nav-link": {
                     "font-size": "16px",
                     "text-align": "left",
-                    "margin": "5px 0",
-                    "padding": "12px 15px",
-                    "color": "#ffffff",
-                    "border-radius": "8px",
-                    "background": "rgba(255, 255, 255, 0.05)",
-                    "transition": "all 0.3s ease",
-                    "--hover-color": "rgba(255, 255, 255, 0.15)",
+                    "margin": "2px 0",
+                    "padding": "8px 15px",
+                    "color": "#333333",
+                    "border-radius": "6px",
+                    "background-color": "#ffffff",
+                    
                 },
+  "nav-link-hover": {
+            "background-color": "#e3f2fd",
+            "color": "#007bff",
+        },
+
+
+
+
                 "nav-link-selected": {
-                    "background": "rgba(255, 255, 255, 0.2)",
-                    "color": "#ffffff",
-                    "font-weight": "600",
-                    "box-shadow": "0 2px 8px rgba(0, 0, 0, 0.2)",
-                    "border-left": "4px solid #ffffff",
+                   "background-color": "#007bff",
+            "color": "white",
+            "font-weight": "500",
+            "box-shadow": "0 0 6px rgba(0, 123, 255, 0.4)"
                 },
                 "menu-title": {
-                    "color": "#ffffff",
+                    "color": "#0d6efd",
                     "font-size": "18px",
-                    "font-weight": "700",
-                    "margin-bottom": "15px",
-                    "padding": "10px",
-                    "background": "rgba(255, 255, 255, 0.1)",
-                    "border-radius": "8px",
-                    "text-align": "center",
+                    "font-weight": "600",
+                    "margin-bottom": "10px",
+                    
                 },
             }
         )
