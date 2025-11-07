@@ -1056,6 +1056,20 @@ def asset_master_form():
     subcategories_df = read_data(SHEETS["subcategories"])
     users_df = read_data(SHEETS["users"])
     
+    def find_column(df: pd.DataFrame, targets):
+        for target in targets:
+            for col in df.columns:
+                if str(col).strip().lower() == target:
+                    return col
+        return None
+
+    category_name_col = find_column(categories_df, ["category name", "category"])
+    category_id_col = find_column(categories_df, ["category id", "categoryid"])
+    subcat_name_col = find_column(subcategories_df, ["subcategory name", "sub category name", "subcategory", "sub category"])
+    subcat_cat_id_col = find_column(subcategories_df, ["category id", "categoryid"])
+    subcat_cat_name_col = find_column(subcategories_df, ["category name", "category"])
+    user_username_col = find_column(users_df, ["username", "user name", "name"])
+
     tab1, tab2 = st.tabs(["Add New Asset", "View/Edit Assets"])
     
     with tab1:
@@ -1076,8 +1090,8 @@ def asset_master_form():
                 
                 asset_name = st.text_input("Asset Name *")
                 
-                if not categories_df.empty:
-                    category_options = categories_df["Category Name"].tolist()
+                if not categories_df.empty and category_name_col:
+                    category_options = categories_df[category_name_col].dropna().astype(str).tolist()
                     category_list = ["Select category"] + category_options
                     category = st.selectbox("Category *", category_list, key="asset_category_select")
                 else:
@@ -1090,19 +1104,24 @@ def asset_master_form():
                     category
                     and category not in ("Select category", "")
                     and not categories_df.empty
+                    and category_name_col
                     and not subcategories_df.empty
+                    and (subcat_name_col or subcat_cat_id_col or subcat_cat_name_col)
                 ):
-                    category_row = categories_df[categories_df["Category Name"] == category]
+                    category_row = categories_df[categories_df[category_name_col].astype(str) == str(category)]
                     if not category_row.empty:
-                        category_id = category_row["Category ID"].iloc[0]
-                        matching_subcats = subcategories_df[
-                            (subcategories_df.get("Category ID", pd.Series(dtype=str)).astype(str) == str(category_id))
-                            | (subcategories_df.get("Category Name", pd.Series(dtype=str)).astype(str) == str(category))
-                        ]
-                        if not matching_subcats.empty and "SubCategory Name" in matching_subcats.columns:
-                            available_subcategories += (
-                                matching_subcats["SubCategory Name"].dropna().astype(str).tolist()
-                            )
+                        category_id_value = category_row[category_id_col].iloc[0] if category_id_col and category_id_col in category_row else None
+
+                        matching_subcats = subcategories_df.copy()
+                        if subcat_cat_id_col and category_id_value is not None:
+                            matching_subcats = matching_subcats[matching_subcats[subcat_cat_id_col].astype(str) == str(category_id_value)]
+                        elif subcat_cat_name_col:
+                            matching_subcats = matching_subcats[matching_subcats[subcat_cat_name_col].astype(str) == str(category)]
+                        else:
+                            matching_subcats = pd.DataFrame()
+
+                        if not matching_subcats.empty and subcat_name_col:
+                            available_subcategories += matching_subcats[subcat_name_col].dropna().astype(str).tolist()
 
                 if available_subcategories == ["None"] and category in ("Select category", ""):
                     subcategory = st.selectbox(
@@ -1137,8 +1156,8 @@ def asset_master_form():
                 else:
                     location = st.text_input("Location")
                 
-                if not users_df.empty and "Username" in users_df.columns:
-                    user_options = ["None"] + users_df["Username"].dropna().astype(str).tolist()
+                if not users_df.empty and user_username_col:
+                    user_options = ["None"] + users_df[user_username_col].dropna().astype(str).tolist()
                     assigned_to = st.selectbox("Assigned To", user_options)
                 else:
                     assigned_to = st.text_input("Assigned To")
@@ -1243,9 +1262,9 @@ def asset_master_form():
                 with cols[0]:
                     st.write(asset_id_value or "-")
                 with cols[1]:
-                    st.write(row.get("Asset Name", "-"))
+                    st.write(row.get("Asset Name", row.get("Asset Name *", "-")))
                 with cols[2]:
-                    st.write(row.get("Category", "-"))
+                    st.write(row.get("Category", row.get("Category Name", "-")))
                 with cols[3]:
                     st.write(row.get("Location", "-"))
 
@@ -1256,43 +1275,65 @@ def asset_master_form():
 
                         with col_left:
                             st.text_input("Asset ID", value=asset_id_value, disabled=True)
-                            new_name = st.text_input("Asset Name *", value=row.get("Asset Name", ""))
+                            new_name = st.text_input("Asset Name *", value=row.get("Asset Name", row.get("Asset Name *", "")))
 
-                            if not categories_df.empty:
-                                cat_options = categories_df["Category Name"].tolist()
+                            if not categories_df.empty and category_name_col:
+                                cat_options = categories_df[category_name_col].dropna().astype(str).tolist()
                                 cat_list = ["Select category"] + cat_options
+                                current_category_value = row.get("Category", row.get("Category Name", "Select category"))
                                 try:
-                                    default_cat_index = cat_list.index(row.get("Category")) if row.get("Category") in cat_list else 0
+                                    default_cat_index = cat_list.index(current_category_value) if current_category_value in cat_list else 0
                                 except ValueError:
                                     default_cat_index = 0
                                 selected_category = st.selectbox("Category", cat_list, index=default_cat_index)
                                 if selected_category != "Select category":
-                                    category_row = categories_df[categories_df["Category Name"] == selected_category]
-                                    selected_category_id = category_row["Category ID"].iloc[0] if not category_row.empty else ""
+                                    category_row = categories_df[categories_df[category_name_col].astype(str) == str(selected_category)]
+                                    selected_category_id = category_row[category_id_col].iloc[0] if category_id_col and not category_row.empty else ""
                                 else:
                                     selected_category_id = ""
                             else:
-                                selected_category = st.text_input("Category", value=row.get("Category", ""))
+                                selected_category = st.text_input("Category", value=row.get("Category", row.get("Category Name", "")))
                                 selected_category_id = ""
 
-                            if not subcategories_df.empty and selected_category not in ("Select category", ""):
-                                if not categories_df.empty:
-                                    matching_subcats = subcategories_df[
-                                        (subcategories_df["Category Name"].astype(str) == str(selected_category))
-                                        | (subcategories_df.get("Category ID", pd.Series(dtype=str)).astype(str) == str(selected_category_id))
+                            subcat_list = ["None"]
+                            if (
+                                selected_category
+                                and selected_category not in ("Select category", "")
+                                and not subcategories_df.empty
+                                and (subcat_name_col or subcat_cat_id_col or subcat_cat_name_col)
+                            ):
+                                matching_subcats = subcategories_df.copy()
+                                if subcat_cat_id_col and selected_category_id:
+                                    matching_subcats = matching_subcats[
+                                        matching_subcats[subcat_cat_id_col].astype(str) == str(selected_category_id)
+                                    ]
+                                elif subcat_cat_name_col:
+                                    matching_subcats = matching_subcats[
+                                        matching_subcats[subcat_cat_name_col].astype(str) == str(selected_category)
                                     ]
                                 else:
-                                    matching_subcats = subcategories_df[subcategories_df["Category Name"].astype(str) == str(selected_category)]
-                                subcat_list = ["None"] + matching_subcats.get("SubCategory Name", pd.Series()).dropna().astype(str).tolist()
-                                try:
-                                    default_subcat_index = subcat_list.index(row.get("Sub Category", row.get("SubCategory Name", "None")))
-                                except ValueError:
-                                    default_subcat_index = 0
-                                selected_subcategory = st.selectbox("Sub Category", subcat_list, index=default_subcat_index)
-                            else:
-                                selected_subcategory = st.text_input("Sub Category", value=row.get("Sub Category", row.get("SubCategory Name", "")))
+                                    matching_subcats = pd.DataFrame()
+                                if not matching_subcats.empty and subcat_name_col:
+                                    subcat_list += matching_subcats[subcat_name_col].dropna().astype(str).tolist()
 
-                            model_serial = st.text_input("Model / Serial No", value=row.get("Model / Serial No", row.get("Model/Serial No", "")))
+                            current_subcat_value = row.get(
+                                "Sub Category",
+                                row.get("SubCategory Name", row.get("Sub Category Name", "None")),
+                            )
+                            try:
+                                default_subcat_index = subcat_list.index(current_subcat_value) if current_subcat_value in subcat_list else 0
+                            except ValueError:
+                                default_subcat_index = 0
+                            selected_subcategory = st.selectbox(
+                                "Sub Category",
+                                subcat_list,
+                                index=default_subcat_index,
+                            )
+
+                            model_serial = st.text_input(
+                                "Model / Serial No",
+                                value=row.get("Model / Serial No", row.get("Model/Serial No", "")),
+                            )
 
                             purchase_date_value = row.get("Purchase Date", "")
                             try:
