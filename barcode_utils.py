@@ -690,7 +690,10 @@ def barcode_print_page():
                 
                 combined_img = Image.new('RGB', (combined_width, combined_height), 'white')
                 draw = ImageDraw.Draw(combined_img)
-                font = ImageFont.load_default()
+                try:
+                    font = ImageFont.load_default()
+                except Exception:
+                    font = None
 
                 for idx, (asset_id, asset_name, img) in enumerate(barcode_images):
                     row = idx // barcodes_per_row
@@ -705,8 +708,17 @@ def barcode_print_page():
                     combined_img.paste(img_resized, (x_offset, y_offset))
 
                     label_text = asset_id if not asset_name else f"{asset_id} - {asset_name}"
-                    text_width, text_height = draw.textsize(label_text, font=font)
-                    text_x = x_offset + max((img_resized.width - text_width) // 2, 0)
+                    if font:
+                        try:
+                            bbox = draw.textbbox((0, 0), label_text, font=font)
+                            text_width = bbox[2] - bbox[0]
+                        except Exception:
+                            text_width = 0
+                    else:
+                        text_width = 0
+                    text_x = x_offset
+                    if text_width:
+                        text_x = x_offset + max((img_resized.width - text_width) // 2, 0)
                     text_y = y_offset + img_resized.height + 10
                     draw.text((text_x, text_y), label_text, fill="black", font=font)
                 
