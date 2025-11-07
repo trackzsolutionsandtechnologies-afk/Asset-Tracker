@@ -16,6 +16,8 @@ SHEETS = {
     "subcategories": "SubCategories",
     "assets": "Assets",
     "transfers": "Transfers",
+    "maintenance": "AssetMaintenance",
+    "assignments": "EmployeeAssignments",
     "password_resets": "PasswordResets"
 }
 
@@ -49,6 +51,8 @@ def get_config():
                 "subcategories": sheets_config.get("subcategories", SHEETS["subcategories"]),
                 "assets": sheets_config.get("assets", SHEETS["assets"]),
                 "transfers": sheets_config.get("transfers", SHEETS["transfers"]),
+                "maintenance": sheets_config.get("maintenance", SHEETS["maintenance"]),
+                "assignments": sheets_config.get("assignments", SHEETS["assignments"]),
                 "password_resets": sheets_config.get("password_resets", SHEETS["password_resets"])
             }
     except Exception as e:

@@ -12,6 +12,8 @@ from forms import (
     category_form,
     asset_master_form,
     asset_transfer_form,
+    asset_maintenance_form,
+    employee_assignment_form,
     user_management_form,
 )
 from barcode_utils import barcode_scanner_page, barcode_print_page
@@ -118,6 +120,8 @@ def main():
                 "Category",
                 "Asset Master",
                 "Asset Transfer",
+                "Asset Maintenance",
+                "Employee Assignment",
                 "Users",
                 "Scan Barcode",
                 "Print Barcodes"
@@ -129,6 +133,8 @@ def main():
                 "folder",
                 "box-seam",
                 "arrow-repeat",
+                "tools",
+                "person-badge",
                 "people",
                 "search",
                 "printer"
@@ -211,6 +217,10 @@ def main():
         asset_master_form()
     elif selected == "Asset Transfer":
         asset_transfer_form()
+    elif selected == "Asset Maintenance":
+        asset_maintenance_form()
+    elif selected == "Employee Assignment":
+        employee_assignment_form()
     elif selected == "Users":
         user_management_form()
     elif selected == "Scan Barcode":

@@ -38,6 +38,16 @@ def generate_transfer_id() -> str:
     import uuid
     return f"TRF-{uuid.uuid4().hex[:8].upper()}"
 
+def generate_maintenance_id() -> str:
+    """Generate a unique Maintenance ID"""
+    import uuid
+    return f"MTN-{uuid.uuid4().hex[:8].upper()}"
+
+def generate_assignment_id() -> str:
+    """Generate a unique Assignment ID"""
+    import uuid
+    return f"ASN-{uuid.uuid4().hex[:8].upper()}"
+
 def location_form():
     """Location"""
     st.header("📍 Location Management")
@@ -2012,6 +2022,795 @@ def asset_transfer_form():
                     st.divider()
         else:
             st.info("No transfers found. Create a new transfer using the 'New Transfer' tab.")
+
+
+def asset_maintenance_form():
+    """Asset Maintenance Form"""
+    st.header("🛠️ Asset Maintenance")
+
+    maintenance_df = read_data(SHEETS["maintenance"])
+    assets_df = read_data(SHEETS["assets"])
+
+    tab1, tab2 = st.tabs(["Add Maintenance Record", "View/Edit Maintenance"])
+
+    style_block = """
+        <style>
+        div[data-testid="stForm"] {
+            background-color: white !important;
+            padding: 20px !important;
+            border-radius: 10px !important;
+            border: 1px solid #e0e0e0 !important;
+        }
+        div[data-testid="stForm"] button[kind="primary"],
+        button.stButton > button[kind="primary"] {
+            background-color: #28a745 !important;
+            color: white !important;
+            border-color: #28a745 !important;
+        }
+        div[data-testid="stForm"] button[kind="primary"]:hover,
+        button.stButton > button[kind="primary"]:hover {
+            background-color: #218838 !important;
+            border-color: #1e7e34 !important;
+        }
+        [data-testid="stStatusWidget"],
+        .stSpinner {
+            display: none !important;
+        }
+        </style>
+    """
+
+    def parse_date_value(value, fallback=None):
+        if fallback is None:
+            fallback = datetime.now().date()
+        if value is None or value == "":
+            return fallback
+        if isinstance(value, datetime):
+            return value.date()
+        try:
+            return datetime.strptime(str(value), "%Y-%m-%d").date()
+        except Exception:
+            try:
+                return datetime.strptime(str(value), "%d/%m/%Y").date()
+            except Exception:
+                return fallback
+
+    with tab1:
+        st.markdown(style_block, unsafe_allow_html=True)
+
+        if "maintenance_success_message" in st.session_state:
+            st.success(st.session_state["maintenance_success_message"])
+            del st.session_state["maintenance_success_message"]
+
+        if "maintenance_form_key" not in st.session_state:
+            st.session_state["maintenance_form_key"] = 0
+
+        form_key = st.session_state["maintenance_form_key"]
+
+        asset_options = []
+        if not assets_df.empty and "Asset ID" in assets_df.columns:
+            asset_options = ["Select asset"] + (
+                assets_df["Asset ID"].dropna().astype(str).str.strip().tolist()
+            )
+
+        with st.form(f"maintenance_form_{form_key}"):
+            auto_generate = st.checkbox(
+                "Auto-generate Maintenance ID",
+                value=True,
+                key=f"maintenance_auto_{form_key}",
+            )
+            if auto_generate:
+                if "generated_maintenance_id" not in st.session_state:
+                    st.session_state["generated_maintenance_id"] = generate_maintenance_id()
+                maintenance_id = st.text_input(
+                    "Maintenance ID *",
+                    value=st.session_state["generated_maintenance_id"],
+                    disabled=True,
+                    key=f"maintenance_id_{form_key}",
+                )
+            else:
+                maintenance_id = st.text_input(
+                    "Maintenance ID *",
+                    key=f"maintenance_manual_id_{form_key}",
+                )
+                if "generated_maintenance_id" in st.session_state:
+                    del st.session_state["generated_maintenance_id"]
+
+            if asset_options:
+                asset_id = st.selectbox(
+                    "Asset ID *",
+                    asset_options,
+                    key=f"maintenance_asset_{form_key}",
+                )
+            else:
+                asset_id = st.text_input(
+                    "Asset ID *",
+                    key=f"maintenance_asset_text_{form_key}",
+                )
+                st.warning("No assets found. Please add assets first.")
+
+            service_date = st.date_input(
+                "Service Date *",
+                value=datetime.now().date(),
+                key=f"maintenance_service_{form_key}",
+            )
+            vendor = st.text_input("Vendor", key=f"maintenance_vendor_{form_key}")
+            issue = st.text_area("Issue", key=f"maintenance_issue_{form_key}")
+            cost = st.number_input(
+                "Cost",
+                min_value=0.0,
+                value=0.0,
+                step=0.01,
+                key=f"maintenance_cost_{form_key}",
+            )
+            warranty = st.selectbox(
+                "Warranty Used",
+                ["No", "Yes"],
+                key=f"maintenance_warranty_{form_key}",
+            )
+            schedule_next = st.checkbox(
+                "Schedule next service date",
+                value=False,
+                key=f"maintenance_schedule_next_{form_key}",
+            )
+            next_service_date = None
+            if schedule_next:
+                next_service_date = st.date_input(
+                    "Next Service Date",
+                    value=service_date,
+                    key=f"maintenance_next_service_{form_key}",
+                )
+
+            submitted = st.form_submit_button(
+                "Add Maintenance Record",
+                use_container_width=True,
+                type="primary",
+            )
+
+            if submitted:
+                if not maintenance_id:
+                    st.error("Please provide a Maintenance ID")
+                elif asset_options and asset_id == "Select asset":
+                    st.error("Please select an Asset")
+                elif not asset_id:
+                    st.error("Please provide an Asset ID")
+                else:
+                    data_map = {
+                        "Maintenance ID": maintenance_id,
+                        "Asset ID": asset_id,
+                        "Service Date": service_date.strftime("%Y-%m-%d"),
+                        "Vendor": vendor,
+                        "Issue": issue,
+                        "Cost": f"{cost:.2f}",
+                        "Warranty Used": warranty,
+                        "Next Service Date": next_service_date.strftime("%Y-%m-%d") if next_service_date else "",
+                    }
+                    column_order = (
+                        list(maintenance_df.columns)
+                        if not maintenance_df.empty
+                        else list(data_map.keys())
+                    )
+                    data = [data_map.get(col, "") for col in column_order]
+                    with st.spinner("Saving maintenance record..."):
+                        if append_data(SHEETS["maintenance"], data):
+                            if "generated_maintenance_id" in st.session_state:
+                                del st.session_state["generated_maintenance_id"]
+                            st.session_state["maintenance_success_message"] = (
+                                f"✅ Maintenance record '{maintenance_id}' added successfully!"
+                            )
+                            st.session_state["maintenance_form_key"] += 1
+                            if "maintenance_search" in st.session_state:
+                                del st.session_state["maintenance_search"]
+                            st.rerun()
+                        else:
+                            st.error("Failed to save maintenance record")
+
+    with tab2:
+        user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+        is_admin = str(user_role).lower() == "admin"
+
+        if not maintenance_df.empty:
+            search_term = st.text_input(
+                "🔍 Search Maintenance Records",
+                placeholder="Search by maintenance ID, asset, vendor, or issue...",
+                key="maintenance_search",
+            )
+
+            filtered_df = maintenance_df.copy()
+            if search_term:
+                term = search_term.strip().lower()
+                filtered_df = filtered_df[
+                    filtered_df.apply(
+                        lambda row: term in " ".join(row.astype(str).str.lower()),
+                        axis=1,
+                    )
+                ]
+
+            if filtered_df.empty:
+                if search_term:
+                    st.warning("No maintenance records match your search.")
+                else:
+                    st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
+            else:
+                field_headers = [
+                    "**Maintenance ID**",
+                    "**Asset ID**",
+                    "**Service Date**",
+                    "**Vendor**",
+                    "**Issue**",
+                    "**Cost**",
+                    "**Warranty Used**",
+                    "**Next Service**",
+                ]
+                if is_admin:
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
+                else:
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1])
+                for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
+                    with col_widget:
+                        st.write(header)
+                with header_cols[len(field_headers)]:
+                    st.write("**Edit**")
+                if is_admin:
+                    with header_cols[-1]:
+                        st.write("**Delete**")
+                st.divider()
+
+                asset_list = (
+                    assets_df["Asset ID"].dropna().astype(str).str.strip().tolist()
+                    if not assets_df.empty and "Asset ID" in assets_df.columns
+                    else []
+                )
+
+                for idx, row in filtered_df.iterrows():
+                    if (
+                        "Maintenance ID" in maintenance_df.columns
+                        and not maintenance_df[
+                            maintenance_df["Maintenance ID"].astype(str) == str(row.get("Maintenance ID", ""))
+                        ].empty
+                    ):
+                        original_idx = int(
+                            maintenance_df[
+                                maintenance_df["Maintenance ID"].astype(str)
+                                == str(row.get("Maintenance ID", ""))
+                            ].index[0]
+                        )
+                    else:
+                        original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
+
+                    cols = (
+                        st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
+                        if is_admin
+                        else st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1])
+                    )
+                    display_values = [
+                        row.get("Maintenance ID", "N/A"),
+                        row.get("Asset ID", "N/A"),
+                        row.get("Service Date", "N/A"),
+                        row.get("Vendor", ""),
+                        row.get("Issue", ""),
+                        row.get("Cost", ""),
+                        row.get("Warranty Used", ""),
+                        row.get("Next Service Date", ""),
+                    ]
+                    for col_widget, value in zip(cols[: len(display_values)], display_values):
+                        with col_widget:
+                            st.write(value if value not in ("", None) else "N/A")
+
+                    edit_placeholder = cols[len(display_values)]
+                    with edit_placeholder:
+                        if st.button("✏️", key=f"maintenance_edit_{row.get('Maintenance ID', idx)}"):
+                            st.session_state["edit_maintenance_id"] = row.get("Maintenance ID", "")
+                            st.session_state["edit_maintenance_idx"] = original_idx
+                            st.rerun()
+
+                    if is_admin:
+                        with cols[-1]:
+                            if st.button(
+                                "🗑️",
+                                key=f"maintenance_delete_{row.get('Maintenance ID', idx)}",
+                            ):
+                                if delete_data(SHEETS["maintenance"], original_idx):
+                                    st.session_state["maintenance_success_message"] = (
+                                        f"🗑️ Maintenance record '{row.get('Maintenance ID', '')}' deleted."
+                                    )
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete maintenance record")
+
+                    st.divider()
+
+        else:
+            st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
+
+        if (
+            "edit_maintenance_id" in st.session_state
+            and st.session_state["edit_maintenance_id"]
+        ):
+            edit_id = st.session_state["edit_maintenance_id"]
+            edit_idx = st.session_state.get("edit_maintenance_idx", 0)
+            edit_row = maintenance_df[maintenance_df.get("Maintenance ID", pd.Series()).astype(str) == str(edit_id)]
+
+            if not edit_row.empty:
+                record = edit_row.iloc[0]
+                st.subheader(f"Edit Maintenance: {edit_id}")
+                with st.form(f"edit_maintenance_form_{edit_id}"):
+                    asset_options_edit = ["Select asset"] + asset_list if asset_list else []
+                    if asset_options_edit:
+                        try:
+                            default_asset_idx = asset_options_edit.index(record.get("Asset ID", ""))
+                        except ValueError:
+                            default_asset_idx = 0
+                        asset_id_new = st.selectbox(
+                            "Asset ID *",
+                            asset_options_edit,
+                            index=default_asset_idx,
+                        )
+                    else:
+                        asset_id_new = st.text_input(
+                            "Asset ID *",
+                            value=record.get("Asset ID", ""),
+                        )
+
+                    service_date_new = st.date_input(
+                        "Service Date *",
+                        value=parse_date_value(record.get("Service Date")),
+                    )
+                    vendor_new = st.text_input(
+                        "Vendor",
+                        value=record.get("Vendor", ""),
+                    )
+                    issue_new = st.text_area(
+                        "Issue",
+                        value=record.get("Issue", ""),
+                    )
+                    try:
+                        default_cost = float(str(record.get("Cost", 0)).replace(",", ""))
+                    except Exception:
+                        default_cost = 0.0
+                    cost_new = st.number_input(
+                        "Cost",
+                        min_value=0.0,
+                        value=default_cost,
+                        step=0.01,
+                    )
+                    warranty_new = st.selectbox(
+                        "Warranty Used",
+                        ["No", "Yes"],
+                        index=1 if str(record.get("Warranty Used", "")).lower() == "yes" else 0,
+                    )
+                    include_next = st.checkbox(
+                        "Schedule next service date",
+                        value=bool(record.get("Next Service Date")),
+                    )
+                    next_service_new = None
+                    if include_next:
+                        next_service_new = st.date_input(
+                            "Next Service Date",
+                            value=parse_date_value(record.get("Next Service Date")),
+                        )
+
+                    col_update, col_cancel = st.columns(2)
+                    with col_update:
+                        if st.form_submit_button("Update", use_container_width=True):
+                            if asset_options_edit and asset_id_new == "Select asset":
+                                st.error("Please select an Asset")
+                            elif not asset_id_new:
+                                st.error("Please provide an Asset ID")
+                            else:
+                                update_map = {
+                                    "Maintenance ID": edit_id,
+                                    "Asset ID": asset_id_new,
+                                    "Service Date": service_date_new.strftime("%Y-%m-%d"),
+                                    "Vendor": vendor_new,
+                                    "Issue": issue_new,
+                                    "Cost": f"{cost_new:.2f}",
+                                    "Warranty Used": warranty_new,
+                                    "Next Service Date": next_service_new.strftime("%Y-%m-%d") if next_service_new else "",
+                                }
+                                column_order = list(maintenance_df.columns)
+                                updated_row = [update_map.get(col, record.get(col, "")) for col in column_order]
+                                if update_data(SHEETS["maintenance"], int(edit_idx), updated_row):
+                                    st.session_state["maintenance_success_message"] = (
+                                        f"✅ Maintenance record '{edit_id}' updated successfully!"
+                                    )
+                                    st.session_state.pop("edit_maintenance_id", None)
+                                    st.session_state.pop("edit_maintenance_idx", None)
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to update maintenance record")
+                    with col_cancel:
+                        if st.form_submit_button("Cancel", use_container_width=True):
+                            st.session_state.pop("edit_maintenance_id", None)
+                            st.session_state.pop("edit_maintenance_idx", None)
+                            st.rerun()
+
+
+def employee_assignment_form():
+    """Employee Assignment Form"""
+    st.header("🧑‍💼 Employee Assignment")
+
+    assignments_df = read_data(SHEETS["assignments"])
+    users_df = read_data(SHEETS["users"])
+    assets_df = read_data(SHEETS["assets"])
+
+    tab1, tab2 = st.tabs(["Add Assignment", "View/Edit Assignments"])
+
+    style_block = """
+        <style>
+        div[data-testid="stForm"] {
+            background-color: white !important;
+            padding: 20px !important;
+            border-radius: 10px !important;
+            border: 1px solid #e0e0e0 !important;
+        }
+        div[data-testid="stForm"] button[kind="primary"],
+        button.stButton > button[kind="primary"] {
+            background-color: #28a745 !important;
+            color: white !important;
+            border-color: #28a745 !important;
+        }
+        div[data-testid="stForm"] button[kind="primary"]:hover,
+        button.stButton > button[kind="primary"]:hover {
+            background-color: #218838 !important;
+            border-color: #1e7e34 !important;
+        }
+        [data-testid="stStatusWidget"],
+        .stSpinner {
+            display: none !important;
+        }
+        </style>
+    """
+
+    def parse_date_value(value, fallback=None):
+        if fallback is None:
+            fallback = datetime.now().date()
+        if value in ("", None):
+            return fallback
+        if isinstance(value, datetime):
+            return value.date()
+        try:
+            return datetime.strptime(str(value), "%Y-%m-%d").date()
+        except Exception:
+            try:
+                return datetime.strptime(str(value), "%d/%m/%Y").date()
+            except Exception:
+                return fallback
+
+    user_options = []
+    if not users_df.empty and "Username" in users_df.columns:
+        user_options = [
+            "Select user",
+            *users_df["Username"].dropna().astype(str).str.strip().tolist(),
+        ]
+
+    asset_options = []
+    if not assets_df.empty and "Asset ID" in assets_df.columns:
+        asset_options = [
+            "Select asset",
+            *assets_df["Asset ID"].dropna().astype(str).str.strip().tolist(),
+        ]
+
+    with tab1:
+        st.markdown(style_block, unsafe_allow_html=True)
+
+        if "assignment_success_message" in st.session_state:
+            st.success(st.session_state["assignment_success_message"])
+            del st.session_state["assignment_success_message"]
+
+        if "assignment_form_key" not in st.session_state:
+            st.session_state["assignment_form_key"] = 0
+
+        form_key = st.session_state["assignment_form_key"]
+
+        with st.form(f"assignment_form_{form_key}"):
+            auto_generate = st.checkbox(
+                "Auto-generate Assignment ID",
+                value=True,
+                key=f"assignment_auto_{form_key}",
+            )
+            if auto_generate:
+                if "generated_assignment_id" not in st.session_state:
+                    st.session_state["generated_assignment_id"] = generate_assignment_id()
+                assignment_id = st.text_input(
+                    "Assignment ID *",
+                    value=st.session_state["generated_assignment_id"],
+                    disabled=True,
+                    key=f"assignment_id_{form_key}",
+                )
+            else:
+                assignment_id = st.text_input(
+                    "Assignment ID *",
+                    key=f"assignment_manual_id_{form_key}",
+                )
+                if "generated_assignment_id" in st.session_state:
+                    del st.session_state["generated_assignment_id"]
+
+            if user_options:
+                username = st.selectbox(
+                    "Username *",
+                    user_options,
+                    key=f"assignment_user_{form_key}",
+                )
+            else:
+                username = st.text_input(
+                    "Username *",
+                    key=f"assignment_user_text_{form_key}",
+                )
+                st.warning("No users found. Please add users first.")
+
+            if asset_options:
+                asset_id = st.selectbox(
+                    "Asset ID *",
+                    asset_options,
+                    key=f"assignment_asset_{form_key}",
+                )
+            else:
+                asset_id = st.text_input(
+                    "Asset ID *",
+                    key=f"assignment_asset_text_{form_key}",
+                )
+                if assets_df.empty:
+                    st.warning("No assets found. Please add assets first.")
+
+            assignment_date = st.date_input(
+                "Assignment Date *",
+                value=datetime.now().date(),
+                key=f"assignment_date_{form_key}",
+            )
+            include_return = st.checkbox(
+                "Specify a return date",
+                value=False,
+                key=f"assignment_include_return_{form_key}",
+            )
+            return_date = None
+            if include_return:
+                return_date = st.date_input(
+                    "Return Date",
+                    value=assignment_date,
+                    key=f"assignment_return_date_{form_key}",
+                )
+
+            submitted = st.form_submit_button(
+                "Add Assignment",
+                use_container_width=True,
+                type="primary",
+            )
+
+            if submitted:
+                if not assignment_id:
+                    st.error("Please provide an Assignment ID")
+                elif user_options and username == "Select user":
+                    st.error("Please select a Username")
+                elif not username:
+                    st.error("Please provide a Username")
+                elif asset_options and asset_id == "Select asset":
+                    st.error("Please select an Asset")
+                elif not asset_id:
+                    st.error("Please provide an Asset ID")
+                else:
+                    data_map = {
+                        "Assignment ID": assignment_id,
+                        "Username": username,
+                        "Asset ID": asset_id,
+                        "Assignment Date": assignment_date.strftime("%Y-%m-%d"),
+                        "Return Date": return_date.strftime("%Y-%m-%d") if return_date else "",
+                    }
+                    column_order = (
+                        list(assignments_df.columns)
+                        if not assignments_df.empty
+                        else list(data_map.keys())
+                    )
+                    data = [data_map.get(col, "") for col in column_order]
+                    with st.spinner("Saving assignment..."):
+                        if append_data(SHEETS["assignments"], data):
+                            if "generated_assignment_id" in st.session_state:
+                                del st.session_state["generated_assignment_id"]
+                            st.session_state["assignment_success_message"] = (
+                                f"✅ Assignment '{assignment_id}' added successfully!"
+                            )
+                            st.session_state["assignment_form_key"] += 1
+                            if "assignment_search" in st.session_state:
+                                del st.session_state["assignment_search"]
+                            st.rerun()
+                        else:
+                            st.error("Failed to save assignment")
+
+    with tab2:
+        user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+        is_admin = str(user_role).lower() == "admin"
+
+        if not assignments_df.empty:
+            search_term = st.text_input(
+                "🔍 Search Assignments",
+                placeholder="Search by assignment ID, username, or asset...",
+                key="assignment_search",
+            )
+
+            filtered_df = assignments_df.copy()
+            if search_term:
+                term = search_term.strip().lower()
+                filtered_df = filtered_df[
+                    filtered_df.apply(
+                        lambda row: term in " ".join(row.astype(str).str.lower()),
+                        axis=1,
+                    )
+                ]
+
+            if filtered_df.empty:
+                if search_term:
+                    st.warning("No assignments match your search.")
+                else:
+                    st.info("No assignments found. Add one using the 'Add Assignment' tab.")
+            else:
+                field_headers = [
+                    "**Assignment ID**",
+                    "**Username**",
+                    "**Asset ID**",
+                    "**Assignment Date**",
+                    "**Return Date**",
+                ]
+                if is_admin:
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 1])
+                else:
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1])
+                for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
+                    with col_widget:
+                        st.write(header)
+                with header_cols[len(field_headers)]:
+                    st.write("**Edit**")
+                if is_admin:
+                    with header_cols[-1]:
+                        st.write("**Delete**")
+                st.divider()
+
+                for idx, row in filtered_df.iterrows():
+                    if (
+                        "Assignment ID" in assignments_df.columns
+                        and not assignments_df[
+                            assignments_df["Assignment ID"].astype(str) == str(row.get("Assignment ID", ""))
+                        ].empty
+                    ):
+                        original_idx = int(
+                            assignments_df[
+                                assignments_df["Assignment ID"].astype(str)
+                                == str(row.get("Assignment ID", ""))
+                            ].index[0]
+                        )
+                    else:
+                        original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
+
+                    cols = st.columns([2, 2, 2, 2, 2, 1, 1]) if is_admin else st.columns([2, 2, 2, 2, 2, 1])
+                    display_values = [
+                        row.get("Assignment ID", "N/A"),
+                        row.get("Username", "N/A"),
+                        row.get("Asset ID", "N/A"),
+                        row.get("Assignment Date", ""),
+                        row.get("Return Date", ""),
+                    ]
+                    for col_widget, value in zip(cols[: len(display_values)], display_values):
+                        with col_widget:
+                            st.write(value if value not in ("", None) else "N/A")
+
+                    edit_placeholder = cols[len(display_values)]
+                    with edit_placeholder:
+                        if st.button("✏️", key=f"assignment_edit_{row.get('Assignment ID', idx)}"):
+                            st.session_state["edit_assignment_id"] = row.get("Assignment ID", "")
+                            st.session_state["edit_assignment_idx"] = original_idx
+                            st.rerun()
+
+                    if is_admin:
+                        with cols[-1]:
+                            if st.button(
+                                "🗑️",
+                                key=f"assignment_delete_{row.get('Assignment ID', idx)}",
+                            ):
+                                if delete_data(SHEETS["assignments"], original_idx):
+                                    st.session_state["assignment_success_message"] = (
+                                        f"🗑️ Assignment '{row.get('Assignment ID', '')}' deleted."
+                                    )
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete assignment")
+
+                    st.divider()
+
+        else:
+            st.info("No assignments found. Add one using the 'Add Assignment' tab.")
+
+        if (
+            "edit_assignment_id" in st.session_state
+            and st.session_state["edit_assignment_id"]
+        ):
+            edit_id = st.session_state["edit_assignment_id"]
+            edit_idx = st.session_state.get("edit_assignment_idx", 0)
+            edit_row = assignments_df[assignments_df.get("Assignment ID", pd.Series()).astype(str) == str(edit_id)]
+
+            if not edit_row.empty:
+                record = edit_row.iloc[0]
+                st.subheader(f"Edit Assignment: {edit_id}")
+                with st.form(f"edit_assignment_form_{edit_id}"):
+                    if user_options:
+                        try:
+                            default_user_idx = user_options.index(record.get("Username", ""))
+                        except ValueError:
+                            default_user_idx = 0
+                        username_new = st.selectbox(
+                            "Username *",
+                            user_options,
+                            index=default_user_idx,
+                        )
+                    else:
+                        username_new = st.text_input(
+                            "Username *",
+                            value=record.get("Username", ""),
+                        )
+
+                    if asset_options:
+                        try:
+                            default_asset_idx = asset_options.index(record.get("Asset ID", ""))
+                        except ValueError:
+                            default_asset_idx = 0
+                        asset_id_new = st.selectbox(
+                            "Asset ID *",
+                            asset_options,
+                            index=default_asset_idx,
+                        )
+                    else:
+                        asset_id_new = st.text_input(
+                            "Asset ID *",
+                            value=record.get("Asset ID", ""),
+                        )
+
+                    assignment_date_new = st.date_input(
+                        "Assignment Date *",
+                        value=parse_date_value(record.get("Assignment Date")),
+                    )
+                    include_return = st.checkbox(
+                        "Specify a return date",
+                        value=bool(record.get("Return Date")),
+                    )
+                    return_date_new = None
+                    if include_return:
+                        return_date_new = st.date_input(
+                            "Return Date",
+                            value=parse_date_value(record.get("Return Date")),
+                        )
+
+                    col_update, col_cancel = st.columns(2)
+                    with col_update:
+                        if st.form_submit_button("Update", use_container_width=True):
+                            if user_options and username_new == "Select user":
+                                st.error("Please select a Username")
+                            elif not username_new:
+                                st.error("Please provide a Username")
+                            elif asset_options and asset_id_new == "Select asset":
+                                st.error("Please select an Asset")
+                            elif not asset_id_new:
+                                st.error("Please provide an Asset ID")
+                            else:
+                                update_map = {
+                                    "Assignment ID": edit_id,
+                                    "Username": username_new,
+                                    "Asset ID": asset_id_new,
+                                    "Assignment Date": assignment_date_new.strftime("%Y-%m-%d"),
+                                    "Return Date": return_date_new.strftime("%Y-%m-%d") if return_date_new else "",
+                                }
+                                column_order = list(assignments_df.columns)
+                                updated_row = [update_map.get(col, record.get(col, "")) for col in column_order]
+                                if update_data(SHEETS["assignments"], int(edit_idx), updated_row):
+                                    st.session_state["assignment_success_message"] = (
+                                        f"✅ Assignment '{edit_id}' updated successfully!"
+                                    )
+                                    st.session_state.pop("edit_assignment_id", None)
+                                    st.session_state.pop("edit_assignment_idx", None)
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to update assignment")
+                    with col_cancel:
+                        if st.form_submit_button("Cancel", use_container_width=True):
+                            st.session_state.pop("edit_assignment_id", None)
+                            st.session_state.pop("edit_assignment_idx", None)
+                            st.rerun()
 
 
 def user_management_form():
