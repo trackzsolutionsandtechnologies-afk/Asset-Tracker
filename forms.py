@@ -1590,6 +1590,13 @@ def asset_transfer_form():
     assets_df = read_data(SHEETS["assets"])
     locations_df = read_data(SHEETS["locations"])
     users_df = read_data(SHEETS["users"])
+
+    asset_location_col = None
+    if not assets_df.empty:
+        for col in assets_df.columns:
+            if str(col).strip().lower() in {"location", "location name", "current location"}:
+                asset_location_col = col
+                break
     
     tab1, tab2 = st.tabs(["New Transfer", "View Transfers"])
     
@@ -1675,8 +1682,14 @@ def asset_transfer_form():
                                 row_index = int(asset_row.index[0])
                                 column_order = list(assets_df.columns)
                                 asset_series = asset_row.iloc[0].copy()
-                                if "Location" in column_order:
-                                    asset_series.loc["Location"] = to_location
+                                location_column = asset_location_col
+                                if not location_column or location_column not in column_order:
+                                    for candidate in column_order:
+                                        if str(candidate).strip().lower().startswith("location"):
+                                            location_column = candidate
+                                            break
+                                if location_column and location_column in column_order:
+                                    asset_series.loc[location_column] = to_location
                                 asset_series = asset_series.reindex(column_order, fill_value="")
                                 asset_data = ["" if pd.isna(val) else val for val in asset_series.tolist()]
                                 update_data(SHEETS["assets"], row_index, asset_data)
