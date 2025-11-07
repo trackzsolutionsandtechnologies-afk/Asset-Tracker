@@ -142,7 +142,7 @@ def main():
     """
     <style>
     [data-testid="stSidebar"] {
-        "background-color": "#2b1542";
+        background: linear-gradient(180deg, #2b1542, #3a2060);
         color: #e4d9f5;
     }
     [data-testid="stSidebar"] * {
