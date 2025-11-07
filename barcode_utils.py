@@ -3,6 +3,7 @@ Barcode utilities for scanning and printing
 """
 import base64
 import streamlit as st
+import streamlit.components.v1 as components
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 import io
@@ -567,6 +568,33 @@ def barcode_print_page():
     """Multiple barcode printing page"""
     st.header("🖨️ Print Multiple Barcodes")
     
+    layout_bytes = st.session_state.get("barcode_layout_bytes")
+    if st.button("Create Print Layout", use_container_width=True):
+        if layout_bytes:
+            encoded = base64.b64encode(layout_bytes).decode()
+            components.html(
+                f"""
+                <script>
+                (function() {{
+                    const imageData = "data:image/png;base64,{encoded}";
+                    const w = window.open("", "_blank");
+                    if (w) {{
+                        w.document.write('<html><head><title>Print Barcodes</title></head>' +
+                                         '<body style="margin:0;display:flex;justify-content:center;align-items:center;background:#fff;">' +
+                                         '<img src="' + imageData + '" style="width:100%;height:auto;" onload="window.print();window.onafterprint=function(){{window.close();}}" />' +
+                                         '</body></html>');
+                        w.document.close();
+                    }} else {{
+                        alert('Please allow pop-ups to print the barcode layout.');
+                    }}
+                }})();
+                </script>
+                """,
+                height=0,
+            )
+        else:
+            st.warning("Generate barcodes first to create a print layout.")
+
     assets_df = read_data(SHEETS["assets"])
     
     if assets_df.empty:
@@ -609,6 +637,11 @@ def barcode_print_page():
         asset_options,
         help="Select multiple assets to generate barcodes for printing",
     )
+
+    previous_selection = st.session_state.get("barcode_layout_selection")
+    if previous_selection is not None and selected_assets != previous_selection:
+        st.session_state.pop("barcode_layout_bytes", None)
+    st.session_state["barcode_layout_selection"] = selected_assets
     
     if selected_assets:
         selected_records = [asset_option_map[label] for label in selected_assets if label in asset_option_map]
@@ -649,54 +682,52 @@ def barcode_print_page():
                 st.subheader("Download Barcodes")
                 st.info("Right-click on each barcode image and select 'Save image as...' to download, or use the print function in your browser.")
                 
-                # Create a combined image for printing
-                if st.button("Create Print Layout", use_container_width=True):
-                    # Create a combined image
-                    img_width = 400
-                    img_height = 240
-                    combined_width = img_width * barcodes_per_row
-                    combined_height = img_height * rows
+                # Create a combined image for printing automatically
+                img_width = 400
+                img_height = 240
+                combined_width = img_width * barcodes_per_row
+                combined_height = img_height * rows
+                
+                combined_img = Image.new('RGB', (combined_width, combined_height), 'white')
+                draw = ImageDraw.Draw(combined_img)
+                font = ImageFont.load_default()
+
+                for idx, (asset_id, asset_name, img) in enumerate(barcode_images):
+                    row = idx // barcodes_per_row
+                    col = idx % barcodes_per_row
                     
-                    combined_img = Image.new('RGB', (combined_width, combined_height), 'white')
-                    draw = ImageDraw.Draw(combined_img)
-                    font = ImageFont.load_default()
-
-                    for idx, (asset_id, asset_name, img) in enumerate(barcode_images):
-                        row = idx // barcodes_per_row
-                        col = idx % barcodes_per_row
-                        
-                        # Resize image
-                        img_resized = img.resize((img_width - 20, img_height - 80))
-                        
-                        # Paste image
-                        x_offset = col * img_width + 10
-                        y_offset = row * img_height + 20
-                        combined_img.paste(img_resized, (x_offset, y_offset))
-
-                        label_text = asset_id if not asset_name else f"{asset_id} - {asset_name}"
-                        text_width, text_height = draw.textsize(label_text, font=font)
-                        text_x = x_offset + (img_resized.width - text_width) // 2
-                        text_y = y_offset + img_resized.height + 10
-                        draw.text((text_x, text_y), label_text, fill="black", font=font)
+                    # Resize image
+                    img_resized = img.resize((img_width - 20, img_height - 80))
                     
-                    # Convert to bytes for download
-                    img_buffer = io.BytesIO()
-                    combined_img.save(img_buffer, format='PNG')
-                    img_buffer.seek(0)
-                    layout_bytes = img_buffer.getvalue()
+                    # Paste image
+                    x_offset = col * img_width + 10
+                    y_offset = row * img_height + 20
+                    combined_img.paste(img_resized, (x_offset, y_offset))
 
-                    st.image(combined_img, caption="Print Layout Preview", use_container_width=True)
-                    st.download_button(
-                        label="Download Combined Barcode Sheet",
-                        data=layout_bytes,
-                        file_name="barcodes_print_sheet.png",
-                        mime="image/png",
-                        use_container_width=True,
-                    )
+                    label_text = asset_id if not asset_name else f"{asset_id} - {asset_name}"
+                    text_width, text_height = draw.textsize(label_text, font=font)
+                    text_x = x_offset + max((img_resized.width - text_width) // 2, 0)
+                    text_y = y_offset + img_resized.height + 10
+                    draw.text((text_x, text_y), label_text, fill="black", font=font)
+                
+                img_buffer = io.BytesIO()
+                combined_img.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                layout_bytes = img_buffer.getvalue()
+                st.session_state["barcode_layout_bytes"] = layout_bytes
 
-                    encoded = base64.b64encode(layout_bytes).decode()
-                    st.markdown(
-                        f'<a href="data:image/png;base64,{encoded}" target="_blank">Open Print Layout in New Tab</a>',
-                        unsafe_allow_html=True,
-                    )
-                    st.info("Open the layout in a new tab and use your browser's print dialog (Ctrl+P / Cmd+P).")
+                st.image(combined_img, caption="Print Layout Preview", use_container_width=True)
+                st.download_button(
+                    label="Download Combined Barcode Sheet",
+                    data=layout_bytes,
+                    file_name="barcodes_print_sheet.png",
+                    mime="image/png",
+                    use_container_width=True,
+                )
+
+                encoded = base64.b64encode(layout_bytes).decode()
+                st.markdown(
+                    f'<a href="data:image/png;base64,{encoded}" target="_blank">Open Print Layout in New Tab</a>',
+                    unsafe_allow_html=True,
+                )
+                st.info("Use the 'Create Print Layout' button at the top to open the printable view directly.")
