@@ -73,6 +73,12 @@ def main():
         "📷 Barcode Scanner",
         "🖨️ Print Barcodes"
             ],
+
+
+
+
+
+            
             icons=[""] * 8,  # no Bootstrap icons needed
             menu_icon="💼",
             default_index=0,
@@ -121,6 +127,19 @@ def main():
                 },
             }
         )
+
+# Remove arrow indicators (▸)
+    st.markdown("""
+        <style>
+        ul.nav.nav-pills li a::before {
+            display: none !important;
+            content: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
+
     
     # Main content area
     if selected == "Dashboard":
