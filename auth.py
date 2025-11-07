@@ -178,7 +178,7 @@ def login_page():
             border: 1px solid #444444 !important;
             height: 48px !important;
             padding: 0 16px !important;
-            width: 100% !important;
+            width: 50% !important;
         }
         .login-form-container button[kind="primary"] {
             background-color: #ffffff !important;
