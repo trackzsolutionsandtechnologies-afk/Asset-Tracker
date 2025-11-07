@@ -160,6 +160,24 @@ def reset_password(username: str, token: str, new_password: str) -> bool:
 
 def login_page():
     """Display login page"""
+    # --- Custom CSS for styling ---
+    st.markdown(
+        """
+        <style>
+        [data-testid="stForm"][aria-label="login_form"] button[kind="primary"] {
+            background-color: #e53935 !important;
+            border-color: #e53935 !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+        }
+        [data-testid="stForm"][aria-label="login_form"] button[kind="primary"]:hover {
+            background-color: #c62828 !important;
+            border-color: #c62828 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     st.title("🔐 Asset Tracker - Sign In")
     
     with st.form("login_form"):
