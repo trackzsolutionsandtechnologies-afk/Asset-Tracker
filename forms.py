@@ -1049,6 +1049,8 @@ def asset_master_form():
     """Asset Master Form"""
     st.header("📦 Asset Master Management")
     
+    MAX_ATTACHMENT_CHARS = 48000
+
     assets_df = read_data(SHEETS["assets"])
     locations_df = read_data(SHEETS["locations"])
     suppliers_df = read_data(SHEETS["suppliers"])
@@ -1170,27 +1172,42 @@ def asset_master_form():
                     help="Upload related documents or images.",
                 )
                 attachment = ""
+                attachment_too_large = False
                 if attachment_file is not None:
                     file_content = attachment_file.getvalue()
                     encoded = base64.b64encode(file_content).decode("utf-8")
-                    attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
+                    if len(encoded) > MAX_ATTACHMENT_CHARS:
+                        st.warning("Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).", icon="⚠️")
+                        attachment = ""
+                        attachment_too_large = True
+                    else:
+                        attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
             
             submitted = st.form_submit_button("Add Asset", use_container_width=True)
-            
+
             if submitted:
-                if not asset_id or not asset_name:
+                if attachment_file is not None and attachment == "" and attachment_too_large:
+                    st.error("Attachment was not uploaded because it exceeds the allowed size. Please upload a smaller file.")
+                elif not asset_id or not asset_name:
                     st.error("Please fill in Asset ID and Asset Name")
                 elif not assets_df.empty and asset_id in assets_df["Asset ID"].values:
                     st.error("Asset ID already exists")
                 else:
                     data = [
-                        asset_id, asset_name, category if category != "Select category" else "",
-                        subcategory if subcategory != "None" else "", model_serial,
+                        asset_id,
+                        asset_name,
+                        category if category != "Select category" else "",
+                        subcategory if subcategory != "None" else "",
+                        model_serial,
                         purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
-                        purchase_cost, supplier if supplier != "None" else "",
+                        purchase_cost,
+                        supplier if supplier != "None" else "",
                         location if location != "None" else "",
                         assigned_to if assigned_to != "None" else "",
-                        condition, status, remarks, attachment
+                        condition,
+                        status,
+                        remarks,
+                        attachment,
                     ]
                     if append_data(SHEETS["assets"], data):
                         st.success("Asset added successfully!")
@@ -1401,13 +1418,21 @@ def asset_master_form():
                                 key=f"asset_attachment_{asset_id_value}",
                             )
                             attachment_value = existing_attachment
+                            attachment_too_large_edit = False
                             if attachment_upload is not None:
                                 encoded_edit = base64.b64encode(attachment_upload.getvalue()).decode("utf-8")
-                                attachment_value = f"data:{attachment_upload.type};name={attachment_upload.name};base64,{encoded_edit}"
+                                if len(encoded_edit) > MAX_ATTACHMENT_CHARS:
+                                    st.warning("Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).", icon="⚠️")
+                                    attachment_too_large_edit = True
+                                else:
+                                    attachment_value = f"data:{attachment_upload.type};name={attachment_upload.name};base64,{encoded_edit}"
 
                         col_save, col_cancel = st.columns(2)
                         with col_save:
                             if st.form_submit_button("Update Asset", use_container_width=True):
+                                if attachment_upload is not None and attachment_too_large_edit:
+                                    st.error("Attachment was not updated because it exceeds the allowed size. Please upload a smaller file.")
+                                    st.stop()
                                 updated_data = [
                                     asset_id_value,
                                     new_name,
