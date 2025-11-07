@@ -64,23 +64,26 @@ def main():
         selected = option_menu(
             menu_title="Navigation",
             options=[
-                "🏠 Dashboard",
-        "📍 Location Form",
-        "🚚 Supplier Form",
-        "📁 Category Form",
-        "📦 Asset Master",
-        "🔄 Asset Transfer",
-        "📷 Barcode Scanner",
-        "🖨️ Print Barcodes"
+                "🏠Dashboard",
+                "Location Form",
+                "Supplier Form",
+                "Category Form",
+                "Asset Master",
+                "Asset Transfer",
+                "Barcode Scanner",
+                "Print Barcodes"
             ],
-
-
-
-
-
-            
-            icons=[""] * 8,  # no Bootstrap icons needed
-            menu_icon="💼",
+            icons=[
+                "speedometer2",
+                "geo-alt",
+                "building",
+                "folder",
+                "box-seam",
+                "arrow-left-right",
+                "search",
+                "printer"
+            ],
+            menu_icon="list",
             default_index=0,
             styles={
                 "container": {
@@ -127,19 +130,6 @@ def main():
                 },
             }
         )
-
-# Remove arrow indicators (▸)
-    st.markdown("""
-        <style>
-        ul.nav.nav-pills li a::before {
-            display: none !important;
-            content: none !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-
-
     
     # Main content area
     if selected == "Dashboard":
