@@ -272,6 +272,34 @@ def read_data(sheet_name: str) -> pd.DataFrame:
         st.error(f"Error reading data from {sheet_name}: {str(e)}")
         return pd.DataFrame()
 
+
+def ensure_sheet_headers(sheet_name: str, headers: List[str]) -> bool:
+    """Ensure the worksheet has the expected header row."""
+    worksheet = get_worksheet(sheet_name)
+    if worksheet is None:
+        return False
+
+    try:
+        current_header = worksheet.row_values(1)
+        normalized_current = [str(h).strip().lower() for h in current_header]
+        normalized_expected = [str(h).strip().lower() for h in headers]
+
+        needs_update = False
+        if not current_header:
+            needs_update = True
+        elif len(normalized_current) < len(normalized_expected):
+            needs_update = True
+        elif normalized_current[: len(normalized_expected)] != normalized_expected:
+            needs_update = True
+
+        if needs_update:
+            worksheet.update("1:1", [headers])
+            read_data.clear()
+        return True
+    except Exception as e:
+        st.error(f"Error ensuring headers for {sheet_name}: {str(e)}")
+        return False
+
 def clear_cache():
     """Clear all cached data"""
     read_data.clear()

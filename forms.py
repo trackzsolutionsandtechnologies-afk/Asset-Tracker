@@ -5,7 +5,7 @@ import base64
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from google_sheets import read_data, append_data, update_data, delete_data, find_row
+from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers
 from config import SHEETS, SESSION_KEYS
 from auth import hash_password
 
@@ -2028,6 +2028,18 @@ def asset_maintenance_form():
     """Asset Maintenance Form"""
     st.header("🛠️ Asset Maintenance")
 
+    maintenance_headers = [
+        "Maintenance ID",
+        "Asset ID",
+        "Service Date",
+        "Vendor",
+        "Issue",
+        "Cost",
+        "Warranty Used",
+        "Next Service Date",
+    ]
+    ensure_sheet_headers(SHEETS["maintenance"], maintenance_headers)
+
     maintenance_df = read_data(SHEETS["maintenance"])
     assets_df = read_data(SHEETS["assets"])
 
@@ -2187,7 +2199,7 @@ def asset_maintenance_form():
                     column_order = (
                         list(maintenance_df.columns)
                         if not maintenance_df.empty
-                        else list(data_map.keys())
+                        else maintenance_headers
                     )
                     data = [data_map.get(col, "") for col in column_order]
                     with st.spinner("Saving maintenance record..."):
@@ -2429,6 +2441,15 @@ def employee_assignment_form():
     """Employee Assignment Form"""
     st.header("🧑‍💼 Employee Assignment")
 
+    assignment_headers = [
+        "Assignment ID",
+        "Username",
+        "Asset ID",
+        "Assignment Date",
+        "Return Date",
+    ]
+    ensure_sheet_headers(SHEETS["assignments"], assignment_headers)
+
     assignments_df = read_data(SHEETS["assignments"])
     users_df = read_data(SHEETS["users"])
     assets_df = read_data(SHEETS["assets"])
@@ -2598,7 +2619,7 @@ def employee_assignment_form():
                     column_order = (
                         list(assignments_df.columns)
                         if not assignments_df.empty
-                        else list(data_map.keys())
+                        else assignment_headers
                     )
                     data = [data_map.get(col, "") for col in column_order]
                     with st.spinner("Saving assignment..."):
