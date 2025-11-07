@@ -91,7 +91,12 @@ def main():
             menu_icon="list",
             default_index=0,
             styles={
-                
+                "container": {
+                    "padding": "5px",
+                    "background-color": "#2b1542",  # dark purple background
+                    "border-radius": "1px",
+                   
+                },
                 "icon": {
                     "color": "#c3aed6",  # light lavender icons
                     "font-size": "20px",
@@ -137,7 +142,7 @@ def main():
     """
     <style>
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2b1542, #3a2060);
+        "background-color": "#2b1542";
         color: #e4d9f5;
     }
     [data-testid="stSidebar"] * {
