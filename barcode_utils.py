@@ -5,7 +5,7 @@ import base64
 import streamlit as st
 import streamlit.components.v1 as components
 import qrcode
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps
 import io
 import pandas as pd
 import barcode
@@ -74,43 +74,93 @@ def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image
         st.error(f"Error generating barcode: {str(e)}")
         return None
 
-def decode_barcode_from_image(image):
-    """Decode barcode from image"""
+def _generate_image_variants(image: Image.Image) -> list[np.ndarray]:
+    """Create multiple pre-processed variants of the image to improve decoding success."""
+    variants: list[np.ndarray] = []
+    base = image.convert("RGB")
+    variants.append(np.array(base))
+
     try:
+        contrast_img = ImageEnhance.Contrast(base).enhance(2.0)
+        variants.append(np.array(contrast_img))
+    except Exception:
+        pass
+
+    try:
+        sharpen_img = ImageEnhance.Sharpness(base).enhance(2.0)
+        variants.append(np.array(sharpen_img))
+    except Exception:
+        pass
+
+    try:
+        grayscale = ImageOps.grayscale(base)
+        variants.append(np.array(grayscale))
+        inverted = ImageOps.invert(grayscale)
+        variants.append(np.array(inverted))
+    except Exception:
+        pass
+
+    try:
+        resized = base.resize((int(base.width * 1.5), int(base.height * 1.5)))
+        variants.append(np.array(resized))
+    except Exception:
+        pass
+
+    for angle in (90, -90, 180):
+        try:
+            rotated = base.rotate(angle, expand=True)
+            variants.append(np.array(rotated))
+        except Exception:
+            pass
+
+    # Ensure we at least have the original image
+    if not variants:
+        variants.append(np.array(base))
+
+    return variants
+
+
+def decode_barcode_from_image(image):
+    """Decode barcode from image using pyzbar or OpenCV with multiple preprocessing variants."""
+    try:
+        variants = _generate_image_variants(image)
+
         if PYZBAR_AVAILABLE:
-            # Convert PIL Image to numpy array
-            img_array = np.array(image)
-            # Decode barcodes
-            decoded_objects = pyzbar_decode(img_array)
-            if decoded_objects:
-                # Return the first decoded barcode
-                return decoded_objects[0].data.decode('utf-8')
-        elif CV2_AVAILABLE:
-            import cv2  # type: ignore
-            img_array = np.array(image)
-            # OpenCV barcode detector (requires opencv-contrib)
-            detector = getattr(cv2, "barcode_BarcodeDetector", None)
-            if detector is not None:
+            for variant in variants:
                 try:
-                    barcode_detector = detector()
-                    retval, decoded_info, _ = barcode_detector.detectAndDecode(img_array)
-                    if retval:
-                        if isinstance(decoded_info, (list, tuple)):
-                            for info in decoded_info:
-                                if info:
-                                    return info
-                        elif decoded_info:
-                            return decoded_info
+                    decoded_objects = pyzbar_decode(variant)
+                    if decoded_objects:
+                        return decoded_objects[0].data.decode("utf-8")
+                except Exception:
+                    continue
+
+        if CV2_AVAILABLE:
+            import cv2  # type: ignore
+            detector = getattr(cv2, "barcode_BarcodeDetector", None)
+            qr_detector = cv2.QRCodeDetector()
+
+            for variant in variants:
+                try:
+                    img_array = variant
+                    if detector is not None:
+                        barcode_detector = detector()
+                        retval, decoded_info, _ = barcode_detector.detectAndDecode(img_array)
+                        if retval:
+                            if isinstance(decoded_info, (list, tuple)):
+                                for info in decoded_info:
+                                    if info:
+                                        return info
+                            elif decoded_info:
+                                return decoded_info
                 except Exception:
                     pass
-            # Fallback to QRCode detector (works for QR codes only)
-            try:
-                qr_detector = cv2.QRCodeDetector()
-                data, points, _ = qr_detector.detectAndDecode(img_array)
-                if data:
-                    return data
-            except Exception:
-                pass
+
+                try:
+                    data, points, _ = qr_detector.detectAndDecode(img_array)
+                    if data:
+                        return data
+                except Exception:
+                    continue
     except Exception as e:
         st.error(f"Error decoding barcode: {str(e)}")
     return None
@@ -133,15 +183,15 @@ def barcode_scanner_page():
         # Option to choose input method
         input_method = st.radio(
             "Input Method",
-            ["📷 Camera Scan (Mobile)", "⌨️ Manual Entry"],
+            ["📷 Camera Scan", "🖼️ Upload Barcode Image", "⌨️ Manual Entry"],
             horizontal=True,
             key="barcode_input_method"
         )
         
         scanned_barcode = None
         
-        if input_method == "📷 Camera Scan (Mobile)":
-            st.info("📱 Use your mobile device camera to scan a barcode. Make sure to grant camera permissions when prompted.")
+        if input_method == "📷 Camera Scan":
+            st.info("📷 Use your device camera to capture the barcode. Make sure to grant camera permissions when prompted.")
             
             if not PYZBAR_AVAILABLE and not CV2_AVAILABLE:
                 st.warning("⚠️ Barcode decoding libraries are not available. Please install `pyzbar` or `opencv-contrib-python-headless` on the server.")
@@ -168,6 +218,39 @@ def barcode_scanner_page():
                             st.warning("⚠️ Could not decode barcode. Please try again or use manual entry.")
                             # Show the captured image for debugging
                             st.image(img, caption="Captured Image - Try scanning again", use_container_width=True)
+        elif input_method == "🖼️ Upload Barcode Image":
+            st.info("🖼️ Upload an image file containing the barcode to decode it.")
+
+            if not PYZBAR_AVAILABLE and not CV2_AVAILABLE:
+                st.warning("⚠️ Barcode decoding libraries are not available. Please install `pyzbar` or `opencv-contrib-python-headless` on the server.")
+                if PYZBAR_IMPORT_ERROR:
+                    st.caption(f"pyzbar import error: {PYZBAR_IMPORT_ERROR}")
+                st.info("You can still use manual entry below.")
+            else:
+                uploaded_image = st.file_uploader(
+                    "Upload Barcode Image",
+                    type=["png", "jpg", "jpeg", "webp"],
+                    key="barcode_image_uploader",
+                    help="Provide a clear image of the barcode or QR code."
+                )
+                if uploaded_image is not None:
+                    try:
+                        img = Image.open(uploaded_image)
+                        if img.mode not in ("RGB", "RGBA"):
+                            img = img.convert("RGB")
+                        with st.spinner("Decoding barcode..."):
+                            decoded_barcode = decode_barcode_from_image(img)
+
+                        if decoded_barcode:
+                            scanned_barcode = decoded_barcode
+                            st.success(f"✅ Barcode decoded: {decoded_barcode}")
+                            st.session_state["scanned_barcode"] = decoded_barcode
+                        else:
+                            st.warning("⚠️ Could not decode the uploaded barcode image. Please try a clearer image or use manual entry.")
+                            st.image(img, caption="Uploaded Image", use_container_width=True)
+                    except Exception as err:
+                        st.error(f"Error processing image: {err}")
+
         else:
             # Manual entry
             scanned_barcode = st.text_input(
