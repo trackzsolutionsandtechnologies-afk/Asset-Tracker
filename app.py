@@ -141,6 +141,8 @@ def main():
     st.markdown(
     """
     <style>
+    /* Import DIN font (fallback to sans-serif) */
+    @import url('https://fonts.cdnfonts.com/css/d-din');
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #2b1542, #3a2060);
         color: #e4d9f5;
