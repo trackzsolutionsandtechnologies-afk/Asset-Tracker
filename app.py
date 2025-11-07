@@ -138,22 +138,54 @@ def main():
                 },
             }
         )
+
     st.markdown(
-    """
-    <style>
-    /* Import DIN font (fallback to sans-serif) */
-    @import url('https://fonts.cdnfonts.com/css/d-din');
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2b1542, #3a2060);
-        color: #e4d9f5;
-    }
-    [data-testid="stSidebar"] * {
-        color: #e4d9f5 !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <style>
+        @import url('https://fonts.cdnfonts.com/css/d-din');
+        /* Remove padding, margin, and border radius from sidebar container */
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #2b1542, #3a2060);
+            color: #e4d9f5;
+            font-family: 'D-DIN', sans-serif;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+
+        /* Apply DIN font and consistent text color */
+        [data-testid="stSidebar"] * {
+            font-family: 'D-DIN', sans-serif !important;
+            color: #e4d9f5 !important;
+        }
+
+        /* Remove inner padding from sidebar content area */
+        section[data-testid="stSidebarNav"] {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        /* Remove extra white edges Streamlit sometimes adds */
+        div[data-testid="stSidebarUserContent"] {
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Optional: make the scrollbar match theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #5e3a9c;
+            border-radius: 10px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
     # Main content area
     if selected == "Dashboard":
