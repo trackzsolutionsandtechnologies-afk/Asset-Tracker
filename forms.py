@@ -1670,11 +1670,15 @@ def asset_transfer_form():
                     if append_data(SHEETS["transfers"], data):
                         # Update asset location
                         if not assets_df.empty:
-                            asset_row = assets_df[assets_df["Asset ID"] == asset_id]
+                            asset_row = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id)]
                             if not asset_row.empty:
                                 row_index = int(asset_row.index[0])
-                                asset_data = asset_row.iloc[0].tolist()
-                                asset_data[8] = to_location  # Update location field
+                                column_order = list(assets_df.columns)
+                                asset_series = asset_row.iloc[0].copy()
+                                if "Location" in column_order:
+                                    asset_series.loc["Location"] = to_location
+                                asset_series = asset_series.reindex(column_order, fill_value="")
+                                asset_data = ["" if pd.isna(val) else val for val in asset_series.tolist()]
                                 update_data(SHEETS["assets"], row_index, asset_data)
                         
                         st.success("Transfer created successfully!")
