@@ -208,12 +208,14 @@ def location_form():
                 is_admin = user_role.lower() == "admin"
                 
                 # Table header - adjust columns based on admin status
-                if is_admin:
-                    header_cols = st.columns([2, 3, 3, 1, 1, 1])
-                else:
-                    header_cols = st.columns([2, 3, 3, 1, 1])
-
-                header_labels = ["**Location ID**", "**Location Name**", "**Department**", "**View**", "**Edit**"]
+                header_cols = st.columns([2, 3, 3, 1, 1] + ([1] if is_admin else []))
+                header_labels = [
+                    "**Location ID**",
+                    "**Location Name**",
+                    "**Department**",
+                    "**View**",
+                    "**Edit**",
+                ]
                 if is_admin:
                     header_labels.append("**Delete**")
 
@@ -231,10 +233,9 @@ def location_form():
                     else:
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
-                    if is_admin:
-                        col1, col2, col3, col_view, col_edit, col_delete = st.columns([2, 3, 3, 1, 1, 1])
-                    else:
-                        col1, col2, col3, col_view, col_edit = st.columns([2, 3, 3, 1, 1])
+                    cols = st.columns([2, 3, 3, 1, 1] + ([1] if is_admin else []))
+                    col1, col2, col3, col_view, col_edit = cols[:5]
+                    col_delete = cols[5] if is_admin else None
 
                     with col1:
                         st.write(row.get('Location ID', 'N/A'))
@@ -263,6 +264,7 @@ def location_form():
                             st.rerun()
                     # Only show delete button for admin users
                     if is_admin:
+                        col_delete = cols[-1]
                         with col_delete:
                             delete_key = f"delete_loc_{row.get('Location ID', idx)}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
@@ -279,6 +281,8 @@ def location_form():
                                     st.error("Failed to delete location")
                     
                     st.divider()
+
+                _render_view_modal("location")
             elif search_term:
                 # Search returned no results, but search was performed
                 pass
@@ -454,23 +458,17 @@ def supplier_form():
                 
                 # Table header - adjust columns based on admin status
                 if is_admin:
-                    header_col1, header_col2, header_col3, header_col4 = st.columns([3, 4, 1, 1])
-                    with header_col1:
-                        st.write("**Supplier ID**")
-                    with header_col2:
-                        st.write("**Supplier Name**")
-                    with header_col3:
-                        st.write("**Edit**")
-                    with header_col4:
-                        st.write("**Delete**")
+                    header_cols = st.columns([3, 4, 1, 1, 1])
                 else:
-                    header_col1, header_col2, header_col3 = st.columns([3, 4, 1])
-                    with header_col1:
-                        st.write("**Supplier ID**")
-                    with header_col2:
-                        st.write("**Supplier Name**")
-                    with header_col3:
-                        st.write("**Edit**")
+                    header_cols = st.columns([3, 4, 1, 1])
+
+                header_labels = ["**Supplier ID**", "**Supplier Name**", "**View**", "**Edit**"]
+                if is_admin:
+                    header_labels.append("**Delete**")
+
+                for col_widget, label in zip(header_cols, header_labels):
+                    with col_widget:
+                        st.write(label)
                 st.divider()
 
                 # Display table with edit/delete buttons
@@ -483,15 +481,27 @@ def supplier_form():
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
                     if is_admin:
-                        col1, col2, col3, col4 = st.columns([3, 4, 1, 1])
+                        col1, col2, col_view, col_edit, col_delete = st.columns([3, 4, 1, 1, 1])
                     else:
-                        col1, col2, col3 = st.columns([3, 4, 1])
+                        col1, col2, col_view, col_edit = st.columns([3, 4, 1, 1])
 
                     with col1:
                         st.write(row.get('Supplier ID', 'N/A'))
                     with col2:
                         st.write(row.get('Supplier Name', 'N/A'))
-                    with col3:
+                    with col_view:
+                        if st.button("👁️", key=f"supplier_view_{row.get('Supplier ID', idx)}", use_container_width=True, help="View details"):
+                            record = {
+                                "Supplier ID": row.get("Supplier ID", ""),
+                                "Supplier Name": row.get("Supplier Name", ""),
+                            }
+                            _open_view_modal(
+                                "supplier",
+                                f"Supplier Details: {row.get('Supplier Name', '')}",
+                                record,
+                                ["Supplier ID", "Supplier Name"],
+                            )
+                    with col_edit:
                         edit_key = f"edit_sup_{row.get('Supplier ID', idx)}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this supplier"):
                             st.session_state["edit_supplier_id"] = row.get('Supplier ID', '')
@@ -499,7 +509,7 @@ def supplier_form():
                             st.rerun()
                     # Only show delete button for admin users
                     if is_admin:
-                        with col4:
+                        with col_delete:
                             delete_key = f"delete_sup_{row.get('Supplier ID', idx)}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this supplier"):
                                 supplier_name_to_delete = row.get('Supplier Name', 'Unknown')
@@ -515,6 +525,7 @@ def supplier_form():
                                     st.error("Failed to delete supplier")
                     
                     st.divider()
+                _render_view_modal("supplier")
             elif search_term:
                 # Search returned no results, but search was performed
                 pass
@@ -787,24 +798,13 @@ def category_form():
                 is_admin = user_role.lower() == "admin"
                 
                 # Table header - adjust columns based on admin status
+                header_cols = st.columns([3, 4, 1, 1] + ([1] if is_admin else []))
+                header_labels = ["**Category ID**", "**Category Name**", "**View**", "**Edit**"]
                 if is_admin:
-                    header_col1, header_col2, header_col3, header_col4 = st.columns([3, 4, 1, 1])
-                    with header_col1:
-                        st.write("**Category ID**")
-                    with header_col2:
-                        st.write("**Category Name**")
-                    with header_col3:
-                        st.write("**Edit**")
-                    with header_col4:
-                        st.write("**Delete**")
-                else:
-                    header_col1, header_col2, header_col3 = st.columns([3, 4, 1])
-                    with header_col1:
-                        st.write("**Category ID**")
-                    with header_col2:
-                        st.write("**Category Name**")
-                    with header_col3:
-                        st.write("**Edit**")
+                    header_labels.append("**Delete**")
+                for col_widget, label in zip(header_cols, header_labels):
+                    with col_widget:
+                        st.write(label)
                 st.divider()
 
                 # Display table with edit/delete buttons
@@ -816,24 +816,35 @@ def category_form():
                     else:
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
-                    if is_admin:
-                        col1, col2, col3, col4 = st.columns([3, 4, 1, 1])
-                    else:
-                        col1, col2, col3 = st.columns([3, 4, 1])
+                    cols = st.columns([3, 4, 1, 1] + ([1] if is_admin else []))
+                    col1, col2, col_view, col_edit = cols[:4]
+                    col_delete = cols[4] if is_admin else None
 
                     with col1:
                         st.write(row.get('Category ID', 'N/A'))
                     with col2:
                         st.write(row.get('Category Name', 'N/A'))
-                    with col3:
+                    with col_view:
+                        if st.button("👁️", key=f"category_view_{row.get('Category ID', idx)}", use_container_width=True, help="View details"):
+                            record = {
+                                "Category ID": row.get("Category ID", ""),
+                                "Category Name": row.get("Category Name", ""),
+                            }
+                            _open_view_modal(
+                                "category",
+                                f"Category Details: {row.get('Category Name', '')}",
+                                record,
+                                ["Category ID", "Category Name"],
+                            )
+                    with col_edit:
                         edit_key = f"edit_cat_{row.get('Category ID', idx)}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this category"):
                             st.session_state["edit_category_id"] = row.get('Category ID', '')
                             st.session_state["edit_category_idx"] = int(original_idx)  # Ensure it's a Python int
                             st.rerun()
                     # Only show delete button for admin users
-                    if is_admin:
-                        with col4:
+                    if is_admin and col_delete is not None:
+                        with col_delete:
                             delete_key = f"delete_cat_{row.get('Category ID', idx)}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this category"):
                                 category_name_to_delete = row.get('Category Name', 'Unknown')
@@ -2845,11 +2856,12 @@ def employee_assignment_form():
                     "**Status**",
                     "**Condition**",
                     "**Assignment Date**",
+                    "**View**",
                 ]
                 header_cols = (
-                    st.columns([2, 2, 2, 2, 2, 1, 1])
+                    st.columns([2, 2, 2, 2, 2, 1, 1, 1])
                     if is_admin
-                    else st.columns([2, 2, 2, 2, 2, 1])
+                    else st.columns([2, 2, 2, 2, 2, 1, 1])
                 )
                 for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
                     with col_widget:
@@ -2878,9 +2890,9 @@ def employee_assignment_form():
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
                     cols = (
-                        st.columns([2, 2, 2, 2, 2, 1, 1])
+                        st.columns([2, 2, 2, 2, 2, 1, 1, 1])
                         if is_admin
-                        else st.columns([2, 2, 2, 2, 2, 1])
+                        else st.columns([2, 2, 2, 2, 2, 1, 1])
                     )
                     display_values = [
                         row.get("Asset ID", "N/A"),
@@ -2893,7 +2905,39 @@ def employee_assignment_form():
                         with col_widget:
                             st.write(value if value not in ("", None) else "N/A")
 
-                    edit_placeholder = cols[len(display_values)]
+                    col_view = cols[len(display_values)]
+                    edit_placeholder = cols[len(display_values) + 1]
+                    with col_view:
+                        if st.button("👁️", key=f"assignment_view_{row.get('Assignment ID', idx)}", use_container_width=True, help="View details"):
+                            record = {
+                                "Assignment ID": row.get("Assignment ID", ""),
+                                "Username": row.get("Username", ""),
+                                "Asset ID": row.get("Asset ID", ""),
+                                "Issued By": row.get("Issued By", ""),
+                                "Assignment Date": row.get("Assignment Date", ""),
+                                "Expected Return Date": row.get("Expected Return Date", ""),
+                                "Return Date": row.get("Return Date", ""),
+                                "Status": row.get("Status", ""),
+                                "Condition on Issue": row.get("Condition on Issue", ""),
+                                "Remarks": row.get("Remarks", ""),
+                            }
+                            _open_view_modal(
+                                "assignment",
+                                f"Assignment Details: {row.get('Assignment ID', '')}",
+                                record,
+                                [
+                                    "Assignment ID",
+                                    "Username",
+                                    "Asset ID",
+                                    "Issued By",
+                                    "Assignment Date",
+                                    "Expected Return Date",
+                                    "Return Date",
+                                    "Status",
+                                    "Condition on Issue",
+                                    "Remarks",
+                                ],
+                            )
                     with edit_placeholder:
                         if st.button("✏️", key=f"assignment_edit_{row.get('Assignment ID', idx)}"):
                             st.session_state["edit_assignment_id"] = row.get("Assignment ID", "")
@@ -2901,7 +2945,8 @@ def employee_assignment_form():
                             st.rerun()
 
                     if is_admin:
-                        with cols[-1]:
+                        col_delete = cols[-1]
+                        with col_delete:
                             if st.button(
                                 "🗑️",
                                 key=f"assignment_delete_{row.get('Assignment ID', idx)}",
