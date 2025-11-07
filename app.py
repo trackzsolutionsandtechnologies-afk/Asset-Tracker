@@ -94,7 +94,7 @@ def main():
                 "container": {
                     "padding": "5px",
                     "background-color": "#2b1542",  # dark purple background
-                    "border-radius": "10px",
+                    "border-radius": "1px",
                     "box-shadow": "0 0 12px rgba(0, 0, 0, 0.2)",
                 },
                 "icon": {
