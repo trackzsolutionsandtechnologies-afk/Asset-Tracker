@@ -127,7 +127,7 @@ def main():
             "box-shadow": "0 0 6px rgba(0, 123, 255, 0.4)"
                 },
                 "menu-title": {
-                    "color": "#0d6efd",
+                    "color": "#FF8F8F",
                     "font-size": "18px",
                     "font-weight": "600",
                     "margin-bottom": "10px",
