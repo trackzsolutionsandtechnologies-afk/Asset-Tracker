@@ -164,13 +164,13 @@ def login_page():
     st.markdown(
         """
         <style>
-        div[data-testid="stForm"] button[kind="primary"] {
+        .login-form-wrapper button[kind="primary"] {
             background-color: #e53935 !important;
             border-color: #e53935 !important;
             color: #ffffff !important;
             font-weight: 600 !important;
         }
-        div[data-testid="stForm"] button[kind="primary"]:hover {
+        .login-form-wrapper button[kind="primary"]:hover {
             background-color: #c62828 !important;
             border-color: #c62828 !important;
         }
@@ -178,6 +178,7 @@ def login_page():
         """,
         unsafe_allow_html=True,
     )
+    st.markdown('<div class="login-form-wrapper">', unsafe_allow_html=True)
     st.title("🔐 Asset Tracker - Sign In")
     
     with st.form("login_form"):
@@ -206,6 +207,8 @@ def login_page():
         if forgot_password:
             st.session_state["show_forgot_password"] = True
             st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def forgot_password_page():
     """Display forgot password page"""
