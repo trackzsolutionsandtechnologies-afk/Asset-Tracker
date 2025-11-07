@@ -91,12 +91,7 @@ def main():
             menu_icon="list",
             default_index=0,
             styles={
-                "container": {
-                    "padding": "5px",
-                    "background-color": "#2b1542",  # dark purple background
-                    "border-radius": "1px",
-                   
-                },
+                
                 "icon": {
                     "color": "#c3aed6",  # light lavender icons
                     "font-size": "20px",
