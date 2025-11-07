@@ -161,7 +161,7 @@ def login_page():
         <style>
         [data-testid="stAppViewContainer"] {
             background-color: #ffffff !important;
-            color: #ffffff !important;
+            color: #5C3E94 !important;
         }
         [data-testid="stSidebar"] {
             background-color: transparent !important;
