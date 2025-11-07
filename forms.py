@@ -30,11 +30,15 @@ def _render_view_modal(prefix: str) -> None:
         if not keys:
             st.info("No details available.")
         else:
+            cols = st.columns(2)
+            col_idx = 0
             for key in keys:
                 if key is None:
                     continue
                 value = record.get(key, "")
-                st.write(f"**{key}**: {value if value not in (None, '') else 'N/A'}")
+                with cols[col_idx % 2]:
+                    st.text_input(key, value if value not in (None, "") else "N/A", disabled=True)
+                col_idx += 1
 
         if st.button("Close", key=f"{prefix}_view_close"):
             for suffix in ("_view_open", "_view_record", "_view_title", "_view_order"):
