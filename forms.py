@@ -1164,6 +1164,10 @@ def asset_master_form():
                         st.error("Failed to add asset")
     
     with tab2:
+        if "asset_success_message" in st.session_state:
+            st.success(st.session_state["asset_success_message"])
+            del st.session_state["asset_success_message"]
+
         if not assets_df.empty:
             st.subheader("All Assets")
 
@@ -1190,6 +1194,9 @@ def asset_master_form():
 
             user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
             is_admin = str(user_role).lower() == "admin"
+
+            condition_options = ["Excellent", "Good", "Fair", "Poor", "Damaged"]
+            status_options = ["Active", "Inactive", "Maintenance", "Retired"]
 
             if is_admin:
                 header_cols = st.columns([2, 3, 2, 2, 1, 1])
@@ -1224,43 +1231,135 @@ def asset_master_form():
                     st.write(row.get("Location", "-"))
 
                 if st.session_state.get("edit_asset_id") == asset_id_value:
-                    cols_edit = st.columns([1, 1])
-                    with cols_edit[0]:
-                        edit_form_key = f"asset_edit_form_{asset_id_value}"
-                        with st.form(edit_form_key):
+                    edit_form_key = f"asset_edit_form_{asset_id_value}"
+                    with st.form(edit_form_key):
+                        col_left, col_right = st.columns(2)
+
+                        with col_left:
                             st.text_input("Asset ID", value=asset_id_value, disabled=True)
-                            new_name = st.text_input("Asset Name", value=row.get("Asset Name", ""))
-                            new_category = st.text_input("Category", value=row.get("Category", ""))
-                            new_location = st.text_input("Location", value=row.get("Location", ""))
-                            new_status = st.text_input("Status", value=row.get("Status", ""))
-                            new_condition = st.text_input("Condition", value=row.get("Condition", ""))
+                            new_name = st.text_input("Asset Name *", value=row.get("Asset Name", ""))
 
-                            if st.form_submit_button("Update Asset", use_container_width=True):
-                                updated_row = row.tolist()
+                            if not categories_df.empty:
+                                cat_options = categories_df["Category Name"].tolist()
+                                cat_list = ["Select category"] + cat_options
                                 try:
-                                    updated_row[assets_df.columns.get_loc("Asset Name")] = new_name
-                                    updated_row[assets_df.columns.get_loc("Category")] = new_category
-                                    updated_row[assets_df.columns.get_loc("Location")] = new_location
-                                    if "Status" in assets_df.columns:
-                                        updated_row[assets_df.columns.get_loc("Status")] = new_status
-                                    if "Condition" in assets_df.columns:
-                                        updated_row[assets_df.columns.get_loc("Condition")] = new_condition
-                                except Exception:
-                                    pass
+                                    default_cat_index = cat_list.index(row.get("Category")) if row.get("Category") in cat_list else 0
+                                except ValueError:
+                                    default_cat_index = 0
+                                selected_category = st.selectbox("Category", cat_list, index=default_cat_index)
+                                if selected_category != "Select category":
+                                    category_row = categories_df[categories_df["Category Name"] == selected_category]
+                                    selected_category_id = category_row["Category ID"].iloc[0] if not category_row.empty else ""
+                                else:
+                                    selected_category_id = ""
+                            else:
+                                selected_category = st.text_input("Category", value=row.get("Category", ""))
+                                selected_category_id = ""
 
-                                if update_data(SHEETS["assets"], original_idx, updated_row):
+                            if not subcategories_df.empty and selected_category not in ("Select category", ""):
+                                if not categories_df.empty:
+                                    matching_subcats = subcategories_df[
+                                        (subcategories_df["Category Name"].astype(str) == str(selected_category))
+                                        | (subcategories_df.get("Category ID", pd.Series(dtype=str)).astype(str) == str(selected_category_id))
+                                    ]
+                                else:
+                                    matching_subcats = subcategories_df[subcategories_df["Category Name"].astype(str) == str(selected_category)]
+                                subcat_list = ["None"] + matching_subcats.get("SubCategory Name", pd.Series()).dropna().astype(str).tolist()
+                                try:
+                                    default_subcat_index = subcat_list.index(row.get("Sub Category", row.get("SubCategory Name", "None")))
+                                except ValueError:
+                                    default_subcat_index = 0
+                                selected_subcategory = st.selectbox("Sub Category", subcat_list, index=default_subcat_index)
+                            else:
+                                selected_subcategory = st.text_input("Sub Category", value=row.get("Sub Category", row.get("SubCategory Name", "")))
+
+                            model_serial = st.text_input("Model / Serial No", value=row.get("Model / Serial No", row.get("Model/Serial No", "")))
+
+                            purchase_date_value = row.get("Purchase Date", "")
+                            try:
+                                default_date = datetime.strptime(purchase_date_value, "%Y-%m-%d").date() if purchase_date_value else datetime.now().date()
+                            except Exception:
+                                default_date = datetime.now().date()
+                            new_purchase_date = st.date_input("Purchase Date", value=default_date)
+
+                        with col_right:
+                            purchase_cost = st.number_input(
+                                "Purchase Cost",
+                                min_value=0.0,
+                                value=float(str(row.get("Purchase Cost", 0)).replace(",", "") or 0),
+                                step=0.01,
+                            )
+
+                            if not suppliers_df.empty:
+                                supplier_options = suppliers_df["Supplier Name"].tolist()
+                                supplier_list = ["None"] + supplier_options
+                                try:
+                                    default_supplier_index = supplier_list.index(row.get("Supplier", "None"))
+                                except ValueError:
+                                    default_supplier_index = 0
+                                new_supplier = st.selectbox("Supplier", supplier_list, index=default_supplier_index)
+                            else:
+                                new_supplier = st.text_input("Supplier", value=row.get("Supplier", ""))
+
+                            if not locations_df.empty:
+                                location_options = locations_df["Location Name"].tolist()
+                                location_list = ["None"] + location_options
+                                try:
+                                    default_location_index = location_list.index(row.get("Location", "None"))
+                                except ValueError:
+                                    default_location_index = 0
+                                new_location = st.selectbox("Location", location_list, index=default_location_index)
+                            else:
+                                new_location = st.text_input("Location", value=row.get("Location", ""))
+
+                            assigned_to = st.text_input("Assigned To", value=row.get("Assigned To", ""))
+                            condition = st.selectbox(
+                                "Condition",
+                                condition_options,
+                                index=condition_options.index(str(row.get("Condition", "Good"))) if str(row.get("Condition", "Good")) in condition_options else 1,
+                            )
+                            status = st.selectbox(
+                                "Status",
+                                status_options,
+                                index=status_options.index(str(row.get("Status", "Active"))) if str(row.get("Status", "Active")) in status_options else 0,
+                            )
+                            remarks = st.text_area("Remarks", value=row.get("Remarks", ""))
+                            attachment = st.text_input("Attachment URL", value=row.get("Attachment", ""))
+
+                        col_save, col_cancel = st.columns(2)
+                        with col_save:
+                            if st.form_submit_button("Update Asset", use_container_width=True):
+                                updated_data = [
+                                    asset_id_value,
+                                    new_name,
+                                    selected_category if selected_category not in ("Select category", "") else row.get("Category", ""),
+                                    selected_subcategory if selected_subcategory not in ("None", "") else row.get("Sub Category", row.get("SubCategory Name", "")),
+                                    model_serial,
+                                    new_purchase_date.strftime("%Y-%m-%d"),
+                                    purchase_cost,
+                                    new_supplier if new_supplier != "None" else "",
+                                    new_location if new_location != "None" else "",
+                                    assigned_to,
+                                    condition,
+                                    status,
+                                    remarks,
+                                    attachment,
+                                ]
+
+                                if update_data(SHEETS["assets"], original_idx, updated_data):
                                     st.session_state["asset_success_message"] = f"✅ Asset '{asset_id_value}' updated successfully!"
                                     st.session_state.pop("edit_asset_id", None)
+                                    st.session_state.pop("edit_asset_idx", None)
                                     if "asset_search" in st.session_state:
                                         del st.session_state["asset_search"]
                                     st.rerun()
                                 else:
                                     st.error("Failed to update asset")
-
-                    with cols_edit[1]:
-                        if st.button("Cancel", key=f"asset_cancel_{asset_id_value}", use_container_width=True):
-                            st.session_state.pop("edit_asset_id", None)
-                            st.rerun()
+                        with col_cancel:
+                            if st.form_submit_button("Cancel", use_container_width=True):
+                                st.session_state.pop("edit_asset_id", None)
+                                st.session_state.pop("edit_asset_idx", None)
+                                st.rerun()
                 else:
                     with cols[4]:
                         if st.button("✏️", key=f"asset_edit_{asset_id_value}", use_container_width=True, help="Edit this asset"):
