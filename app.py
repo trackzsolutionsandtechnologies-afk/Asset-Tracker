@@ -138,27 +138,20 @@ def main():
                 },
             }
         )
-    
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+    st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2b1542, #3a2060);
+        color: #e4d9f5;
+    }
+    [data-testid="stSidebar"] * {
+        color: #e4d9f5 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
     # Main content area
     if selected == "Dashboard":
