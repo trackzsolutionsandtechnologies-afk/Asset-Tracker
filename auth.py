@@ -186,7 +186,7 @@ def login_page():
             border: 1px solid #ffffff !important;
         }
         .login-form-container button[kind="primary"]:hover {
-            background-color: #e0e0e0 !important;
+            background-color: #5C3E94 !important;
             color: #000000 !important;
         }
         .login-form-container button[kind="secondary"] {
