@@ -121,7 +121,7 @@ def main():
 
 
                 "nav-link-selected": {
-                   "background-color": "#007bff",
+                   "background-color": "#B7A3E3",
             "color": "white",
             "font-weight": "500",
             "box-shadow": "0 0 6px rgba(0, 123, 255, 0.4)"
