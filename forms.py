@@ -1672,7 +1672,7 @@ def asset_transfer_form():
                         if not assets_df.empty:
                             asset_row = assets_df[assets_df["Asset ID"] == asset_id]
                             if not asset_row.empty:
-                                row_index = asset_row.index[0]
+                                row_index = int(asset_row.index[0])
                                 asset_data = asset_row.iloc[0].tolist()
                                 asset_data[8] = to_location  # Update location field
                                 update_data(SHEETS["assets"], row_index, asset_data)
