@@ -1297,7 +1297,12 @@ def user_management_form():
             st.success(st.session_state["user_success_message"])
             del st.session_state["user_success_message"]
 
-        with st.form("add_user_form"):
+        if "user_form_key" not in st.session_state:
+            st.session_state["user_form_key"] = 0
+
+        form_key = st.session_state["user_form_key"]
+
+        with st.form(f"add_user_form_{form_key}"):
             username = st.text_input("Username *")
             password = st.text_input("Password *", type="password")
             confirm_password = st.text_input("Confirm Password *", type="password")
@@ -1318,6 +1323,9 @@ def user_management_form():
                     success = append_data(SHEETS["users"], [username, hashed_password, email, role])
                     if success:
                         st.session_state["user_success_message"] = f"✅ User '{username}' added successfully!"
+                        st.session_state["user_form_key"] += 1
+                        if "user_search" in st.session_state:
+                            del st.session_state["user_search"]
                         st.rerun()
                     else:
                         st.error("Failed to add user")
