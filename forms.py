@@ -890,9 +890,9 @@ def category_form():
                     with header_col2:
                         st.write("**Category ID**")
                     with header_col3:
-                        st.write("**Category Name**")
-                    with header_col4:
                         st.write("**Sub Category Name**")
+                    with header_col4:
+                        st.write("**Category Name**")
                     with header_col5:
                         st.write("**Edit**")
                     with header_col6:
@@ -904,9 +904,9 @@ def category_form():
                     with header_col2:
                         st.write("**Category ID**")
                     with header_col3:
-                        st.write("**Category Name**")
-                    with header_col4:
                         st.write("**Sub Category Name**")
+                    with header_col4:
+                        st.write("**Category Name**")
                     with header_col5:
                         st.write("**Edit**")
                 st.divider()
@@ -930,9 +930,9 @@ def category_form():
                     with col2:
                         st.write(row.get('Category ID', 'N/A'))
                     with col3:
-                        st.write(row.get('Category Name', 'N/A'))
-                    with col4:
                         st.write(row.get('SubCategory Name', 'N/A'))
+                    with col4:
+                        st.write(row.get('Category Name', 'N/A'))
                     with col5:
                         edit_key = f"edit_subcat_{row.get('SubCategory ID', idx)}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this subcategory"):
