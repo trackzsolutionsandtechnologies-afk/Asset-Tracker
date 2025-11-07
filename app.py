@@ -93,27 +93,29 @@ def main():
             styles={
                 "container": {
                     "padding": "5px",
-                    "background": "#f8f9fa",
-                    "border-radius": "8px",
-                    "box-shadow": "0 0 8px rgba(0, 0, 0, 0.1)"
+                    "background-color": "#2b1542",  # dark purple background
+                    "border-radius": "10px",
+                    "box-shadow": "0 0 12px rgba(0, 0, 0, 0.2)",
                 },
                 "icon": {
-                    "color": "#6c757d",
+                    "color": "#c3aed6",  # light lavender icons
                     "font-size": "20px",
                     
                 },
                 "nav-link": {
                     "font-size": "16px",
                     "text-align": "left",
-                    "margin": "2px 0",
-                    "padding": "8px 15px",
-                    "color": "#333333",
-                    "border-radius": "6px",
-                    "background-color": "#ffffff",
+                    "margin": "5px 0",
+                    "padding": "10px 18px",
+                    "color": "#e4d9f5",  # light text
+                    "border-radius": "8px",
+                    "background-color": "transparent",
+        "transition": "all 0.3s ease",
+         "font-family": "'D-DIN', sans-serif",
                     
                 },
   "nav-link-hover": {
-            "background-color": "#e3f2fd",
+            "background-color": "#4c2a85",  # mid purple highlight on hover
             "color": "#007bff",
         },
 
@@ -121,21 +123,36 @@ def main():
 
 
                 "nav-link-selected": {
-                   "background-color": "#B7A3E3",
+                   "background-color": "#6f42c1",  # bright purple active item
             "color": "white",
-            "font-weight": "500",
-            "box-shadow": "0 0 6px rgba(0, 123, 255, 0.4)"
+            "font-weight": "600",
+            "box-shadow": "0 0 8px rgba(111, 66, 193, 0.5)",
                 },
                 "menu-title": {
-                    "color": "#FF8F8F",
+                    "color": "#b897ff",
                     "font-size": "18px",
                     "font-weight": "600",
                     "margin-bottom": "10px",
+                     "font-family": "'D-DIN', sans-serif",
                     
                 },
             }
         )
-    
+    st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2b1542, #3a2060);
+        color: #e4d9f5;
+    }
+    [data-testid="stSidebar"] * {
+        color: #e4d9f5 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
     # Main content area
     if selected == "Dashboard":
         dashboard_page()
