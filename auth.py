@@ -181,7 +181,7 @@ def login_page():
             width: 50% !important;
         }
         .login-form-container button[kind="primary"] {
-            background-color: #ffffff !important;
+            background-color: #5C3E94 !important;
             color: #000000 !important;
             border: 1px solid #ffffff !important;
         }
@@ -190,12 +190,12 @@ def login_page():
             color: #000000 !important;
         }
         .login-form-container button[kind="secondary"] {
-            background-color: transparent !important;
+            background-color: #5C3E94 !important;
             color: #ffffff !important;
             border: 1px solid #ffffff !important;
         }
         .login-form-container button[kind="secondary"]:hover {
-            background-color: #ffffff !important;
+            background-color: #5C3E94 !important;
             color: #000000 !important;
         }
         </style>
