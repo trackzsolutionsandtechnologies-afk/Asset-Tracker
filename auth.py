@@ -160,175 +160,32 @@ def reset_password(username: str, token: str, new_password: str) -> bool:
 
 def login_page():
     """Display login page"""
-    st.markdown(
-        """
-        <style>
-        .login-screen {
-            min-height: calc(100vh - 6rem);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem 1.5rem;
-            background: linear-gradient(145deg, #f5f7fb 0%, #ffffff 40%, #eef1f8 100%);
-        }
-        [data-testid="stForm"][aria-label="login_form"] {
-            width: 100%;
-            max-width: 380px;
-            padding: 2.5rem 2.75rem 2rem;
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 22px 48px rgba(31, 45, 61, 0.12);
-            border: 1px solid rgba(226, 232, 240, 0.65);
-            backdrop-filter: blur(6px);
-        }
-        [data-testid="stForm"][aria-label="login_form"] .stTextInput>label {
-            display: none;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .stTextInput>div>div>input {
-            height: 48px;
-            border-radius: 14px;
-            border: 1px solid #e0e7f1;
-            background: #f6f8fc;
-            padding: 0 18px 0 48px;
-            font-size: 15px;
-            color: #1f2937;
-            box-shadow: none;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .stTextInput>div>div>input:focus {
-            border-color: #4c6ef5;
-            box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.12);
-            background: #ffffff;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .stTextInput:nth-of-type(1)>div>div>input {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.6' viewBox='0 0 24 24'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: 16px center;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .stTextInput:nth-of-type(2)>div>div>input {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.6' viewBox='0 0 24 24'%3E%3Crect width='18' height='11' x='3' y='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: 16px center;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .login-title {
-            font-size: 26px;
-            font-weight: 600;
-            color: #1f2937;
-            text-align: center;
-            margin-bottom: 0.3rem;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .login-subtitle {
-            font-size: 14px;
-            color: #6b7280;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .remember-link-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 0.25rem;
-            margin-bottom: 1.75rem;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .remember-link-row label {
-            color: #4b5563;
-            font-size: 13px;
-        }
-        [data-testid="stForm"][aria-label="login_form"] button[kind="primary"] {
-            height: 48px;
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #3d8bfd, #5b6dfb);
-            border: none;
-            box-shadow: 0 12px 24px rgba(61, 139, 253, 0.30);
-        }
-        [data-testid="stForm"][aria-label="login_form"] button[kind="primary"]:hover {
-            background: linear-gradient(135deg, #366efc, #4356fb);
-        }
-        [data-testid="stForm"][aria-label="login_form"] button[kind="secondary"] {
-            border: none;
-            background: transparent;
-            box-shadow: none;
-            color: #5b6b92;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 0;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .aux-links {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1.25rem;
-            font-size: 13.5px;
-            color: #5b6b92;
-        }
-        [data-testid="stForm"][aria-label="login_form"] .aux-links span {
-            color: #3d8bfd;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        </style>
-        <div class="login-screen">
-        """,
-        unsafe_allow_html=True,
-    )
-
+    st.title("🔐 Asset Tracker - Sign In")
+    
     with st.form("login_form"):
-        st.markdown(
-            """
-            <div class="login-title">Welcome Back</div>
-            <div class="login-subtitle">Please sign in to your account</div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        username = st.text_input(
-            "Username",
-            key="login_username",
-            placeholder="Username or email",
-            label_visibility="collapsed",
-        )
-        password = st.text_input(
-            "Password",
-            type="password",
-            key="login_password",
-            placeholder="Password",
-            label_visibility="collapsed",
-        )
-
-        col_remember, col_forgot = st.columns([1, 1])
-        with col_remember:
-            remember_me = st.checkbox("Remember me", key="remember_me", value=False)
-        with col_forgot:
-            forgot_password = st.form_submit_button(
-                "Forgot password?", use_container_width=True, type="secondary"
-            )
-
-        col_register, col_submit = st.columns([1, 1])
-        with col_register:
-            st.markdown(
-                "<div class=\"aux-links\"><span>Register now</span></div>",
-                unsafe_allow_html=True,
-            )
-        with col_submit:
-            submit_button = st.form_submit_button("LOGIN", use_container_width=True)
-
+        username = st.text_input("Username", key="login_username")
+        password = st.text_input("Password", type="password", key="login_password")
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            submit_button = st.form_submit_button("Sign In", use_container_width=True)
+        
+        with col2:
+            forgot_password = st.form_submit_button("Forgot Password", use_container_width=True)
+        
         if submit_button:
             if authenticate_user(username, password):
                 st.session_state[SESSION_KEYS["authenticated"]] = True
                 st.session_state[SESSION_KEYS["username"]] = username
                 st.session_state[SESSION_KEYS["user_role"]] = get_user_role(username)
-                st.session_state["remember_me"] = remember_me
                 st.success("Login successful!")
                 st.rerun()
             else:
                 st.error("Invalid username or password")
-
+        
         if forgot_password:
             st.session_state["show_forgot_password"] = True
             st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 def forgot_password_page():
     """Display forgot password page"""
