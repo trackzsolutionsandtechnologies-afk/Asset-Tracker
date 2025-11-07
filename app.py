@@ -146,7 +146,7 @@ def main():
         color: #e4d9f5;
     }
     [data-testid="stSidebar"] * {
-        background: transparent !important;
+        color: #e4d9f5 !important;
     }
     </style>
     """,
