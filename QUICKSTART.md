@@ -66,21 +66,21 @@ Use the username and password you created in step 3 to log in.
 
 ## First Steps After Login
 
-1. **Add Locations**: Go to "Location Form" and add your locations
-2. **Add Suppliers**: Go to "Supplier Form" and add suppliers
-3. **Add Categories**: Go to "Category Form" and add asset categories
+1. **Add Locations**: Go to "Location" and add your locations
+2. **Add Suppliers**: Go to "Supplier" and add suppliers
+3. **Add Categories**: Go to "Category" and add asset categories
 4. **Add Assets**: Go to "Asset Master" and start adding assets
 5. **View Dashboard**: Check the "Dashboard" for visualizations
 
 ## Features Overview
 
 - **Dashboard**: View key metrics and charts
-- **Location Form**: Manage locations and departments
-- **Supplier Form**: Manage suppliers
-- **Category Form**: Organize assets by categories and subcategories
+- **Location**: Manage locations and departments
+- **Supplier**: Manage suppliers
+- **Category**: Organize assets by categories and subcategories
 - **Asset Master**: Add, edit, and manage assets with automatic barcode generation
 - **Asset Transfer**: Track asset transfers between locations
-- **Barcode Scanner**: Search assets by barcode or name
+- **Scan Barcode**: Search assets by barcode or name
 - **Print Barcodes**: Generate printable barcode sheets for multiple assets
 
 ## Troubleshooting

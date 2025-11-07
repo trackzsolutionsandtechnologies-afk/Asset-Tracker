@@ -77,9 +77,9 @@ The application will open automatically in your browser at `http://localhost:850
 
 1. Login with the username and password you created
 2. Start by adding:
-   - Locations (Location Form)
-   - Suppliers (Supplier Form)
-   - Categories (Category Form)
+   - Locations (Location)
+   - Suppliers (Supplier)
+   - Categories (Category)
    - Assets (Asset Master)
 
 ## ⚠️ Important Notes

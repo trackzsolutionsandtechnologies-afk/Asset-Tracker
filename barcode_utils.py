@@ -79,8 +79,8 @@ def decode_barcode_from_image(image):
     return None
 
 def barcode_scanner_page():
-    """Barcode scanner and search page"""
-    st.header("🔍 Barcode Scanner & Search")
+    """Scan Barcode and search page"""
+    st.header("🔍 Scan Barcode & Search")
     
     assets_df = read_data(SHEETS["assets"])
     

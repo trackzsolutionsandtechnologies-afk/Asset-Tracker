@@ -50,12 +50,12 @@ Then open your browser to: **http://localhost:8501**
 ### 🎯 Available Features
 
 - **📊 Dashboard** - View analytics, charts, and key metrics
-- **📍 Location Form** - Manage locations and departments
-- **🏢 Supplier Form** - Manage suppliers
-- **📂 Category Form** - Organize assets by categories
+- **📍 Location** - Manage locations and departments
+- **🏢 Supplier** - Manage suppliers
+- **📂 Category** - Organize assets by categories
 - **📦 Asset Master** - Add, edit, and manage assets with barcode generation
 - **🚚 Asset Transfer** - Track asset movements between locations
-- **🔍 Barcode Scanner** - Search assets by barcode or name
+- **🔍 Scan Barcode** - Search assets by barcode or name
 - **🖨️ Print Barcodes** - Generate printable barcode labels
 
 ### 📝 Quick Commands

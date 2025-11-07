@@ -32,7 +32,7 @@ def generate_subcategory_id() -> str:
     return f"SUB-{uuid.uuid4().hex[:8].upper()}"
 
 def location_form():
-    """Location Form"""
+    """Location"""
     st.header("📍 Location Management")
     
     df = read_data(SHEETS["locations"])
@@ -43,14 +43,14 @@ def location_form():
         # Green Add Location button styling, white form background, and hide loading indicators
         st.markdown("""
             <style>
-            /* White background for Add Location form */
+            /* White background for Add Location */
             div[data-testid="stForm"] {
                 background-color: white !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
                 border: 1px solid #e0e0e0 !important;
             }
-            /* Target the primary button in the location form */
+            /* Target the primary button in the Location section */
             div[data-testid="stForm"] button[kind="primary"],
             button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;
@@ -274,7 +274,7 @@ def location_form():
             st.info("No locations found. Add a new location using the 'Add New Location' tab.")
 
 def supplier_form():
-    """Supplier Form"""
+    """Supplier"""
     st.header("🚚 Supplier Management")
     
     df = read_data(SHEETS["suppliers"])
@@ -285,14 +285,14 @@ def supplier_form():
         # Green Add Supplier button styling, white form background, and hide loading indicators
         st.markdown("""
             <style>
-            /* White background for Add Supplier form */
+            /* White background for Add Supplier */
             div[data-testid="stForm"] {
                 background-color: white !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
                 border: 1px solid #e0e0e0 !important;
             }
-            /* Target the primary button in the supplier form */
+            /* Target the primary button in the Supplier section */
             div[data-testid="stForm"] button[kind="primary"],
             button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;
@@ -509,7 +509,7 @@ def supplier_form():
             st.info("No suppliers found. Add a new supplier using the 'Add New Supplier' tab.")
 
 def category_form():
-    """Asset Category and Sub Category Form"""
+    """Asset Category and Sub Category"""
     st.header("📂 Category Management")
     
     categories_df = read_data(SHEETS["categories"])
@@ -521,14 +521,14 @@ def category_form():
         # Green Add Category button styling, white form background, and hide loading indicators
         st.markdown("""
             <style>
-            /* White background for Add Category form */
+            /* White background for Add Category */
             div[data-testid="stForm"] {
                 background-color: white !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
                 border: 1px solid #e0e0e0 !important;
             }
-            /* Target the primary button in the category form */
+            /* Target the primary button in the Category section */
             div[data-testid="stForm"] button[kind="primary"],
             button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;

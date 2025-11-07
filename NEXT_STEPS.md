@@ -84,7 +84,7 @@ Then:
 ### 3. Explore Features
 
 - **Dashboard**: View analytics and charts
-- **Barcode Scanner**: Search for assets by barcode
+- **Scan Barcode**: Search for assets by barcode
 - **Print Barcodes**: Generate printable barcode labels
 - **Asset Transfer**: Track asset movements
 

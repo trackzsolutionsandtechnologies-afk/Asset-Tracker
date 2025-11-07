@@ -61,12 +61,12 @@ def main():
             menu_title="Navigation",
             options=[
                 "Dashboard",
-                "Location Form",
-                "Supplier Form",
-                "Category Form",
+                "Location",
+                "Supplier",
+                "Category",
                 "Asset Master",
                 "Asset Transfer",
-                "Barcode Scanner",
+                "Scan Barcode",
                 "Print Barcodes"
             ],
             icons=[
@@ -97,17 +97,17 @@ def main():
     # Main content area
     if selected == "Dashboard":
         dashboard_page()
-    elif selected == "Location Form":
+    elif selected == "Location":
         location_form()
-    elif selected == "Supplier Form":
+    elif selected == "Supplier":
         supplier_form()
-    elif selected == "Category Form":
+    elif selected == "Category":
         category_form()
     elif selected == "Asset Master":
         asset_master_form()
     elif selected == "Asset Transfer":
         asset_transfer_form()
-    elif selected == "Barcode Scanner":
+    elif selected == "Scan Barcode":
         barcode_scanner_page()
     elif selected == "Print Barcodes":
         barcode_print_page()

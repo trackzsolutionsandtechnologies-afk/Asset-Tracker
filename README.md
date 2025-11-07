@@ -11,7 +11,7 @@ A comprehensive asset tracking system built with Streamlit and Google Sheets as 
 - 📂 **Category Management**: Organize assets by categories and subcategories
 - 📦 **Asset Master**: Complete asset management with barcode generation
 - 🚚 **Asset Transfer**: Track asset transfers between locations
-- 🔍 **Barcode Scanner**: Search and scan assets by barcode
+- 🔍 **Scan Barcode**: Search and scan assets by barcode
 - 🖨️ **Barcode Printing**: Print multiple barcodes at once
 
 ## Setup Instructions
@@ -89,7 +89,7 @@ For deploying to Streamlit Cloud, see `STREAMLIT_CLOUD_DEPLOY.md` for detailed i
 1. **Login**: Use your username and password to access the system
 2. **Dashboard**: View key metrics and visualizations
 3. **Forms**: Use the navigation menu to access different forms
-4. **Barcode Scanner**: Enter or scan barcodes to find assets
+4. **Scan Barcode**: Enter or scan barcodes to find assets
 5. **Print Barcodes**: Select multiple assets and generate printable barcode sheets
 
 ## Notes
