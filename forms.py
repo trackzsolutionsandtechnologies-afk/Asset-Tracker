@@ -1141,18 +1141,18 @@ def asset_master_form():
                     matching_category_names = all_category_names
 
                 if matching_category_names:
+                    category_name_choices = sorted(dict.fromkeys(matching_category_names))
                     subcategory = st.selectbox(
                         "Sub Category (Category Name)",
-                        ["Select category"] + sorted(dict.fromkeys(matching_category_names)),
+                        ["Select category"] + category_name_choices,
                         key="asset_subcategory_select",
                     )
                 else:
-                    subcategory = st.selectbox(
-                        "Sub Category (Category Name)",
-                        ["No categories available"],
-                        disabled=True,
-                        key="asset_subcategory_select",
-                    )
+                    if category in ("Select sub category", ""):
+                        help_text = "Please choose a sub category first."
+                    else:
+                        help_text = "No category mapping found for the selected sub category."
+                    st.info(help_text)
                     subcategory = ""
                 
                 model_serial = st.text_input("Model / Serial No")
@@ -1380,10 +1380,8 @@ def asset_master_form():
                                     index=default_subcat_index,
                                 )
                             else:
-                                selected_subcategory = st.selectbox(
-                                    "Sub Category (Category Name)",
-                                    ["No categories available"],
-                                    disabled=True,
+                                st.info(
+                                    "No category mapping found for the selected sub category."
                                 )
                                 selected_subcategory = ""
 
