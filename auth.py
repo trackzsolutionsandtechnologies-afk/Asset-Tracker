@@ -156,52 +156,6 @@ def reset_password(username: str, token: str, new_password: str) -> bool:
 
 def login_page():
     """Display login page"""
-    # --- Custom CSS for styling ---
-    st.markdown(
-        """
-        <style>
-        /* Sign In (Primary) Button */
-        div[data-testid="stForm"] button[kind="primary"] {
-            background-color: #e53935 !important;
-            color: #ffffff !important;
-            font-weight: 600 !important;
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 0.6em 1.2em !important;
-            font-size: 16px !important;
-            transition: all 0.3s ease-in-out;
-        }
-        div[data-testid="stForm"] button[kind="primary"]:hover {
-            background-color: #c62828 !important;
-            transform: scale(1.03);
-        }
-
-        /* Forgot Password (Secondary) Button */
-        div[data-testid="stForm"] button[kind="secondary"] {
-            background-color: #eeeeee !important;
-            color: #333333 !important;
-            font-weight: 500 !important;
-            border-radius: 8px !important;
-            padding: 0.6em 1.2em !important;
-            border: 1px solid #cccccc !important;
-            transition: all 0.3s ease-in-out;
-        }
-        div[data-testid="stForm"] button[kind="secondary"]:hover {
-            background-color: #e0e0e0 !important;
-        }
-
-        /* Center title and form */
-        .login-form-wrapper {
-            max-width: 420px;
-            margin: 0 auto;
-            text-align: center;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown('<div class="login-form-wrapper">', unsafe_allow_html=True)
     st.title("🔐 Asset Tracker - Sign In")
 
     with st.form("login_form"):
@@ -221,16 +175,14 @@ def login_page():
                 st.session_state[SESSION_KEYS["authenticated"]] = True
                 st.session_state[SESSION_KEYS["username"]] = username
                 st.session_state[SESSION_KEYS["user_role"]] = get_user_role(username)
-                st.success("✅ Login successful!")
+                st.success("Login successful!")
                 st.rerun()
             else:
-                st.error("❌ Invalid username or password")
+                st.error("Invalid username or password")
         
         if forgot_password:
             st.session_state["show_forgot_password"] = True
             st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def forgot_password_page():
