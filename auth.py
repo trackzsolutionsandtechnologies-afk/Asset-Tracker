@@ -156,30 +156,6 @@ def reset_password(username: str, token: str, new_password: str) -> bool:
 
 def login_page():
     """Display login page"""
-    st.markdown(
-        """
-        <style>
-        [data-testid="stAppViewContainer"] {
-            background-color: #5C3E94!important;
-            color: #321313 !important;  /*this is login header color*/
-             border-radius: 16px;
-        }
-        [data-testid="stSidebar"] {
-            background-color: transparent !important;
-        }
-   
-   
-        
-        
-            
-        
-        
-                </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown('<div class="login-form-container">', unsafe_allow_html=True)
     st.title("🔐 Asset Tracker - Sign In")
 
     with st.form("login_form"):
@@ -207,8 +183,6 @@ def login_page():
         if forgot_password:
             st.session_state["show_forgot_password"] = True
             st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def forgot_password_page():
