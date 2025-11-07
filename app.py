@@ -93,7 +93,7 @@ def main():
             styles={
                 "container": {
                     "padding": "5px",
-                    "background-color": "#2b1542",  # dark purple background
+                 "background": "linear-gradient(180deg, #2b1542, #3a2060)",  # same as sidebar
                     "border-radius": "1px",
                    
                 },
