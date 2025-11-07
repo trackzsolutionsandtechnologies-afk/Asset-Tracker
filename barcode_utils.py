@@ -58,13 +58,40 @@ except ImportError:
 class BarcodeStreamProcessor:
     def __init__(self) -> None:
         self.latest_result: str | None = None
+        self._last_announced: str | None = None
 
     def recv(self, frame: "av.VideoFrame") -> "av.VideoFrame":  # type: ignore[name-defined]
         img = frame.to_ndarray(format="bgr24")
+        display_img = img.copy()
+
         result = decode_barcode_from_array(img)
-        if result:
+
+        if PYZBAR_AVAILABLE:
+            try:
+                decoded_objects = pyzbar_decode(img)
+                if decoded_objects and CV2_AVAILABLE:
+                    import cv2  # type: ignore
+
+                    for obj in decoded_objects:
+                        x, y, w, h = obj.rect
+                        cv2.rectangle(display_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        cv2.putText(
+                            display_img,
+                            obj.data.decode("utf-8"),
+                            (x, max(y - 10, 0)),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.6,
+                            (0, 255, 0),
+                            2,
+                        )
+            except Exception:
+                pass
+
+        if result and result != self._last_announced:
             self.latest_result = result
-        return frame
+            self._last_announced = result
+
+        return av.VideoFrame.from_ndarray(display_img, format="bgr24")
 
 def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image.Image:
     """Generate a barcode image for an asset ID"""
