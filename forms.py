@@ -1589,6 +1589,7 @@ def asset_transfer_form():
     transfers_df = read_data(SHEETS["transfers"])
     assets_df = read_data(SHEETS["assets"])
     locations_df = read_data(SHEETS["locations"])
+    users_df = read_data(SHEETS["users"])
     
     tab1, tab2 = st.tabs(["New Transfer", "View Transfers"])
     
@@ -1620,8 +1621,36 @@ def asset_transfer_form():
                     to_location = st.text_input("To Location *")
             
             transfer_date = st.date_input("Transfer Date *", value=datetime.now().date())
-            approved_by = st.text_input("Approved By *")
-            
+
+            approved_by_options = []
+            approved_by_placeholder = "Select approver"
+            approved_by_column = None
+            if not users_df.empty:
+                for col in users_df.columns:
+                    if str(col).strip().lower() in {"username", "user name", "name", "full name"}:
+                        approved_by_column = col
+                        break
+                if approved_by_column:
+                    approved_by_options = (
+                        users_df[approved_by_column]
+                        .dropna()
+                        .astype(str)
+                        .str.strip()
+                        .replace("", pd.NA)
+                        .dropna()
+                        .unique()
+                        .tolist()
+                    )
+                    approved_by_options = sorted(approved_by_options)
+
+            if approved_by_options:
+                approved_by = st.selectbox(
+                    "Approved By *",
+                    [approved_by_placeholder] + approved_by_options,
+                )
+            else:
+                approved_by = st.text_input("Approved By *")
+
             submitted = st.form_submit_button("Create Transfer", use_container_width=True)
             
             if submitted:
@@ -1631,7 +1660,7 @@ def asset_transfer_form():
                     st.error("Please select both locations")
                 elif from_location == to_location:
                     st.error("From and To locations cannot be the same")
-                elif not approved_by:
+                elif not approved_by or (approved_by_options and approved_by == approved_by_placeholder):
                     st.error("Please enter approver name")
                 else:
                     data = [
