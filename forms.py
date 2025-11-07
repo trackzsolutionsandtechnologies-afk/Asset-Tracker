@@ -1587,16 +1587,43 @@ def asset_transfer_form():
     st.header("🚚 Asset Transfer Management")
     
     transfers_df = read_data(SHEETS["transfers"])
+    def find_column(df: pd.DataFrame, targets: list[str]) -> str | None:
+        for target in targets:
+            for col in df.columns:
+                if str(col).strip().lower() == target:
+                    return col
+        return None
+
     assets_df = read_data(SHEETS["assets"])
     locations_df = read_data(SHEETS["locations"])
     users_df = read_data(SHEETS["users"])
 
-    asset_location_col = None
-    if not assets_df.empty:
-        for col in assets_df.columns:
-            if str(col).strip().lower() in {"location", "location name", "current location"}:
-                asset_location_col = col
-                break
+    asset_id_col = find_column(
+        assets_df,
+        [
+            "asset id",
+            "asset id / barcode",
+            "asset id/barcode",
+            "asset id barcode",
+            "assetid",
+            "asset code",
+            "barcode",
+        ],
+    ) if not assets_df.empty else None
+
+    asset_location_col = (
+        find_column(
+            assets_df,
+            [
+                "location",
+                "location name",
+                "current location",
+                "asset location",
+            ],
+        )
+        if not assets_df.empty
+        else None
+    )
     
     tab1, tab2 = st.tabs(["New Transfer", "View Transfers"])
     
@@ -1676,8 +1703,11 @@ def asset_transfer_form():
                     ]
                     if append_data(SHEETS["transfers"], data):
                         # Update asset location
-                        if not assets_df.empty:
-                            asset_row = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id)]
+                        if not assets_df.empty and asset_id_col:
+                            asset_row = assets_df[
+                                assets_df[asset_id_col].astype(str).str.strip()
+                                == str(asset_id).strip()
+                            ]
                             if not asset_row.empty:
                                 row_index = int(asset_row.index[0])
                                 column_order = list(assets_df.columns)
@@ -1690,9 +1720,21 @@ def asset_transfer_form():
                                             break
                                 if location_column and location_column in column_order:
                                     asset_series.loc[location_column] = to_location
+                                else:
+                                    st.warning(
+                                        "Unable to map transfer location back to Assets sheet because the location column could not be identified.",
+                                        icon="⚠️",
+                                    )
                                 asset_series = asset_series.reindex(column_order, fill_value="")
                                 asset_data = ["" if pd.isna(val) else val for val in asset_series.tolist()]
                                 update_data(SHEETS["assets"], row_index, asset_data)
+                        elif assets_df.empty:
+                            st.warning("Assets sheet is empty – cannot sync transfer location.", icon="⚠️")
+                        elif not asset_id_col:
+                            st.warning(
+                                "Unable to identify the Asset ID column in the Assets sheet, so the location could not be updated.",
+                                icon="⚠️",
+                            )
                         
                         st.success("Transfer created successfully!")
                         st.rerun()
