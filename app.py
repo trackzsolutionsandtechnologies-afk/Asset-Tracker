@@ -18,7 +18,7 @@ st.markdown("""
 
     html, body, [class*="css"] {
         font-family: 'DIN', sans-serif !important;
-        background-color: #ffffff !important;
+        background-color: #B7A3E3 !important;
         color: #262730 !important;
     }
 
@@ -29,7 +29,7 @@ st.markdown("""
 
     /* Make buttons white with blue border */
     div.stButton > button {
-        background-color: #ffffff !important;
+        background-color: #B7A3E3 !important;
         color: #1f77b4 !important;
         border: 2px solid #1f77b4 !important;
         border-radius: 8px !important;
