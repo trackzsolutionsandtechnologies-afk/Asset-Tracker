@@ -1127,7 +1127,7 @@ def asset_master_form():
                     )
                     category = ""
 
-                category_names_for_selected = ["None"]
+                category_names_for_selected = []
                 selected_subcat_norm = str(category).strip().lower()
                 matching_subcats = pd.DataFrame()
                 if (
@@ -1138,7 +1138,7 @@ def asset_master_form():
                     matching_subcats = subcategories_df[subcat_name_norm_series == selected_subcat_norm]
                     if not matching_subcats.empty:
                         if subcat_cat_name_col:
-                            category_names_for_selected = ["None"] + unique_clean(matching_subcats[subcat_cat_name_col])
+                            category_names_for_selected = unique_clean(matching_subcats[subcat_cat_name_col])
                         elif (
                             subcat_cat_id_col
                             and category_id_col
@@ -1154,18 +1154,24 @@ def asset_master_form():
                                 .isin(ids.str.strip().str.lower())
                             ]
                             if not cat_matches.empty:
-                                category_names_for_selected = ["None"] + unique_clean(cat_matches[category_name_col])
+                                category_names_for_selected = unique_clean(cat_matches[category_name_col])
 
                 category_help = None
-                if category_names_for_selected == ["None"]:
+                if not category_names_for_selected:
                     if category in ("Select sub category", ""):
                         category_help = "Please select a sub category first."
                     else:
                         category_help = "No category mapping found for the selected sub category."
 
+                subcategory_options = (
+                    ["Select category name"] + category_names_for_selected
+                    if category_names_for_selected
+                    else ["None"]
+                )
+
                 subcategory = st.selectbox(
                     "Sub Category (Category Name)",
-                    category_names_for_selected,
+                    subcategory_options,
                     key="asset_subcategory_select",
                     help=category_help,
                 )
@@ -1227,7 +1233,9 @@ def asset_master_form():
                         asset_id,
                         asset_name,
                         category if category not in ("", "Select sub category") else "",
-                        subcategory if subcategory not in ("", "None", "Select category") else "",
+                        subcategory
+                        if subcategory not in ("", "None", "Select category", "Select category name")
+                        else "",
                         model_serial,
                         purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
                         purchase_cost,
@@ -1347,7 +1355,7 @@ def asset_master_form():
                                 )
                                 selected_category = ""
 
-                            category_names_for_selected_edit = ["None"]
+                            category_names_for_selected_edit = []
                             selected_category_norm = str(selected_category).strip().lower()
                             matching_rows_edit = pd.DataFrame()
                             if (
@@ -1360,7 +1368,7 @@ def asset_master_form():
                                 ]
                                 if not matching_rows_edit.empty:
                                     if subcat_cat_name_col:
-                                        category_names_for_selected_edit = ["None"] + unique_clean(
+                                        category_names_for_selected_edit = unique_clean(
                                             matching_rows_edit[subcat_cat_name_col]
                                         )
                                     elif (
@@ -1378,7 +1386,7 @@ def asset_master_form():
                                             .isin(ids_edit.str.strip().str.lower())
                                         ]
                                         if not cat_matches_edit.empty:
-                                            category_names_for_selected_edit = ["None"] + unique_clean(
+                                            category_names_for_selected_edit = unique_clean(
                                                 cat_matches_edit[category_name_col]
                                             )
 
@@ -1388,7 +1396,9 @@ def asset_master_form():
                             )
                             if current_subcat_value and current_subcat_value not in category_names_for_selected_edit:
                                 category_names_for_selected_edit.append(current_subcat_value)
-                            category_names_for_selected_edit = sorted(dict.fromkeys(category_names_for_selected_edit))
+                            category_names_for_selected_edit = sorted(
+                                dict.fromkeys(category_names_for_selected_edit)
+                            )
 
                             try:
                                 default_subcat_index = (
@@ -1400,15 +1410,34 @@ def asset_master_form():
                                 default_subcat_index = 0
 
                             subcategory_help_edit_final = None
-                            if category_names_for_selected_edit == ["None"]:
+                            if not category_names_for_selected_edit:
                                 if selected_category in ("Select sub category", ""):
                                     subcategory_help_edit_final = "Please select a sub category first."
                                 else:
                                     subcategory_help_edit_final = "No category mapping found for the selected sub category."
 
+                            edit_subcategory_options = (
+                                ["Select category name"] + category_names_for_selected_edit
+                                if category_names_for_selected_edit
+                                else ["None"]
+                            )
+
+                            # Adjust default index when using options with placeholder
+                            if category_names_for_selected_edit:
+                                try:
+                                    default_subcat_index = (
+                                        edit_subcategory_options.index(current_subcat_value)
+                                        if current_subcat_value in edit_subcategory_options
+                                        else 0
+                                    )
+                                except ValueError:
+                                    default_subcat_index = 0
+                            else:
+                                default_subcat_index = 0
+
                             selected_subcategory = st.selectbox(
                                 "Sub Category (Category Name)",
-                                category_names_for_selected_edit,
+                                edit_subcategory_options,
                                 index=default_subcat_index,
                                 key=f"asset_edit_subcategory_final_{asset_id_value}",
                                 help=subcategory_help_edit_final,
@@ -1504,7 +1533,9 @@ def asset_master_form():
                                     asset_id_value,
                                     new_name,
                                     selected_category if selected_category not in ("", "Select sub category") else row.get("Category", ""),
-                                    selected_subcategory if selected_subcategory not in ("", "None", "Select category") else row.get("Sub Category", row.get("SubCategory Name", "")),
+                                    selected_subcategory
+                                    if selected_subcategory not in ("", "None", "Select category", "Select category name")
+                                    else row.get("Sub Category", row.get("SubCategory Name", "")),
                                     model_serial,
                                     new_purchase_date.strftime("%Y-%m-%d"),
                                     purchase_cost,
