@@ -2773,21 +2773,16 @@ def employee_assignment_form():
                     st.info("No assignments found. Add one using the 'Add Assignment' tab.")
             else:
                 field_headers = [
-                    "**Assignment ID**",
-                    "**Username**",
                     "**Asset ID**",
-                    "**Issued By**",
-                    "**Assignment Date**",
-                    "**Expected Return**",
-                    "**Return Date**",
+                    "**Username**",
                     "**Status**",
                     "**Condition**",
-                    "**Remarks**",
+                    "**Assignment Date**",
                 ]
                 header_cols = (
-                    st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1, 1])
+                    st.columns([2, 2, 2, 2, 2, 1, 1])
                     if is_admin
-                    else st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1])
+                    else st.columns([2, 2, 2, 2, 2, 1])
                 )
                 for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
                     with col_widget:
@@ -2816,21 +2811,16 @@ def employee_assignment_form():
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
                     cols = (
-                        st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1, 1])
+                        st.columns([2, 2, 2, 2, 2, 1, 1])
                         if is_admin
-                        else st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1])
+                        else st.columns([2, 2, 2, 2, 2, 1])
                     )
                     display_values = [
-                        row.get("Assignment ID", "N/A"),
-                        row.get("Username", "N/A"),
                         row.get("Asset ID", "N/A"),
-                        row.get("Issued By", ""),
-                        row.get("Assignment Date", ""),
-                        row.get("Expected Return Date", ""),
-                        row.get("Return Date", ""),
+                        row.get("Username", "N/A"),
                         row.get("Status", ""),
                         row.get("Condition on Issue", ""),
-                        row.get("Remarks", ""),
+                        row.get("Assignment Date", ""),
                     ]
                     for col_widget, value in zip(cols[: len(display_values)], display_values):
                         with col_widget:
