@@ -50,12 +50,17 @@ def main():
     
     # User is authenticated - show main application
     username = st.session_state.get(SESSION_KEYS["username"], "User")
+    if isinstance(username, str):
+        display_name = username.strip() or "User"
+        display_name = display_name.title()
+    else:
+        display_name = "User"
     
     # Sidebar
     with st.sidebar:
-        st.title(f"👤 {username}")
+        st.markdown(f"### 👋 Welcome {display_name}")
         
-        if st.button("🚪 Logout", use_container_width=True):
+        if st.button("🔓 Logout", use_container_width=True):
             logout()
         
         st.divider()
@@ -74,12 +79,12 @@ def main():
                 "Print Barcodes"
             ],
             icons=[
-                "🏠",
+                "speedometer2",
                 "geo-alt",
-                "building",
+                "truck",
                 "folder",
                 "box-seam",
-                "arrow-left-right",
+                "arrow-repeat",
                 "search",
                 "printer"
             ],
