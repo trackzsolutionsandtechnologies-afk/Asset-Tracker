@@ -160,28 +160,18 @@ def login_page():
         """
         <style>
         [data-testid="stAppViewContainer"] {
-    background-color: #5C3E94 !important;
-    color: #321313 !important;  /* login header color */
-    font-family: "DIN", sans-serif !important;
-}
-
-[data-testid="stSidebar"] {
-    background-color: transparent !important;
-}
-
-/* Center form and give some spacing */
-.login-form-container {
-    max-width: 400px;
-    margin: 100px auto;
-    padding: 2rem;
-    background-color: rgba(255,255,255,0.1);
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
+            background-color: #5C3E94!important;
+            color: #321313 !important;  /*this is login header color*/
+             border-radius: 16px;
+        }
+        [data-testid="stSidebar"] {
+            background-color: transparent !important;
+        }
+   
    
         
         
-
+            
         
         
                 </style>
