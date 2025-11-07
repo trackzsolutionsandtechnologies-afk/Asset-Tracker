@@ -1218,7 +1218,18 @@ def asset_master_form():
                 else:
                     assigned_to = st.text_input("Assigned To")
                 condition = st.selectbox("Condition", ["Excellent", "Good", "Fair", "Poor", "Damaged"])
-                status = st.selectbox("Status", ["Active", "Inactive", "Maintenance", "Retired"])
+                status = st.selectbox(
+                    "Status",
+                    [
+                        "Active",
+                        "Inactive",
+                        "Maintenance",
+                        "Retired",
+                        "Assigned",
+                        "Returned",
+                        "Under Repair",
+                    ],
+                )
                 remarks = st.text_area("Remarks")
                 attachment_file = st.file_uploader(
                     "Attachment (Image or File)",
@@ -1307,7 +1318,15 @@ def asset_master_form():
             is_admin = str(user_role).lower() == "admin"
 
             condition_options = ["Excellent", "Good", "Fair", "Poor", "Damaged"]
-            status_options = ["Active", "Inactive", "Maintenance", "Retired"]
+            status_options = [
+                "Active",
+                "Inactive",
+                "Maintenance",
+                "Retired",
+                "Assigned",
+                "Returned",
+                "Under Repair",
+            ]
 
             if is_admin:
                 header_cols = st.columns([2, 3, 2, 2, 1, 1])
@@ -2523,6 +2542,7 @@ def employee_assignment_form():
 
     asset_id_col = None
     asset_assigned_col = None
+    asset_status_col = None
     if not assets_df.empty:
         for col in assets_df.columns:
             col_norm = str(col).strip().lower()
@@ -2537,14 +2557,16 @@ def employee_assignment_form():
                 asset_id_col = col
             elif col_norm in {"assigned to", "assigned_to", "assignedto"} and asset_assigned_col is None:
                 asset_assigned_col = col
+            elif col_norm in {"status", "asset status"} and asset_status_col is None:
+                asset_status_col = col
 
-    def update_asset_assignee(asset_value: str, assignee_value: str) -> None:
+    def update_asset_assignment(asset_value: str, assignee_value: str, status_value: str | None = None) -> None:
         nonlocal assets_df
         if not asset_value:
             return
         if assets_df.empty:
             return
-        if asset_id_col is None or asset_assigned_col is None:
+        if asset_id_col is None:
             return
         try:
             match = assets_df[
@@ -2556,7 +2578,10 @@ def employee_assignment_form():
             row_index = int(match.index[0])
             column_order = list(assets_df.columns)
             asset_series = match.iloc[0].copy()
-            asset_series.loc[asset_assigned_col] = assignee_value
+            if asset_assigned_col:
+                asset_series.loc[asset_assigned_col] = assignee_value
+            if asset_status_col and status_value is not None:
+                asset_series.loc[asset_status_col] = status_value
             asset_series = asset_series.reindex(column_order, fill_value="")
 
             row_data: list[str] = []
@@ -2572,7 +2597,10 @@ def employee_assignment_form():
                     row_data.append(val)
 
             if update_data(SHEETS["assets"], row_index, row_data):
-                assets_df.at[row_index, asset_assigned_col] = assignee_value
+                if asset_assigned_col:
+                    assets_df.at[row_index, asset_assigned_col] = assignee_value
+                if asset_status_col and status_value is not None:
+                    assets_df.at[row_index, asset_status_col] = status_value
         except Exception as err:
             st.warning(f"Unable to update asset assignment: {err}")
 
@@ -2736,7 +2764,7 @@ def employee_assignment_form():
                             st.session_state["assignment_success_message"] = (
                                 f"✅ Assignment '{assignment_id}' added successfully!"
                             )
-                            update_asset_assignee(asset_id, username if status == "Assigned" else "")
+                            update_asset_assignment(asset_id, username if status == "Assigned" else "", status)
                             st.session_state["refresh_asset_users"] = True
                             st.session_state["assignment_form_key"] += 1
                             if "assignment_search" in st.session_state:
@@ -2843,7 +2871,10 @@ def employee_assignment_form():
                                     st.session_state["assignment_success_message"] = (
                                         f"🗑️ Assignment '{row.get('Assignment ID', '')}' deleted."
                                     )
-                                    update_asset_assignee(row.get("Asset ID", ""), "")
+                                    status_after_delete = row.get("Status", "")
+                                    if str(status_after_delete).strip().lower() == "assigned":
+                                        status_after_delete = ""
+                                    update_asset_assignment(row.get("Asset ID", ""), "", status_after_delete)
                                     st.session_state["refresh_asset_users"] = True
                                     st.rerun()
                                 else:
@@ -2993,9 +3024,10 @@ def employee_assignment_form():
                                         f"✅ Assignment '{edit_id}' updated successfully!"
                                     )
                                     new_assignee = username_new if status_new == "Assigned" else ""
-                                    update_asset_assignee(asset_id_new, new_assignee)
+                                    update_asset_assignment(asset_id_new, new_assignee, status_new)
                                     if asset_id_new != old_asset_id or (old_status.lower() == "assigned" and status_new != "Assigned"):
-                                        update_asset_assignee(old_asset_id, "")
+                                        old_status_value = "" if old_status.lower() == "assigned" else old_status
+                                        update_asset_assignment(old_asset_id, "", status_new if asset_id_new == old_asset_id else old_status_value)
                                     st.session_state["refresh_asset_users"] = True
                                     st.session_state.pop("edit_assignment_id", None)
                                     st.session_state.pop("edit_assignment_idx", None)
