@@ -2448,8 +2448,13 @@ def employee_assignment_form():
         "Assignment ID",
         "Username",
         "Asset ID",
+        "Issued By",
         "Assignment Date",
+        "Expected Return Date",
         "Return Date",
+        "Status",
+        "Condition on Issue",
+        "Remarks",
     ]
     ensure_sheet_headers(SHEETS["assignments"], assignment_headers)
 
@@ -2506,6 +2511,8 @@ def employee_assignment_form():
             "Select user",
             *users_df["Username"].dropna().astype(str).str.strip().tolist(),
         ]
+
+    issued_by_options = user_options.copy()
 
     asset_options = []
     if not assets_df.empty and "Asset ID" in assets_df.columns:
@@ -2636,6 +2643,24 @@ def employee_assignment_form():
                 value=datetime.now().date(),
                 key=f"assignment_date_{form_key}",
             )
+
+            if issued_by_options:
+                issued_by = st.selectbox(
+                    "Issued By *",
+                    issued_by_options,
+                    key=f"assignment_issued_by_{form_key}",
+                )
+            else:
+                issued_by = st.text_input(
+                    "Issued By *",
+                    key=f"assignment_issued_by_text_{form_key}",
+                )
+
+            expected_return_date = st.date_input(
+                "Expected Return Date",
+                value=assignment_date,
+                key=f"assignment_expected_return_{form_key}",
+            )
             include_return = st.checkbox(
                 "Specify a return date",
                 value=False,
@@ -2648,6 +2673,21 @@ def employee_assignment_form():
                     value=assignment_date,
                     key=f"assignment_return_date_{form_key}",
                 )
+
+            status = st.selectbox(
+                "Status",
+                ["Assigned", "Returned", "Under Repair"],
+                key=f"assignment_status_{form_key}",
+            )
+            condition_issue = st.selectbox(
+                "Condition on Issue",
+                ["Working", "Damaged", "Used"],
+                key=f"assignment_condition_{form_key}",
+            )
+            remarks = st.text_area(
+                "Remarks",
+                key=f"assignment_remarks_{form_key}",
+            )
 
             submitted = st.form_submit_button(
                 "Add Assignment",
@@ -2666,13 +2706,22 @@ def employee_assignment_form():
                     st.error("Please select an Asset")
                 elif not asset_id:
                     st.error("Please provide an Asset ID")
+                elif issued_by_options and issued_by == "Select user":
+                    st.error("Please select Issued By")
+                elif not issued_by:
+                    st.error("Please provide Issued By")
                 else:
                     data_map = {
                         "Assignment ID": assignment_id,
                         "Username": username,
                         "Asset ID": asset_id,
+                        "Issued By": issued_by,
                         "Assignment Date": assignment_date.strftime("%Y-%m-%d"),
+                        "Expected Return Date": expected_return_date.strftime("%Y-%m-%d") if expected_return_date else "",
                         "Return Date": return_date.strftime("%Y-%m-%d") if return_date else "",
+                        "Status": status,
+                        "Condition on Issue": condition_issue,
+                        "Remarks": remarks,
                     }
                     column_order = (
                         list(assignments_df.columns)
@@ -2687,7 +2736,7 @@ def employee_assignment_form():
                             st.session_state["assignment_success_message"] = (
                                 f"✅ Assignment '{assignment_id}' added successfully!"
                             )
-                            update_asset_assignee(asset_id, username)
+                            update_asset_assignee(asset_id, username if status == "Assigned" else "")
                             st.session_state["refresh_asset_users"] = True
                             st.session_state["assignment_form_key"] += 1
                             if "assignment_search" in st.session_state:
@@ -2727,13 +2776,19 @@ def employee_assignment_form():
                     "**Assignment ID**",
                     "**Username**",
                     "**Asset ID**",
+                    "**Issued By**",
                     "**Assignment Date**",
+                    "**Expected Return**",
                     "**Return Date**",
+                    "**Status**",
+                    "**Condition**",
+                    "**Remarks**",
                 ]
-                if is_admin:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 1])
-                else:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1])
+                header_cols = (
+                    st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1, 1])
+                    if is_admin
+                    else st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1])
+                )
                 for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
                     with col_widget:
                         st.write(header)
@@ -2760,13 +2815,22 @@ def employee_assignment_form():
                     else:
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
-                    cols = st.columns([2, 2, 2, 2, 2, 1, 1]) if is_admin else st.columns([2, 2, 2, 2, 2, 1])
+                    cols = (
+                        st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1, 1])
+                        if is_admin
+                        else st.columns([2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 2, 1])
+                    )
                     display_values = [
                         row.get("Assignment ID", "N/A"),
                         row.get("Username", "N/A"),
                         row.get("Asset ID", "N/A"),
+                        row.get("Issued By", ""),
                         row.get("Assignment Date", ""),
+                        row.get("Expected Return Date", ""),
                         row.get("Return Date", ""),
+                        row.get("Status", ""),
+                        row.get("Condition on Issue", ""),
+                        row.get("Remarks", ""),
                     ]
                     for col_widget, value in zip(cols[: len(display_values)], display_values):
                         with col_widget:
@@ -2848,6 +2912,26 @@ def employee_assignment_form():
                         "Assignment Date *",
                         value=parse_date_value(record.get("Assignment Date")),
                     )
+                    if issued_by_options:
+                        try:
+                            default_issued_idx = issued_by_options.index(record.get("Issued By", ""))
+                        except ValueError:
+                            default_issued_idx = 0
+                        issued_by_new = st.selectbox(
+                            "Issued By *",
+                            issued_by_options,
+                            index=default_issued_idx,
+                        )
+                    else:
+                        issued_by_new = st.text_input(
+                            "Issued By *",
+                            value=record.get("Issued By", ""),
+                        )
+
+                    expected_return_new = st.date_input(
+                        "Expected Return Date",
+                        value=parse_date_value(record.get("Expected Return Date")),
+                    )
                     include_return = st.checkbox(
                         "Specify a return date",
                         value=bool(record.get("Return Date")),
@@ -2858,6 +2942,29 @@ def employee_assignment_form():
                             "Return Date",
                             value=parse_date_value(record.get("Return Date")),
                         )
+
+                    status_new = st.selectbox(
+                        "Status",
+                        ["Assigned", "Returned", "Under Repair"],
+                        index={
+                            "assigned": 0,
+                            "returned": 1,
+                            "under repair": 2,
+                        }.get(str(record.get("Status", "Assigned")).strip().lower(), 0),
+                    )
+                    condition_new = st.selectbox(
+                        "Condition on Issue",
+                        ["Working", "Damaged", "Used"],
+                        index={
+                            "working": 0,
+                            "damaged": 1,
+                            "used": 2,
+                        }.get(str(record.get("Condition on Issue", "Working")).strip().lower(), 0),
+                    )
+                    remarks_new = st.text_area(
+                        "Remarks",
+                        value=record.get("Remarks", ""),
+                    )
 
                     col_update, col_cancel = st.columns(2)
                     with col_update:
@@ -2870,13 +2977,24 @@ def employee_assignment_form():
                                 st.error("Please select an Asset")
                             elif not asset_id_new:
                                 st.error("Please provide an Asset ID")
+                            elif issued_by_options and issued_by_new == "Select user":
+                                st.error("Please select Issued By")
+                            elif not issued_by_new:
+                                st.error("Please provide Issued By")
                             else:
+                                old_asset_id = record.get("Asset ID", "")
+                                old_status = str(record.get("Status", "")).strip()
                                 update_map = {
                                     "Assignment ID": edit_id,
                                     "Username": username_new,
                                     "Asset ID": asset_id_new,
+                                    "Issued By": issued_by_new,
                                     "Assignment Date": assignment_date_new.strftime("%Y-%m-%d"),
+                                    "Expected Return Date": expected_return_new.strftime("%Y-%m-%d") if expected_return_new else "",
                                     "Return Date": return_date_new.strftime("%Y-%m-%d") if return_date_new else "",
+                                    "Status": status_new,
+                                    "Condition on Issue": condition_new,
+                                    "Remarks": remarks_new,
                                 }
                                 column_order = list(assignments_df.columns)
                                 updated_row = [update_map.get(col, record.get(col, "")) for col in column_order]
@@ -2884,9 +3002,10 @@ def employee_assignment_form():
                                     st.session_state["assignment_success_message"] = (
                                         f"✅ Assignment '{edit_id}' updated successfully!"
                                     )
-                                    update_asset_assignee(asset_id_new, username_new)
-                                    if asset_id_new != record.get("Asset ID", ""):
-                                        update_asset_assignee(record.get("Asset ID", ""), "")
+                                    new_assignee = username_new if status_new == "Assigned" else ""
+                                    update_asset_assignee(asset_id_new, new_assignee)
+                                    if asset_id_new != old_asset_id or (old_status.lower() == "assigned" and status_new != "Assigned"):
+                                        update_asset_assignee(old_asset_id, "")
                                     st.session_state["refresh_asset_users"] = True
                                     st.session_state.pop("edit_assignment_id", None)
                                     st.session_state.pop("edit_assignment_idx", None)
