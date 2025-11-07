@@ -16,7 +16,7 @@ st.markdown("""
 
     html, body, [class*="css"] {
         font-family: 'DIN', sans-serif !important;
-        background-color: #ffffff !important;
+        background-color:    !important;
         color: #262730 !important;
     }
 
@@ -36,7 +36,7 @@ st.markdown("""
 
     /* Button hover effect */
     div.stButton > button:hover {
-        background-color: #1f77b4 !important;
+        background-color: #5C3E94 !important;
         color: #ffffff !important;
     }
     </style>
