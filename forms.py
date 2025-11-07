@@ -1726,7 +1726,18 @@ def asset_transfer_form():
                                         icon="⚠️",
                                     )
                                 asset_series = asset_series.reindex(column_order, fill_value="")
-                                asset_data = ["" if pd.isna(val) else val for val in asset_series.tolist()]
+
+                                asset_data = []
+                                for val in asset_series.tolist():
+                                    if pd.isna(val):
+                                        asset_data.append("")
+                                    else:
+                                        if hasattr(val, "item"):
+                                            try:
+                                                val = val.item()
+                                            except Exception:
+                                                val = str(val)
+                                        asset_data.append(val)
                                 update_data(SHEETS["assets"], row_index, asset_data)
                         elif assets_df.empty:
                             st.warning("Assets sheet is empty – cannot sync transfer location.", icon="⚠️")
