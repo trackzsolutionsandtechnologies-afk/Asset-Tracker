@@ -94,7 +94,7 @@ def main():
                 "container": {
                     "padding": "5px",
                  "background": "linear-gradient(180deg, #2b1542, #3a2060)",  # same as sidebar
-                    "border-radius": "1px",
+                    "border-radius": "0px",
                    
                 },
                 "icon": {
