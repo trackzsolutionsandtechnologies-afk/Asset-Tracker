@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import datetime
 from google_sheets import read_data, append_data, update_data, delete_data, find_row
 from config import SHEETS, SESSION_KEYS
+from auth import hash_password
 
 def generate_location_id() -> str:
     """Generate a unique Location ID"""
@@ -1275,4 +1276,158 @@ def asset_transfer_form():
             st.dataframe(transfers_df, use_container_width=True)
         else:
             st.info("No transfers found. Create a new transfer using the 'New Transfer' tab.")
+
+
+def user_management_form():
+    """User Management Form"""
+    st.header("👥 User Management")
+
+    # Only admins can manage users
+    user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+    if str(user_role).lower() != "admin":
+        st.warning("Only administrators can view or modify users.")
+        return
+
+    users_df = read_data(SHEETS["users"])
+
+    tab1, tab2 = st.tabs(["Add User", "View/Edit Users"])
+
+    with tab1:
+        if "user_success_message" in st.session_state:
+            st.success(st.session_state["user_success_message"])
+            del st.session_state["user_success_message"]
+
+        with st.form("add_user_form"):
+            username = st.text_input("Username *")
+            password = st.text_input("Password *", type="password")
+            confirm_password = st.text_input("Confirm Password *", type="password")
+            email = st.text_input("Email *")
+            role = st.selectbox("Role *", ["admin", "user"], index=1)
+
+            submitted = st.form_submit_button("Add User", use_container_width=True)
+
+            if submitted:
+                if not username or not password or not confirm_password or not email:
+                    st.error("Please fill in all required fields")
+                elif password != confirm_password:
+                    st.error("Passwords do not match")
+                elif not users_df.empty and "Username" in users_df.columns and username in users_df["Username"].astype(str).values:
+                    st.error("Username already exists")
+                else:
+                    hashed_password = hash_password(password)
+                    success = append_data(SHEETS["users"], [username, hashed_password, email, role])
+                    if success:
+                        st.session_state["user_success_message"] = f"✅ User '{username}' added successfully!"
+                        st.rerun()
+                    else:
+                        st.error("Failed to add user")
+
+    with tab2:
+        if "user_success_message" in st.session_state:
+            st.success(st.session_state["user_success_message"])
+            del st.session_state["user_success_message"]
+
+        if users_df.empty:
+            st.info("No users found. Add a new user using the 'Add User' tab.")
+            return
+
+        st.subheader("Existing Users")
+
+        search_term = st.text_input(
+            "🔍 Search Users",
+            placeholder="Search by Username, Email, or Role...",
+            key="user_search",
+        )
+
+        if search_term:
+            mask = (
+                users_df["Username"].astype(str).str.contains(search_term, case=False, na=False)
+                | users_df["Email"].astype(str).str.contains(search_term, case=False, na=False)
+                | users_df["Role"].astype(str).str.contains(search_term, case=False, na=False)
+            )
+            filtered_df = users_df[mask]
+            if filtered_df.empty:
+                st.info(f"No users found matching '{search_term}'")
+                return
+        else:
+            filtered_df = users_df
+
+        st.caption(f"Showing {len(filtered_df)} of {len(users_df)} user(s)")
+
+        st.divider()
+
+        for idx, row in filtered_df.iterrows():
+            original_idx = int(users_df[users_df["Username"] == row.get("Username")].index[0])
+
+            is_editing = st.session_state.get("edit_user", "") == row.get("Username")
+
+            if is_editing:
+                email = st.text_input(
+                    "Email",
+                    value=row.get("Email", ""),
+                    key=f"user_email_{row.get('Username')}"
+                )
+                role = st.selectbox(
+                    "Role",
+                    ["admin", "user"],
+                    index=0 if str(row.get("Role", "user")).lower() == "admin" else 1,
+                    key=f"user_role_{row.get('Username')}"
+                )
+                new_password = st.text_input(
+                    "New Password (leave blank to keep current)",
+                    type="password",
+                    key=f"user_new_password_{row.get('Username')}"
+                )
+                confirm_password = st.text_input(
+                    "Confirm New Password",
+                    type="password",
+                    key=f"user_confirm_password_{row.get('Username')}"
+                )
+
+                col_save, col_cancel = st.columns(2)
+                with col_save:
+                    if st.button("Save", key=f"user_save_{row.get('Username')}"):
+                        if new_password and new_password != confirm_password:
+                            st.error("Passwords do not match")
+                        else:
+                            hashed = row.get("Password", "")
+                            if new_password:
+                                hashed = hash_password(new_password)
+                            updated_data = [
+                                row.get("Username"),
+                                hashed,
+                                email,
+                                role,
+                            ]
+                            if update_data(SHEETS["users"], original_idx, updated_data):
+                                st.session_state["user_success_message"] = f"✅ User '{row.get('Username')}' updated successfully!"
+                                st.session_state.pop("edit_user", None)
+                                st.rerun()
+                            else:
+                                st.error("Failed to update user")
+                with col_cancel:
+                    if st.button("Cancel", key=f"user_cancel_{row.get('Username')}"):
+                        st.session_state.pop("edit_user", None)
+                        st.rerun()
+                st.divider()
+            else:
+                col_username, col_email, col_role, col_edit, col_delete = st.columns([2, 3, 2, 1, 1])
+                with col_username:
+                    st.write(row.get("Username", "-"))
+                with col_email:
+                    st.write(row.get("Email", "-"))
+                with col_role:
+                    st.write(row.get("Role", "-"))
+                with col_edit:
+                    if st.button("Edit", key=f"user_edit_{row.get('Username')}"):
+                        st.session_state["edit_user"] = row.get("Username")
+                        st.rerun()
+                with col_delete:
+                    if st.button("Delete", key=f"user_delete_{row.get('Username')}"):
+                        if delete_data(SHEETS["users"], original_idx):
+                            st.session_state["user_success_message"] = f"🗑️ User '{row.get('Username')}' deleted."
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete user")
+                st.divider()
 

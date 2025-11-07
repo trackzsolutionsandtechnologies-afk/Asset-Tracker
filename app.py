@@ -6,7 +6,14 @@ from streamlit_option_menu import option_menu
 from config import get_config
 from auth import login_page, forgot_password_page, check_authentication, logout, SESSION_KEYS
 from dashboard import dashboard_page
-from forms import location_form, supplier_form, category_form, asset_master_form, asset_transfer_form
+from forms import (
+    location_form,
+    supplier_form,
+    category_form,
+    asset_master_form,
+    asset_transfer_form,
+    user_management_form,
+)
 from barcode_utils import barcode_scanner_page, barcode_print_page
 
 st.markdown("""
@@ -111,6 +118,7 @@ def main():
                 "Category",
                 "Asset Master",
                 "Asset Transfer",
+                "Users",
                 "Scan Barcode",
                 "Print Barcodes"
             ],
@@ -121,6 +129,7 @@ def main():
                 "folder",
                 "box-seam",
                 "arrow-repeat",
+                "people",
                 "search",
                 "printer"
             ],
@@ -202,6 +211,8 @@ def main():
         asset_master_form()
     elif selected == "Asset Transfer":
         asset_transfer_form()
+    elif selected == "Users":
+        user_management_form()
     elif selected == "Scan Barcode":
         barcode_scanner_page()
     elif selected == "Print Barcodes":
