@@ -9,14 +9,41 @@ from dashboard import dashboard_page
 from forms import location_form, supplier_form, category_form, asset_master_form, asset_transfer_form
 from barcode_utils import barcode_scanner_page, barcode_print_page
 
+import streamlit as st
+
 st.markdown("""
     <style>
+    /* Import DIN font */
     @import url('https://fonts.cdnfonts.com/css/din-regular');
-    html, body, [class*="css"]  {
+
+    html, body, [class*="css"] {
         font-family: 'DIN', sans-serif !important;
+        background-color: #ffffff !important;
+        color: #262730 !important;
+    }
+
+    /* Sidebar also white */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff !important;
+    }
+
+    /* Make buttons white with blue border */
+    div.stButton > button {
+        background-color: #ffffff !important;
+        color: #1f77b4 !important;
+        border: 2px solid #1f77b4 !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Button hover effect */
+    div.stButton > button:hover {
+        background-color: #1f77b4 !important;
+        color: #ffffff !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
