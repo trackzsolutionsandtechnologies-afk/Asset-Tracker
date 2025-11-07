@@ -164,13 +164,13 @@ def login_page():
     st.markdown(
         """
         <style>
-        [data-testid="stForm"][aria-label="login_form"] button[kind="primary"] {
+        div[data-testid="stForm"] button[kind="primary"] {
             background-color: #e53935 !important;
             border-color: #e53935 !important;
             color: #ffffff !important;
             font-weight: 600 !important;
         }
-        [data-testid="stForm"][aria-label="login_form"] button[kind="primary"]:hover {
+        div[data-testid="stForm"] button[kind="primary"]:hover {
             background-color: #c62828 !important;
             border-color: #c62828 !important;
         }
@@ -189,7 +189,9 @@ def login_page():
             submit_button = st.form_submit_button("Sign In", use_container_width=True)
         
         with col2:
-            forgot_password = st.form_submit_button("Forgot Password", use_container_width=True)
+            forgot_password = st.form_submit_button(
+                "Forgot Password", use_container_width=True, type="secondary"
+            )
         
         if submit_button:
             if authenticate_user(username, password):
