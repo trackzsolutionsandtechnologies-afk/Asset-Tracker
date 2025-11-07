@@ -33,6 +33,11 @@ def generate_subcategory_id() -> str:
     # Generate a short unique ID
     return f"SUB-{uuid.uuid4().hex[:8].upper()}"
 
+def generate_transfer_id() -> str:
+    """Generate a unique Transfer ID"""
+    import uuid
+    return f"TRF-{uuid.uuid4().hex[:8].upper()}"
+
 def location_form():
     """Location"""
     st.header("📍 Location Management")
@@ -1628,33 +1633,126 @@ def asset_transfer_form():
     tab1, tab2 = st.tabs(["New Transfer", "View Transfers"])
     
     with tab1:
-        with st.form("transfer_form"):
-            # Generate Transfer ID
-            import uuid
-            transfer_id = st.text_input("Transfer ID", value=f"TRF-{uuid.uuid4().hex[:8].upper()}", disabled=True)
-            
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stForm"] {
+                background-color: white !important;
+                padding: 20px !important;
+                border-radius: 10px !important;
+                border: 1px solid #e0e0e0 !important;
+            }
+            div[data-testid="stForm"] button[kind="primary"],
+            button.stButton > button[kind="primary"] {
+                background-color: #28a745 !important;
+                color: white !important;
+                border-color: #28a745 !important;
+            }
+            div[data-testid="stForm"] button[kind="primary"]:hover,
+            button.stButton > button[kind="primary"]:hover {
+                background-color: #218838 !important;
+                border-color: #1e7e34 !important;
+            }
+            [data-testid="stStatusWidget"],
+            .stSpinner {
+                display: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if "transfer_success_message" in st.session_state:
+            st.success(st.session_state["transfer_success_message"])
+            del st.session_state["transfer_success_message"]
+
+        if "transfer_form_key" not in st.session_state:
+            st.session_state["transfer_form_key"] = 0
+
+        form_key = st.session_state["transfer_form_key"]
+
+        with st.form(f"transfer_form_{form_key}"):
+            if "generated_transfer_id" not in st.session_state:
+                st.session_state["generated_transfer_id"] = generate_transfer_id()
+
+            transfer_id = st.text_input(
+                "Transfer ID",
+                value=st.session_state["generated_transfer_id"],
+                disabled=True,
+                key=f"transfer_id_{form_key}",
+            )
+
             if not assets_df.empty:
-                asset_options = assets_df["Asset ID"].tolist()
-                asset_id = st.selectbox("Asset ID *", ["Select asset"] + asset_options)
+                asset_column = asset_id_col or assets_df.columns[0]
+                asset_options = (
+                    assets_df[asset_column]
+                    .dropna()
+                    .astype(str)
+                    .str.strip()
+                    .replace("", pd.NA)
+                    .dropna()
+                    .unique()
+                    .tolist()
+                )
+                asset_options = sorted(asset_options)
+                asset_id = st.selectbox(
+                    "Asset ID *",
+                    ["Select asset"] + asset_options,
+                    key=f"transfer_asset_{form_key}",
+                )
             else:
-                asset_id = st.text_input("Asset ID *")
+                asset_id = st.text_input("Asset ID *", key=f"transfer_asset_text_{form_key}")
                 st.warning("No assets found. Please add assets first.")
-            
+
             if not locations_df.empty:
-                location_options = locations_df["Location Name"].tolist()
+                location_col = None
+                for candidate in locations_df.columns:
+                    if str(candidate).strip().lower() in {"location name", "location", "name"}:
+                        location_col = candidate
+                        break
+                location_col = location_col or locations_df.columns[0]
+                location_options = (
+                    locations_df[location_col]
+                    .dropna()
+                    .astype(str)
+                    .str.strip()
+                    .replace("", pd.NA)
+                    .dropna()
+                    .unique()
+                    .tolist()
+                )
+                location_options = sorted(location_options)
                 col1, col2 = st.columns(2)
                 with col1:
-                    from_location = st.selectbox("From Location *", ["Select location"] + location_options)
+                    from_location = st.selectbox(
+                        "From Location *",
+                        ["Select location"] + location_options,
+                        key=f"transfer_from_location_{form_key}",
+                    )
                 with col2:
-                    to_location = st.selectbox("To Location *", ["Select location"] + location_options)
+                    to_location = st.selectbox(
+                        "To Location *",
+                        ["Select location"] + location_options,
+                        key=f"transfer_to_location_{form_key}",
+                    )
             else:
                 col1, col2 = st.columns(2)
                 with col1:
-                    from_location = st.text_input("From Location *")
+                    from_location = st.text_input(
+                        "From Location *",
+                        key=f"transfer_from_location_text_{form_key}",
+                    )
                 with col2:
-                    to_location = st.text_input("To Location *")
-            
-            transfer_date = st.date_input("Transfer Date *", value=datetime.now().date())
+                    to_location = st.text_input(
+                        "To Location *",
+                        key=f"transfer_to_location_text_{form_key}",
+                    )
+
+            transfer_date = st.date_input(
+                "Transfer Date *",
+                value=datetime.now().date(),
+                key=f"transfer_date_{form_key}",
+            )
 
             approved_by_options = []
             approved_by_placeholder = "Select approver"
@@ -1681,11 +1779,19 @@ def asset_transfer_form():
                 approved_by = st.selectbox(
                     "Approved By *",
                     [approved_by_placeholder] + approved_by_options,
+                    key=f"transfer_approved_by_{form_key}",
                 )
             else:
-                approved_by = st.text_input("Approved By *")
+                approved_by = st.text_input(
+                    "Approved By *",
+                    key=f"transfer_approved_by_text_{form_key}",
+                )
 
-            submitted = st.form_submit_button("Create Transfer", use_container_width=True)
+            submitted = st.form_submit_button(
+                "Create Transfer",
+                use_container_width=True,
+                type="primary",
+            )
             
             if submitted:
                 if asset_id == "Select asset" or not asset_id:
@@ -1698,11 +1804,14 @@ def asset_transfer_form():
                     st.error("Please enter approver name")
                 else:
                     data = [
-                        transfer_id, asset_id, from_location, to_location,
-                        transfer_date.strftime("%Y-%m-%d"), approved_by
+                        transfer_id,
+                        asset_id,
+                        from_location,
+                        to_location,
+                        transfer_date.strftime("%Y-%m-%d"),
+                        approved_by,
                     ]
                     if append_data(SHEETS["transfers"], data):
-                        # Update asset location
                         if not assets_df.empty and asset_id_col:
                             asset_row = assets_df[
                                 assets_df[asset_id_col].astype(str).str.strip()
@@ -1746,15 +1855,73 @@ def asset_transfer_form():
                                 "Unable to identify the Asset ID column in the Assets sheet, so the location could not be updated.",
                                 icon="⚠️",
                             )
-                        
-                        st.success("Transfer created successfully!")
+
+                        st.session_state["transfer_success_message"] = (
+                            f"✅ Transfer '{transfer_id}' created successfully!"
+                        )
+                        if "generated_transfer_id" in st.session_state:
+                            del st.session_state["generated_transfer_id"]
+                        st.session_state["transfer_form_key"] += 1
+                        if "transfer_search" in st.session_state:
+                            del st.session_state["transfer_search"]
                         st.rerun()
                     else:
                         st.error("Failed to create transfer")
     
     with tab2:
         if not transfers_df.empty:
-            st.dataframe(transfers_df, use_container_width=True)
+            search_term = st.text_input(
+                "🔍 Search Transfers",
+                placeholder="Search by Transfer ID, Asset ID, Location, Date, or Approver...",
+                key="transfer_search",
+            )
+
+            filtered_df = transfers_df.copy()
+            if search_term:
+                term = search_term.strip().lower()
+                filtered_df = filtered_df[
+                    filtered_df.apply(
+                        lambda row: term in " ".join(row.astype(str).str.lower()),
+                        axis=1,
+                    )
+                ]
+
+            if filtered_df.empty:
+                if search_term:
+                    st.warning("No transfers match your search.")
+                else:
+                    st.info(
+                        "No transfers found. Create a new transfer using the 'New Transfer' tab."
+                    )
+            else:
+                header_cols = st.columns([2, 2, 2, 2, 2, 2])
+                headers = [
+                    "**Transfer ID**",
+                    "**Asset ID**",
+                    "**From Location**",
+                    "**To Location**",
+                    "**Transfer Date**",
+                    "**Approved By**",
+                ]
+                for col, header in zip(header_cols, headers):
+                    with col:
+                        st.write(header)
+                st.divider()
+
+                for _, row in filtered_df.iterrows():
+                    cols = st.columns([2, 2, 2, 2, 2, 2])
+                    values = [
+                        row.get("Transfer ID", "N/A"),
+                        row.get("Asset ID", row.get(asset_id_col or "Asset ID", "N/A")),
+                        row.get("From Location", row.get("From", "N/A")),
+                        row.get("To Location", row.get("To", "N/A")),
+                        row.get("Transfer Date", "N/A"),
+                        row.get("Approved By", "N/A"),
+                    ]
+                    for col, value in zip(cols, values):
+                        with col:
+                            st.write(value if value != "" else "N/A")
+                    st.divider()
         else:
             st.info("No transfers found. Create a new transfer using the 'New Transfer' tab.")
 
