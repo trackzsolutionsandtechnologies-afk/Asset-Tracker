@@ -3025,6 +3025,7 @@ def employee_assignment_form():
                                     st.error("Failed to delete assignment")
 
                     st.divider()
+                _render_view_modal("assignment")
 
         else:
             st.info("No assignments found. Add one using the 'Add Assignment' tab.")
