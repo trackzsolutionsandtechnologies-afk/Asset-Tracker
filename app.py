@@ -18,7 +18,7 @@ st.markdown("""
 
     html, body, [class*="css"] {
         font-family: 'DIN', sans-serif !important;
-        background-color: #B7A3E3 !important;
+        background-color: #000000 !important;
         color: #262730 !important;
     }
 
