@@ -15,18 +15,39 @@ from google_sheets import read_data, update_data
 from config import SHEETS
 import numpy as np
 from datetime import datetime
+import subprocess
+import sys
 
 # Try to import barcode scanning libraries
-try:
-    from pyzbar.pyzbar import decode as pyzbar_decode
-    PYZBAR_AVAILABLE = True
-except ImportError:
-    PYZBAR_AVAILABLE = False
+PYZBAR_AVAILABLE = False
+PYZBAR_IMPORT_ERROR = None
+CV2_AVAILABLE = False
+
+def _attempt_pyzbar_import():
+    global PYZBAR_AVAILABLE, PYZBAR_IMPORT_ERROR, pyzbar_decode
     try:
-        import cv2
-        CV2_AVAILABLE = True
-    except ImportError:
-        CV2_AVAILABLE = False
+        from pyzbar.pyzbar import decode as pyzbar_decode  # type: ignore
+        PYZBAR_AVAILABLE = True
+        PYZBAR_IMPORT_ERROR = None
+    except (ImportError, OSError) as err:
+        PYZBAR_AVAILABLE = False
+        PYZBAR_IMPORT_ERROR = str(err)
+
+_attempt_pyzbar_import()
+
+if not PYZBAR_AVAILABLE:
+    # Try to install pyzbar dynamically (best effort)
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "pyzbar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        _attempt_pyzbar_import()
+    except Exception:
+        pass
+
+try:
+    import cv2  # type: ignore
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
 
 def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image.Image:
     """Generate a barcode image for an asset ID"""
@@ -65,17 +86,31 @@ def decode_barcode_from_image(image):
                 # Return the first decoded barcode
                 return decoded_objects[0].data.decode('utf-8')
         elif CV2_AVAILABLE:
-            # Try using OpenCV with barcode detector
-            import cv2
+            import cv2  # type: ignore
             img_array = np.array(image)
-            # Convert to grayscale if needed
-            if len(img_array.shape) == 3:
-                gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-            else:
-                gray = img_array
-            # Try to decode with OpenCV (basic implementation)
-            # Note: OpenCV doesn't have built-in barcode decoder, so we'd need additional library
-            pass
+            # OpenCV barcode detector (requires opencv-contrib)
+            detector = getattr(cv2, "barcode_BarcodeDetector", None)
+            if detector is not None:
+                try:
+                    barcode_detector = detector()
+                    retval, decoded_info, _ = barcode_detector.detectAndDecode(img_array)
+                    if retval:
+                        if isinstance(decoded_info, (list, tuple)):
+                            for info in decoded_info:
+                                if info:
+                                    return info
+                        elif decoded_info:
+                            return decoded_info
+                except Exception:
+                    pass
+            # Fallback to QRCode detector (works for QR codes only)
+            try:
+                qr_detector = cv2.QRCodeDetector()
+                data, points, _ = qr_detector.detectAndDecode(img_array)
+                if data:
+                    return data
+            except Exception:
+                pass
     except Exception as e:
         st.error(f"Error decoding barcode: {str(e)}")
     return None
@@ -108,8 +143,10 @@ def barcode_scanner_page():
         if input_method == "📷 Camera Scan (Mobile)":
             st.info("📱 Use your mobile device camera to scan a barcode. Make sure to grant camera permissions when prompted.")
             
-            if not PYZBAR_AVAILABLE:
-                st.warning("⚠️ Barcode scanning library (pyzbar) is not installed. Please install it using: `pip install pyzbar`")
+            if not PYZBAR_AVAILABLE and not CV2_AVAILABLE:
+                st.warning("⚠️ Barcode decoding libraries are not available. Please install `pyzbar` or `opencv-contrib-python-headless` on the server.")
+                if PYZBAR_IMPORT_ERROR:
+                    st.caption(f"pyzbar import error: {PYZBAR_IMPORT_ERROR}")
                 st.info("You can still use manual entry below.")
             else:
                 camera_image = st.camera_input("Scan Barcode", key="barcode_camera")
