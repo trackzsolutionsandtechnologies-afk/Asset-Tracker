@@ -1049,7 +1049,7 @@ def asset_master_form():
     """Asset Master Form"""
     st.header("📦 Asset Master Management")
     
-    MAX_ATTACHMENT_CHARS = 2800000  # roughly 2MB base64
+    MAX_ATTACHMENT_CHARS = 48000  # ~35 KB base64 fits Google Sheets cell limit
 
     assets_df = read_data(SHEETS["assets"])
     locations_df = read_data(SHEETS["locations"])
