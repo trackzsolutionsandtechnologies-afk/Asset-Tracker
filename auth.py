@@ -167,22 +167,12 @@ def login_page():
             background-color: transparent !important;
         }
    
-        
-        /* ✅ Button styling fix */
-.login-form-container .stButton > button {
-    background-color: #5C3E94 !important;
-    color: #000000 !important;
-    border: 1px solid #ffffff !important;
-    border-radius: 8px !important;
-    padding: 0.6em 1.2em !important;
-    font-weight: 600 !important;
+        .login-form-container label,
+.login-form-container span,
+.login-form-container p,
+.login-form-container h1 {
+    color: #ffffff !important;
 }
-
-/* ✅ Hover effect */
-.login-form-container .stButton > button:hover {
-    background-color: #e0e0e0 !important;
-    color: #000000 !important;
-    border: 1px solid #cccccc !important;
         
         
         
