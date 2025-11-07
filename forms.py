@@ -1095,8 +1095,9 @@ def asset_master_form():
                 subcategory_name_options = []
                 if not subcategories_df.empty and subcat_name_col:
                     subcategory_name_options.extend(subcategories_df[subcat_name_col].dropna().astype(str).tolist())
+                subcategory_name_options = sorted(dict.fromkeys(subcategory_name_options))
+
                 if subcategory_name_options:
-                    subcategory_name_options = sorted(dict.fromkeys(subcategory_name_options))
                     category = st.selectbox(
                         "Category (Sub Category Name) *",
                         ["Select sub category"] + subcategory_name_options,
@@ -1111,17 +1112,38 @@ def asset_master_form():
                     )
                     category = ""
 
-                category_name_options = []
+                all_category_names = []
                 if not categories_df.empty and category_name_col:
-                    category_name_options.extend(categories_df[category_name_col].dropna().astype(str).tolist())
+                    all_category_names.extend(categories_df[category_name_col].dropna().astype(str).tolist())
                 if subcat_cat_name_col and not subcategories_df.empty:
-                    category_name_options.extend(subcategories_df[subcat_cat_name_col].dropna().astype(str).tolist())
-                category_name_options = sorted(dict.fromkeys(category_name_options))
+                    all_category_names.extend(subcategories_df[subcat_cat_name_col].dropna().astype(str).tolist())
+                all_category_names = sorted(dict.fromkeys(all_category_names))
 
-                if category_name_options:
+                matching_category_names = []
+                if (
+                    category
+                    and category not in ("Select sub category", "")
+                    and not subcategories_df.empty
+                    and subcat_name_col
+                ):
+                    matching_rows = subcategories_df[
+                        subcategories_df[subcat_name_col].astype(str) == str(category)
+                    ]
+                    if not matching_rows.empty:
+                        if subcat_cat_name_col:
+                            matching_category_names = matching_rows[subcat_cat_name_col].dropna().astype(str).tolist()
+                        elif subcat_cat_id_col and category_id_col and category_name_col and not categories_df.empty:
+                            ids = matching_rows[subcat_cat_id_col].dropna().astype(str).unique().tolist()
+                            matching_category_names = categories_df[
+                                categories_df[category_id_col].astype(str).isin(ids)
+                            ][category_name_col].dropna().astype(str).tolist()
+                if not matching_category_names:
+                    matching_category_names = all_category_names
+
+                if matching_category_names:
                     subcategory = st.selectbox(
                         "Sub Category (Category Name)",
-                        ["Select category"] + category_name_options,
+                        ["Select category"] + sorted(dict.fromkeys(matching_category_names)),
                         key="asset_subcategory_select",
                     )
                 else:
@@ -1310,21 +1332,44 @@ def asset_master_form():
                                 )
                                 selected_category = ""
 
-                            edit_category_name_options = []
+                            all_category_names_edit = []
                             if not categories_df.empty and category_name_col:
-                                edit_category_name_options.extend(categories_df[category_name_col].dropna().astype(str).tolist())
+                                all_category_names_edit.extend(categories_df[category_name_col].dropna().astype(str).tolist())
                             if subcat_cat_name_col and not subcategories_df.empty:
-                                edit_category_name_options.extend(subcategories_df[subcat_cat_name_col].dropna().astype(str).tolist())
+                                all_category_names_edit.extend(subcategories_df[subcat_cat_name_col].dropna().astype(str).tolist())
+                            all_category_names_edit = sorted(dict.fromkeys(all_category_names_edit))
+
+                            matching_category_names_edit = []
+                            if (
+                                selected_category
+                                and selected_category not in ("Select sub category", "")
+                                and not subcategories_df.empty
+                                and subcat_name_col
+                            ):
+                                matching_rows_edit = subcategories_df[
+                                    subcategories_df[subcat_name_col].astype(str) == str(selected_category)
+                                ]
+                                if not matching_rows_edit.empty:
+                                    if subcat_cat_name_col:
+                                        matching_category_names_edit = matching_rows_edit[subcat_cat_name_col].dropna().astype(str).tolist()
+                                    elif subcat_cat_id_col and category_id_col and category_name_col and not categories_df.empty:
+                                        ids_edit = matching_rows_edit[subcat_cat_id_col].dropna().astype(str).unique().tolist()
+                                        matching_category_names_edit = categories_df[
+                                            categories_df[category_id_col].astype(str).isin(ids_edit)
+                                        ][category_name_col].dropna().astype(str).tolist()
+                            if not matching_category_names_edit:
+                                matching_category_names_edit = all_category_names_edit
+
                             current_subcat_value = row.get(
                                 "Sub Category",
                                 row.get("SubCategory Name", row.get("Sub Category Name", "")),
                             )
-                            if current_subcat_value and current_subcat_value not in edit_category_name_options:
-                                edit_category_name_options.append(current_subcat_value)
-                            edit_category_name_options = sorted(dict.fromkeys(edit_category_name_options))
+                            if current_subcat_value and current_subcat_value not in matching_category_names_edit:
+                                matching_category_names_edit.append(current_subcat_value)
+                            matching_category_names_edit = sorted(dict.fromkeys(matching_category_names_edit))
 
-                            if edit_category_name_options:
-                                subcat_list = ["Select category"] + edit_category_name_options
+                            if matching_category_names_edit:
+                                subcat_list = ["Select category"] + matching_category_names_edit
                                 try:
                                     default_subcat_index = subcat_list.index(current_subcat_value) if current_subcat_value in subcat_list else 0
                                 except ValueError:
