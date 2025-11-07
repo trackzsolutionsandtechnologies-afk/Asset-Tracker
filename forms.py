@@ -25,7 +25,12 @@ def _render_view_modal(prefix: str) -> None:
     title = st.session_state.get(f"{prefix}_view_title", "Details")
     order = st.session_state.get(f"{prefix}_view_order")
 
-    with st.modal(title):
+    modal_ctx = getattr(st, "modal", None)
+    ctx_manager = modal_ctx(title) if callable(modal_ctx) else st.container()
+
+    with ctx_manager:
+        if modal_ctx is None:
+            st.subheader(title)
         keys = order or list(record.keys())
         if not keys:
             st.info("No details available.")
@@ -40,7 +45,9 @@ def _render_view_modal(prefix: str) -> None:
                     st.text_input(key, value if value not in (None, "") else "N/A", disabled=True)
                 col_idx += 1
 
-        if st.button("Close", key=f"{prefix}_view_close"):
+        close_key = f"{prefix}_view_close"
+        close_button = st.button("Close", key=close_key)
+        if close_button:
             for suffix in ("_view_open", "_view_record", "_view_title", "_view_order"):
                 st.session_state.pop(f"{prefix}{suffix}", None)
             st.rerun()
