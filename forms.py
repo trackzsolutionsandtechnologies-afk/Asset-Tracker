@@ -5,7 +5,41 @@ import base64
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from typing import Dict, List, Optional
 from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers
+# Helper utilities for modal views
+
+def _open_view_modal(prefix: str, title: str, record: Dict[str, str], order: Optional[List[str]] = None) -> None:
+    st.session_state[f"{prefix}_view_title"] = title
+    st.session_state[f"{prefix}_view_record"] = record
+    st.session_state[f"{prefix}_view_order"] = order
+    st.session_state[f"{prefix}_view_open"] = True
+    st.rerun()
+
+
+def _render_view_modal(prefix: str) -> None:
+    if not st.session_state.get(f"{prefix}_view_open"):
+        return
+
+    record = st.session_state.get(f"{prefix}_view_record", {}) or {}
+    title = st.session_state.get(f"{prefix}_view_title", "Details")
+    order = st.session_state.get(f"{prefix}_view_order")
+
+    with st.modal(title):
+        keys = order or list(record.keys())
+        if not keys:
+            st.info("No details available.")
+        else:
+            for key in keys:
+                if key is None:
+                    continue
+                value = record.get(key, "")
+                st.write(f"**{key}**: {value if value not in (None, '') else 'N/A'}")
+
+        if st.button("Close", key=f"{prefix}_view_close"):
+            for suffix in ("_view_open", "_view_record", "_view_title", "_view_order"):
+                st.session_state.pop(f"{prefix}{suffix}", None)
+            st.rerun()
 from config import SHEETS, SESSION_KEYS
 from auth import hash_password
 
@@ -175,27 +209,17 @@ def location_form():
                 
                 # Table header - adjust columns based on admin status
                 if is_admin:
-                    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 3, 3, 1, 1])
-                    with header_col1:
-                        st.write("**Location ID**")
-                    with header_col2:
-                        st.write("**Location Name**")
-                    with header_col3:
-                        st.write("**Department**")
-                    with header_col4:
-                        st.write("**Edit**")
-                    with header_col5:
-                        st.write("**Delete**")
+                    header_cols = st.columns([2, 3, 3, 1, 1, 1])
                 else:
-                    header_col1, header_col2, header_col3, header_col4 = st.columns([2, 3, 3, 1])
-                    with header_col1:
-                        st.write("**Location ID**")
-                    with header_col2:
-                        st.write("**Location Name**")
-                    with header_col3:
-                        st.write("**Department**")
-                    with header_col4:
-                        st.write("**Edit**")
+                    header_cols = st.columns([2, 3, 3, 1, 1])
+
+                header_labels = ["**Location ID**", "**Location Name**", "**Department**", "**View**", "**Edit**"]
+                if is_admin:
+                    header_labels.append("**Delete**")
+
+                for col_widget, label in zip(header_cols, header_labels):
+                    with col_widget:
+                        st.write(label)
                 st.divider()
 
                 # Display table with edit/delete buttons
@@ -208,9 +232,9 @@ def location_form():
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
                     if is_admin:
-                        col1, col2, col3, col4, col5 = st.columns([2, 3, 3, 1, 1])
+                        col1, col2, col3, col_view, col_edit, col_delete = st.columns([2, 3, 3, 1, 1, 1])
                     else:
-                        col1, col2, col3, col4 = st.columns([2, 3, 3, 1])
+                        col1, col2, col3, col_view, col_edit = st.columns([2, 3, 3, 1, 1])
 
                     with col1:
                         st.write(row.get('Location ID', 'N/A'))
@@ -218,7 +242,20 @@ def location_form():
                         st.write(row.get('Location Name', 'N/A'))
                     with col3:
                         st.write(row.get('Department', 'N/A'))
-                    with col4:
+                    with col_view:
+                        if st.button("👁️", key=f"location_view_{row.get('Location ID', idx)}", use_container_width=True, help="View details"):
+                            record = {
+                                "Location ID": row.get("Location ID", ""),
+                                "Location Name": row.get("Location Name", ""),
+                                "Department": row.get("Department", ""),
+                            }
+                            _open_view_modal(
+                                "location",
+                                f"Location Details: {row.get('Location Name', '')}",
+                                record,
+                                ["Location ID", "Location Name", "Department"],
+                            )
+                    with col_edit:
                         edit_key = f"edit_loc_{row.get('Location ID', idx)}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
                             st.session_state["edit_location_id"] = row.get('Location ID', '')
@@ -226,7 +263,7 @@ def location_form():
                             st.rerun()
                     # Only show delete button for admin users
                     if is_admin:
-                        with col5:
+                        with col_delete:
                             delete_key = f"delete_loc_{row.get('Location ID', idx)}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
                                 location_name_to_delete = row.get('Location Name', 'Unknown')
@@ -247,6 +284,8 @@ def location_form():
                 pass
             else:
                 st.info("No locations found. Add a new location using the 'Add New Location' tab.")
+
+            _render_view_modal("location")
             
             # Edit form (shown when edit button is clicked)
             if "edit_location_id" in st.session_state and st.session_state["edit_location_id"]:
