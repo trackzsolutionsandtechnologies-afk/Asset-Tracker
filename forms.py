@@ -1603,6 +1603,81 @@ def asset_transfer_form():
     locations_df = read_data(SHEETS["locations"])
     users_df = read_data(SHEETS["users"])
 
+    transfer_id_col = (
+        find_column(
+            transfers_df,
+            [
+                "transfer id",
+                "transferid",
+                "transfer",
+                "id",
+            ],
+        )
+        if not transfers_df.empty
+        else None
+    )
+    transfer_asset_id_col = (
+        find_column(
+            transfers_df,
+            [
+                "asset id",
+                "asset",
+                "asset code",
+                "assetid",
+            ],
+        )
+        if not transfers_df.empty
+        else None
+    )
+    transfer_from_col = (
+        find_column(
+            transfers_df,
+            [
+                "from location",
+                "from",
+                "source location",
+            ],
+        )
+        if not transfers_df.empty
+        else None
+    )
+    transfer_to_col = (
+        find_column(
+            transfers_df,
+            [
+                "to location",
+                "to",
+                "destination location",
+            ],
+        )
+        if not transfers_df.empty
+        else None
+    )
+    transfer_date_col = (
+        find_column(
+            transfers_df,
+            [
+                "transfer date",
+                "date",
+                "transferdate",
+            ],
+        )
+        if not transfers_df.empty
+        else None
+    )
+    transfer_approved_by_col = (
+        find_column(
+            transfers_df,
+            [
+                "approved by",
+                "approver",
+                "approved",
+            ],
+        )
+        if not transfers_df.empty
+        else None
+    )
+
     asset_id_col = find_column(
         assets_df,
         [
@@ -1803,14 +1878,27 @@ def asset_transfer_form():
                 elif not approved_by or (approved_by_options and approved_by == approved_by_placeholder):
                     st.error("Please enter approver name")
                 else:
-                    data = [
-                        transfer_id,
-                        asset_id,
-                        from_location,
-                        to_location,
-                        transfer_date.strftime("%Y-%m-%d"),
-                        approved_by,
-                    ]
+                    data_map = {
+                        (transfer_id_col or "Transfer ID"): transfer_id,
+                        (transfer_asset_id_col or "Asset ID"): asset_id,
+                        (transfer_from_col or "From Location"): from_location,
+                        (transfer_to_col or "To Location"): to_location,
+                        (transfer_date_col or "Transfer Date"): transfer_date.strftime("%Y-%m-%d"),
+                        (transfer_approved_by_col or "Approved By"): approved_by,
+                    }
+
+                    if not transfers_df.empty:
+                        column_order = list(transfers_df.columns)
+                    else:
+                        column_order = [
+                            transfer_id_col or "Transfer ID",
+                            transfer_asset_id_col or "Asset ID",
+                            transfer_from_col or "From Location",
+                            transfer_to_col or "To Location",
+                            transfer_date_col or "Transfer Date",
+                            transfer_approved_by_col or "Approved By",
+                        ]
+                    data = [data_map.get(col, "") for col in column_order]
                     if append_data(SHEETS["transfers"], data):
                         if not assets_df.empty and asset_id_col:
                             asset_row = assets_df[
@@ -1911,12 +1999,12 @@ def asset_transfer_form():
                 for _, row in filtered_df.iterrows():
                     cols = st.columns([2, 2, 2, 2, 2, 2])
                     values = [
-                        row.get("Transfer ID", "N/A"),
-                        row.get("Asset ID", row.get(asset_id_col or "Asset ID", "N/A")),
-                        row.get("From Location", row.get("From", "N/A")),
-                        row.get("To Location", row.get("To", "N/A")),
-                        row.get("Transfer Date", "N/A"),
-                        row.get("Approved By", "N/A"),
+                        row.get(transfer_id_col or "Transfer ID", row.get("Transfer ID", "N/A")),
+                        row.get(transfer_asset_id_col or "Asset ID", row.get("Asset ID", "N/A")),
+                        row.get(transfer_from_col or "From Location", row.get("From Location", row.get("From", "N/A"))),
+                        row.get(transfer_to_col or "To Location", row.get("To Location", row.get("To", "N/A"))),
+                        row.get(transfer_date_col or "Transfer Date", row.get("Transfer Date", "N/A")),
+                        row.get(transfer_approved_by_col or "Approved By", row.get("Approved By", "N/A")),
                     ]
                     for col, value in zip(cols, values):
                         with col:
