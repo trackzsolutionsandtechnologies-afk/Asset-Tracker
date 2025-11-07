@@ -947,33 +947,20 @@ def category_form():
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
                 is_admin = user_role.lower() == "admin"
                 
-                # Table header - adjust columns based on admin status
+                header_cols = st.columns([2, 2, 3, 3, 1, 1] + ([1] if is_admin else []))
+                header_labels = [
+                    "**Sub Category ID**",
+                    "**Category ID**",
+                    "**Category Name**",
+                    "**Sub Category Name**",
+                    "**View**",
+                    "**Edit**",
+                ]
                 if is_admin:
-                    header_col1, header_col2, header_col3, header_col4, header_col5, header_col6 = st.columns([2, 2, 3, 3, 1, 1])
-                    with header_col1:
-                        st.write("**Sub Category ID**")
-                    with header_col2:
-                        st.write("**Category ID**")
-                    with header_col3:
-                        st.write("**Category Name**")
-                    with header_col4:
-                        st.write("**Sub Category Name**")
-                    with header_col5:
-                        st.write("**Edit**")
-                    with header_col6:
-                        st.write("**Delete**")
-                else:
-                    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 2, 3, 3, 1])
-                    with header_col1:
-                        st.write("**Sub Category ID**")
-                    with header_col2:
-                        st.write("**Category ID**")
-                    with header_col3:
-                        st.write("**Category Name**")
-                    with header_col4:
-                        st.write("**Sub Category Name**")
-                    with header_col5:
-                        st.write("**Edit**")
+                    header_labels.append("**Delete**")
+                for col_widget, label in zip(header_cols, header_labels):
+                    with col_widget:
+                        st.write(label)
                 st.divider()
 
                 # Display table with edit/delete buttons
@@ -985,10 +972,9 @@ def category_form():
                     else:
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
-                    if is_admin:
-                        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 3, 3, 1, 1])
-                    else:
-                        col1, col2, col3, col4, col5 = st.columns([2, 2, 3, 3, 1])
+                    cols = st.columns([2, 2, 3, 3, 1, 1] + ([1] if is_admin else []))
+                    col1, col2, col3, col4, col_view, col_edit = cols[:6]
+                    col_delete = cols[6] if is_admin else None
 
                     with col1:
                         st.write(row.get('SubCategory ID', 'N/A'))
@@ -998,15 +984,29 @@ def category_form():
                         st.write(row.get('Category Name', 'N/A'))
                     with col4:
                         st.write(row.get('SubCategory Name', 'N/A'))
-                    with col5:
+                    with col_view:
+                        if st.button("👁️", key=f"subcategory_view_{row.get('SubCategory ID', idx)}", use_container_width=True, help="View details"):
+                            record = {
+                                "Sub Category ID": row.get("SubCategory ID", ""),
+                                "Category ID": row.get("Category ID", ""),
+                                "Category Name": row.get("Category Name", ""),
+                                "Sub Category Name": row.get("SubCategory Name", ""),
+                            }
+                            _open_view_modal(
+                                "subcategory",
+                                f"Sub Category Details: {row.get('SubCategory Name', '')}",
+                                record,
+                                ["Sub Category ID", "Category ID", "Category Name", "Sub Category Name"],
+                            )
+                    with col_edit:
                         edit_key = f"edit_subcat_{row.get('SubCategory ID', idx)}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this subcategory"):
                             st.session_state["edit_subcategory_id"] = row.get('SubCategory ID', '')
                             st.session_state["edit_subcategory_idx"] = int(original_idx)  # Ensure it's a Python int
                             st.rerun()
                     # Only show delete button for admin users
-                    if is_admin:
-                        with col6:
+                    if is_admin and col_delete is not None:
+                        with col_delete:
                             delete_key = f"delete_subcat_{row.get('SubCategory ID', idx)}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this subcategory"):
                                 subcategory_name_to_delete = row.get('SubCategory Name', 'Unknown')
@@ -1022,6 +1022,7 @@ def category_form():
                                     st.error("Failed to delete subcategory")
                     
                     st.divider()
+                _render_view_modal("subcategory")
             elif search_term:
                 # Search returned no results, but search was performed
                 pass
@@ -1378,16 +1379,21 @@ def asset_master_form():
                 "Under Repair",
             ]
 
+            header_cols = st.columns([2, 3, 2, 2, 1, 1] + ([1] if is_admin else []))
+            header_labels = [
+                "**Asset ID**",
+                "**Name**",
+                "**Category**",
+                "**Location**",
+                "**View**",
+                "**Edit**",
+            ]
             if is_admin:
-                header_cols = st.columns([2, 3, 2, 2, 1, 1])
-                labels = ["Asset ID", "Name", "Category", "Location", "Edit", "Delete"]
-            else:
-                header_cols = st.columns([2, 3, 2, 2, 1])
-                labels = ["Asset ID", "Name", "Category", "Location", "Edit"]
+                header_labels.append("**Delete**")
 
-            for col, label in zip(header_cols, labels):
+            for col, label in zip(header_cols, header_labels):
                 with col:
-                    st.write(f"**{label}**")
+                    st.write(label)
 
             st.divider()
 
@@ -1397,20 +1403,26 @@ def asset_master_form():
                 original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
 
                 if is_admin:
-                    cols = st.columns([2, 3, 2, 2, 1, 1])
+                    cols = st.columns([2, 3, 2, 2, 1, 1, 1])
                 else:
-                    cols = st.columns([2, 3, 2, 2, 1])
+                    cols = st.columns([2, 3, 2, 2, 1, 1])
 
-                with cols[0]:
+                col_asset, col_name, col_category, col_location = cols[:4]
+                col_view = cols[4]
+                col_edit = cols[5]
+                col_delete = cols[6] if is_admin else None
+
+                with col_asset:
                     st.write(asset_id_value or "-")
-                with cols[1]:
+                with col_name:
                     st.write(row.get("Asset Name", row.get("Asset Name *", "-")))
-                with cols[2]:
+                with col_category:
                     st.write(row.get("Category", row.get("Category Name", "-")))
-                with cols[3]:
+                with col_location:
                     st.write(row.get("Location", "-"))
 
                 if st.session_state.get("edit_asset_id") == asset_id_value:
+                    col_view.write("-")
                     edit_form_key = f"asset_edit_form_{asset_id_value}"
                     with st.form(edit_form_key):
                         col_left, col_right = st.columns(2)
@@ -1650,13 +1662,56 @@ def asset_master_form():
                                 st.session_state.pop("edit_asset_idx", None)
                                 st.rerun()
                 else:
-                    with cols[4]:
+                    with col_view:
+                        if st.button(
+                            "👁️",
+                            key=f"asset_view_{asset_id_value}_{idx}",
+                            use_container_width=True,
+                            help="View asset details",
+                        ):
+                            record = {
+                                "Asset ID": asset_id_value,
+                                "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
+                                "Category": row.get("Category", row.get("Category Name", "")),
+                                "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
+                                "Location": row.get("Location", ""),
+                                "Assigned To": row.get("Assigned To", ""),
+                                "Status": row.get("Status", ""),
+                                "Condition": row.get("Condition", ""),
+                                "Supplier": row.get("Supplier", ""),
+                                "Model / Serial No": row.get("Model / Serial No", row.get("Model/Serial No", "")),
+                                "Purchase Date": row.get("Purchase Date", ""),
+                                "Purchase Cost": row.get("Purchase Cost", ""),
+                                "Remarks": row.get("Remarks", ""),
+                            }
+                            _open_view_modal(
+                                "asset",
+                                f"Asset Details: {asset_id_value}",
+                                record,
+                                [
+                                    "Asset ID",
+                                    "Asset Name",
+                                    "Category",
+                                    "Sub Category",
+                                    "Location",
+                                    "Assigned To",
+                                    "Status",
+                                    "Condition",
+                                    "Supplier",
+                                    "Model / Serial No",
+                                    "Purchase Date",
+                                    "Purchase Cost",
+                                    "Remarks",
+                                ],
+                            )
+
+                    with col_edit:
                         if st.button("✏️", key=f"asset_edit_{asset_id_value}", use_container_width=True, help="Edit this asset"):
                             st.session_state["edit_asset_id"] = asset_id_value
                             st.session_state["edit_asset_idx"] = original_idx
                             st.rerun()
-                    if is_admin:
-                        with cols[5]:
+                    if is_admin and col_delete is not None:
+                        with col_delete:
                             if st.button("🗑️", key=f"asset_delete_{asset_id_value}", use_container_width=True, help="Delete this asset"):
                                 if delete_data(SHEETS["assets"], original_idx):
                                     st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
@@ -1665,6 +1720,7 @@ def asset_master_form():
                                     st.error("Failed to delete asset")
 
                 st.divider()
+            _render_view_modal("asset")
 
         else:
             st.info("No assets found. Add a new asset using the 'Add New Asset' tab.")
