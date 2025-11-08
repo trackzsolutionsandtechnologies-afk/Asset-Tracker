@@ -241,28 +241,34 @@ def location_form():
                     """
                     <style>
                     .location-table-wrapper {
-                        border: 1px solid #b5d6eb;
+                        border: 1px solid #ee0000;
                         border-radius: 8px;
                         overflow: hidden;
                         margin-left: -10%;
                         margin-top: 12px;
-                        width: 120%;  
+                        width: 130%;  
+                        flex-direction: row;
+                        align-items: flex-start;
                     }
                     .location-table-row {
                         display: grid;
                         align-items: stretch;
                         border-bottom: 1px solid #d4d4d4;
+                        width: 130%; 
                     }
                     .location-table-row.header {
                         background: #d7effc;
                         font-weight: 600;
                         color: #21445b;
+                        width: 130%; 
                     }
                     .location-table-row.striped {
                         background: #f7f9fb;
+                        width: 130%; 
                     }
                     .location-table-row:not(.header) {
-                        background: #ffffff;
+                        background: #d7effc;
+                        width: 130%; 
                     }
                     .location-table-cell {
                         padding: 10px 12px;
@@ -270,12 +276,13 @@ def location_form():
                         display: flex;
                         align-items: center;
                         font-size: 15px;
+                        width: 130%; 
                     }
                     .location-table-cell:last-child {
                         border-right: none;
                     }
                     .location-table-actions {
-                        width: 100%;
+                        width: 130%;
                         display: flex;
                         justify-content: center;
                         gap: 6px;
