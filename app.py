@@ -162,13 +162,14 @@ def main():
                     "padding": "5px",
                  "background": "linear-gradient(180deg, #2b1542, #3a2060)",  # same as sidebar
                     "border-radius": "0px",
-                    "width": "338px"
+                    "width": "338px",
+                    "font-family": "'DIN', sans-serif", 
                    
                 },
                 "icon": {
                     "color": "#c3aed6",  # light lavender icons
                     "font-size": "20px",
-                    
+                    "font-family": "'DIN', sans-serif", 
                 },
                 "nav-link": {
                     "font-size": "16px",
@@ -178,13 +179,14 @@ def main():
                     "color": "#e4d9f5",  # light text
                     "border-radius": "8px",
                     "background-color": "transparent",
-        "transition": "all 0.3s ease",
-         "font-family": "'D-DIN', sans-serif",
+                    "transition": "all 0.3s ease",
+                    "font-family": "'D-DIN', sans-serif",
                     
                 },
   "nav-link-hover": {
             "background-color": "#4c2a85",  # mid purple highlight on hover
             "color": "#007bff",
+            "font-family": "'D-DIN', sans-serif",
         },
 
 
@@ -195,13 +197,14 @@ def main():
             "color": "white",
             "font-weight": "600",
             "box-shadow": "0 0 8px rgba(111, 66, 193, 0.5)",
+            "font-family": "'D-DIN', sans-serif",
                 },
                 "menu-title": {
                     "color": "#b897ff",
                     "font-size": "18px",
                     "font-weight": "600",
                     "margin-bottom": "10px",
-                     "font-family": "'D-DIN', sans-serif",
+                    "font-family": "'D-DIN', sans-serif",
                     
                 },
             }
