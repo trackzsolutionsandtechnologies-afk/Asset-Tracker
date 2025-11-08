@@ -272,10 +272,12 @@ def location_form():
                         justify-content: center;
                         gap: 6px;
                     }
-                    .location-table-actions button {
+                    .location-table-actions button,
+                    .location-table-actions button[data-testid^="stBaseButton"] {
                         border: none !important;
                         box-shadow: none !important;
                         background-color: transparent !important;
+                        outline: none !important;
                     }
                     .location-table-actions button:hover {
                         background-color: rgba(107, 70, 193, 0.1) !important;
