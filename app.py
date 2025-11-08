@@ -72,6 +72,13 @@ st.markdown("""
         display: none !important;
     }
 
+    /* Hide viewer badge / avatar row */
+    [data-testid="viewer-badge"] {
+        display: none !important;
+    }
+    .viewer-badge {
+        display: none !important;
+    }
 
     </style>
 """, unsafe_allow_html=True)
