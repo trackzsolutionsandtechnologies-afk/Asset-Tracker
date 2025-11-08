@@ -85,6 +85,24 @@ st.markdown("""
 
     .link_gzau3_10 {
         display: none !important;
+    }
+
+    /* Custom footer */
+    footer {
+        visibility: hidden;
+    }
+    footer:after {
+        content: "Trackz Solutions & Technologies";
+        visibility: visible;
+        display: block;
+        text-align: center;
+        padding: 1rem 0;
+        font-family: 'DIN', sans-serif;
+        font-size: 0.9rem;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2b1542, #3a2060);
+        margin-top: 2rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
