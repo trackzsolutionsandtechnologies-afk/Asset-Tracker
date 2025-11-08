@@ -83,25 +83,6 @@ st.markdown("""
         display: none !important;
     }
 
-    /* Ensure the sidebar toggle remains visible */
-    [data-testid="collapsedControl"] {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-    }
-    [data-testid="collapsedControl"] button {
-        background-color: #6f42c1 !important;
-        border: 1px solid #b897ff !important;
-        color: #ffffff !important;
-        box-shadow: none !important;
-    }
-    [data-testid="collapsedControl"] button:hover {
-        background-color: #4c2a85 !important;
-    }
-    [data-testid="collapsedControl"] button svg {
-        fill: #ffffff !important;
-    }
-
     .link_gzau3_10 {
         display: none !important;
     }
