@@ -258,6 +258,9 @@ def main():
         min-width: 338px !important;
         max-width: 338px !important;
     }
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
     [data-testid="stSidebar"] * {
         color: #e4d9f5 !important;
     }
