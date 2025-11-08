@@ -1426,25 +1426,6 @@ def asset_master_form():
     
     MAX_ATTACHMENT_CHARS = 48000  # ~35 KB base64 fits Google Sheets cell limit
 
-    asset_headers = [
-        "Asset ID",
-        "Asset Name",
-        "Category",
-        "Sub Category",
-        "Model/Serial No",
-        "Purchase Date",
-        "Purchase Cost",
-        "Warranty",
-        "Supplier",
-        "Location",
-        "Assigned To",
-        "Condition",
-        "Status",
-        "Remarks",
-        "Attachment",
-    ]
-    ensure_sheet_headers(SHEETS["assets"], asset_headers)
-
     assets_df = read_data(SHEETS["assets"])
     locations_df = read_data(SHEETS["locations"])
     suppliers_df = read_data(SHEETS["suppliers"])
