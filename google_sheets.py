@@ -216,6 +216,7 @@ def get_worksheet(sheet_name: str):
                 worksheet.append_row([
                     "Asset ID", "Asset Name", "Category", "Sub Category", 
                     "Model/Serial No", "Purchase Date", "Purchase Cost", 
+                    "Warranty",
                     "Supplier", "Location", "Assigned To", "Condition", 
                     "Status", "Remarks", "Attachment"
                 ])

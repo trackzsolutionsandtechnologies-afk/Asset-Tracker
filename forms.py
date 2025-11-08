@@ -1556,6 +1556,7 @@ def asset_master_form():
             
             with col2:
                 purchase_cost = st.number_input("Purchase Cost", min_value=0.0, value=0.0, step=0.01)
+                warranty = st.selectbox("Warranty", ["No", "Yes"])
                 
                 if not suppliers_df.empty:
                     supplier_options = suppliers_df["Supplier Name"].tolist()
@@ -1628,6 +1629,7 @@ def asset_master_form():
                         model_serial,
                         purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
                         purchase_cost,
+                        warranty,
                         supplier if supplier != "None" else "",
                         location if location != "None" else "",
                         assigned_to if assigned_to != "None" else "",
@@ -1688,12 +1690,16 @@ def asset_master_form():
                 "Under Repair",
             ]
 
-            header_cols = st.columns([2, 3, 2, 2, 1, 1] + ([1] if is_admin else []))
+            if is_admin:
+                header_cols = st.columns([2, 3, 2, 2, 1, 1, 1, 1])
+            else:
+                header_cols = st.columns([2, 3, 2, 2, 1, 1, 1])
             header_labels = [
                 "**Asset ID**",
                 "**Name**",
                 "**Category**",
                 "**Location**",
+                "**Warranty**",
                 "**View**",
                 "**Edit**",
             ]
@@ -1712,14 +1718,14 @@ def asset_master_form():
                 original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
 
                 if is_admin:
-                    cols = st.columns([2, 3, 2, 2, 1, 1, 1])
+                    cols = st.columns([2, 3, 2, 2, 1, 1, 1, 1])
                 else:
-                    cols = st.columns([2, 3, 2, 2, 1, 1])
+                    cols = st.columns([2, 3, 2, 2, 1, 1, 1])
 
-                col_asset, col_name, col_category, col_location = cols[:4]
-                col_view = cols[4]
-                col_edit = cols[5]
-                col_delete = cols[6] if is_admin else None
+                col_asset, col_name, col_category, col_location, col_warranty = cols[:5]
+                col_view = cols[5]
+                col_edit = cols[6]
+                col_delete = cols[7] if is_admin else None
 
                 with col_asset:
                     st.write(asset_id_value or "-")
@@ -1731,6 +1737,7 @@ def asset_master_form():
                     st.write(row.get("Location", "-"))
 
                 if st.session_state.get("edit_asset_id") == asset_id_value:
+                    col_warranty.write("-")
                     col_view.write("-")
                     edit_form_key = f"asset_edit_form_{asset_id_value}"
                     with st.form(edit_form_key):
@@ -1870,6 +1877,12 @@ def asset_master_form():
                                 value=float(str(row.get("Purchase Cost", 0)).replace(",", "") or 0),
                                 step=0.01,
                             )
+                            warranty_existing = str(row.get("Warranty", "")).strip().lower()
+                            warranty_edit = st.selectbox(
+                                "Warranty",
+                                ["No", "Yes"],
+                                index=1 if warranty_existing == "yes" else 0,
+                            )
 
                             if not suppliers_df.empty:
                                 supplier_options = suppliers_df["Supplier Name"].tolist()
@@ -1947,6 +1960,7 @@ def asset_master_form():
                                     model_serial,
                                     new_purchase_date.strftime("%Y-%m-%d"),
                                     purchase_cost,
+                                    warranty_edit,
                                     new_supplier if new_supplier != "None" else "",
                                     new_location if new_location != "None" else "",
                                     assigned_to if assigned_to != "None" else "",
@@ -1971,6 +1985,8 @@ def asset_master_form():
                                 st.session_state.pop("edit_asset_idx", None)
                                 st.rerun()
                 else:
+                    with col_warranty:
+                        st.write(row.get("Warranty", "N/A"))
                     with col_view:
                         if st.button(
                             "👁️",
@@ -1991,6 +2007,7 @@ def asset_master_form():
                                 "Model / Serial No": row.get("Model / Serial No", row.get("Model/Serial No", "")),
                                 "Purchase Date": row.get("Purchase Date", ""),
                                 "Purchase Cost": row.get("Purchase Cost", ""),
+                                "Warranty": row.get("Warranty", ""),
                                 "Remarks": row.get("Remarks", ""),
                             }
                             _open_view_modal(
@@ -2010,6 +2027,7 @@ def asset_master_form():
                                     "Model / Serial No",
                                     "Purchase Date",
                                     "Purchase Cost",
+                                    "Warranty",
                                     "Remarks",
                                 ],
                             )
