@@ -1513,22 +1513,59 @@ def asset_master_form():
             unsafe_allow_html=True,
         )
         
+        asset_form_keys = {
+            "auto_generate": "asset_auto_generate",
+            "asset_id": "asset_id_input",
+            "asset_name": "asset_name_input",
+            "category_select": "asset_category_select",
+            "subcategory_select": "asset_subcategory_select",
+            "model_serial": "asset_model_serial",
+            "purchase_date": "asset_purchase_date",
+            "purchase_cost": "asset_purchase_cost",
+            "warranty": "asset_warranty",
+            "supplier": "asset_supplier",
+            "location": "asset_location",
+            "assigned_to": "asset_assigned_to",
+            "condition": "asset_condition",
+            "status": "asset_status",
+            "remarks": "asset_remarks",
+            "attachment": "asset_attachment",
+        }
+
+        if asset_form_keys["auto_generate"] not in st.session_state:
+            st.session_state[asset_form_keys["auto_generate"]] = True
+        if asset_form_keys["purchase_date"] not in st.session_state:
+            st.session_state[asset_form_keys["purchase_date"]] = datetime.now().date()
+        if asset_form_keys["purchase_cost"] not in st.session_state:
+            st.session_state[asset_form_keys["purchase_cost"]] = 0.0
+
         with st.form("asset_form"):
             col1, col2 = st.columns(2)
             
             with col1:
-                auto_generate = st.checkbox("Auto-generate Asset ID", value=True)
+                auto_generate = st.checkbox(
+                    "Auto-generate Asset ID",
+                    key=asset_form_keys["auto_generate"],
+                )
+                asset_id_key = asset_form_keys["asset_id"]
                 if auto_generate:
-                    # Generate ID once and store in session state
                     if "generated_asset_id" not in st.session_state:
                         st.session_state["generated_asset_id"] = generate_asset_id()
-                    asset_id = st.text_input("Asset ID / Barcode", value=st.session_state["generated_asset_id"], disabled=True)
+                    st.session_state[asset_id_key] = st.session_state["generated_asset_id"]
                 else:
-                    asset_id = st.text_input("Asset ID / Barcode *")
+                    if st.session_state.get(asset_id_key) == st.session_state.get("generated_asset_id"):
+                        st.session_state[asset_id_key] = ""
                     if "generated_asset_id" in st.session_state:
                         del st.session_state["generated_asset_id"]
+
+                asset_id_label = "Asset ID / Barcode" if auto_generate else "Asset ID / Barcode *"
+                asset_id = st.text_input(
+                    asset_id_label,
+                    key=asset_id_key,
+                    disabled=auto_generate,
+                )
                 
-                asset_name = st.text_input("Asset Name *")
+                asset_name = st.text_input("Asset Name *", key=asset_form_keys["asset_name"])
                 
                 if not subcategories_df.empty and subcat_name_col:
                     subcategory_name_options = unique_clean(subcategories_df[subcat_name_col])
@@ -1539,14 +1576,14 @@ def asset_master_form():
                     category = st.selectbox(
                         "Category (Sub Category Name) *",
                         ["Select sub category"] + subcategory_name_options,
-                        key="asset_category_select",
+                        key=asset_form_keys["category_select"],
                     )
                 else:
                     category = st.selectbox(
                         "Category (Sub Category Name) *",
                         ["No subcategories available"],
                         disabled=True,
-                        key="asset_category_select",
+                        key=asset_form_keys["category_select"],
                     )
                     category = ""
 
@@ -1595,38 +1632,48 @@ def asset_master_form():
                 subcategory = st.selectbox(
                     "Sub Category (Category Name)",
                     subcategory_options,
-                    key="asset_subcategory_select",
+                    key=asset_form_keys["subcategory_select"],
                     help=category_help,
                 )
                 
-                model_serial = st.text_input("Model / Serial No")
-                purchase_date = st.date_input("Purchase Date")
+                model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
+                purchase_date = st.date_input(
+                    "Purchase Date",
+                    value=st.session_state.get(asset_form_keys["purchase_date"], datetime.now().date()),
+                    key=asset_form_keys["purchase_date"],
+                )
             
             with col2:
-                purchase_cost = st.number_input("Purchase Cost", min_value=0.0, value=0.0, step=0.01)
-                warranty = st.selectbox("Warranty", ["No", "Yes"])
+                purchase_cost = st.number_input(
+                    "Purchase Cost",
+                    min_value=0.0,
+                    value=st.session_state.get(asset_form_keys["purchase_cost"], 0.0),
+                    step=0.01,
+                    key=asset_form_keys["purchase_cost"],
+                )
+                warranty = st.selectbox("Warranty", ["No", "Yes"], key=asset_form_keys["warranty"])
                 
                 if not suppliers_df.empty:
                     supplier_options = suppliers_df["Supplier Name"].tolist()
-                    supplier = st.selectbox("Supplier", ["None"] + supplier_options)
+                    supplier = st.selectbox("Supplier", ["None"] + supplier_options, key=asset_form_keys["supplier"])
                 else:
-                    supplier = st.text_input("Supplier")
+                    supplier = st.text_input("Supplier", key=asset_form_keys["supplier"])
                 
                 if not locations_df.empty:
                     location_options = locations_df["Location Name"].tolist()
-                    location = st.selectbox("Location", ["None"] + location_options)
+                    location = st.selectbox("Location", ["None"] + location_options, key=asset_form_keys["location"])
                 else:
-                    location = st.text_input("Location")
+                    location = st.text_input("Location", key=asset_form_keys["location"])
                 
                 refresh_key = st.session_state.pop("refresh_asset_users", False)
                 if refresh_key:
                     users_df = read_data(SHEETS["users"])
                 if not users_df.empty and user_username_col and user_username_col in users_df.columns:
                     user_options = ["None"] + users_df[user_username_col].dropna().astype(str).tolist()
-                    assigned_to = st.selectbox("Assigned To", user_options)
+                    assigned_to = st.selectbox("Assigned To", user_options, key=asset_form_keys["assigned_to"])
                 else:
-                    assigned_to = st.text_input("Assigned To")
-                condition = st.selectbox("Condition", ["Excellent", "Good", "Fair", "Poor", "Damaged"])
+                    assigned_to = st.text_input("Assigned To", key=asset_form_keys["assigned_to"])
+                condition = st.selectbox("Condition", ["Excellent", "Good", "Fair", "Poor", "Damaged"], key=asset_form_keys["condition"])
                 status = st.selectbox(
                     "Status",
                     [
@@ -1638,12 +1685,14 @@ def asset_master_form():
                         "Returned",
                         "Under Repair",
                     ],
+                    key=asset_form_keys["status"],
                 )
-                remarks = st.text_area("Remarks")
+                remarks = st.text_area("Remarks", key=asset_form_keys["remarks"])
                 attachment_file = st.file_uploader(
                     "Attachment (Image or File)",
                     type=None,
                     help="Upload related documents or images.",
+                    key=asset_form_keys["attachment"],
                 )
                 attachment = ""
                 attachment_too_large = False
@@ -1694,26 +1743,27 @@ def asset_master_form():
 
                         st.session_state["asset_success_message"] = "Asset added successfully!"
                         reset_keys = [
-                            "Asset ID / Barcode",
-                            "Asset ID / Barcode *",
-                            "Asset Name *",
-                            "Model / Serial No",
-                            "Purchase Cost",
-                            "Warranty",
-                            "Supplier",
-                            "Location",
-                            "Assigned To",
-                            "Condition",
-                            "Status",
-                            "Remarks",
-                            "Attachment (Image or File)",
-                            "Purchase Date",
+                            asset_form_keys["asset_id"],
+                            asset_form_keys["asset_name"],
+                            asset_form_keys["category_select"],
+                            asset_form_keys["subcategory_select"],
+                            asset_form_keys["model_serial"],
+                            asset_form_keys["purchase_cost"],
+                            asset_form_keys["warranty"],
+                            asset_form_keys["supplier"],
+                            asset_form_keys["location"],
+                            asset_form_keys["assigned_to"],
+                            asset_form_keys["condition"],
+                            asset_form_keys["status"],
+                            asset_form_keys["remarks"],
+                            asset_form_keys["attachment"],
+                            asset_form_keys["purchase_date"],
                         ]
                         for state_key in reset_keys:
                             st.session_state.pop(state_key, None)
-                        st.session_state.pop("asset_category_select", None)
-                        st.session_state.pop("asset_subcategory_select", None)
-                        st.session_state["Auto-generate Asset ID"] = True
+                        st.session_state[asset_form_keys["auto_generate"]] = True
+                        st.session_state[asset_form_keys["purchase_cost"]] = 0.0
+                        st.session_state[asset_form_keys["purchase_date"]] = datetime.now().date()
                         st.rerun()
                     else:
                         st.error("Failed to add asset")
