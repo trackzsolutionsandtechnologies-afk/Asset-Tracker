@@ -1484,6 +1484,35 @@ def asset_master_form():
     tab1, tab2, tab3 = st.tabs(["Add New Asset", "View/Edit Assets", "Reports"])
     
     with tab1:
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stTabPanel"] div[data-testid="stForm"] {
+                background-color: white !important;
+                padding: 20px !important;
+                border-radius: 10px !important;
+                border: 1px solid #e0e0e0 !important;
+            }
+            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"],
+            button.stButton > button[kind="primary"] {
+                background-color: #28a745 !important;
+                color: white !important;
+                border-color: #28a745 !important;
+            }
+            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"]:hover,
+            button.stButton > button[kind="primary"]:hover {
+                background-color: #218838 !important;
+                border-color: #1e7e34 !important;
+            }
+            [data-testid="stStatusWidget"],
+            .stSpinner {
+                display: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        
         with st.form("asset_form"):
             col1, col2 = st.columns(2)
             
