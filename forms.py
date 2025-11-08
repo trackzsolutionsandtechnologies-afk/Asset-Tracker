@@ -1741,27 +1741,6 @@ def asset_master_form():
             view_placeholder = st.empty()
             edit_placeholder = st.empty()
 
-            st.markdown(
-                """
-                <style>
-                div[data-testid="column"] div[data-testid="stButton"] button,
-                div[data-testid="column"] button[kind="secondary"],
-                div[data-testid="column"] div[data-testid^="baseButton"] button {
-                    border: none !important;
-                    background: none !important;
-                    box-shadow: none !important;
-                    padding: 0 !important;
-                }
-                div[data-testid="column"] div[data-testid="stButton"] button:focus-visible,
-                div[data-testid="column"] button[kind="secondary"]:focus-visible,
-                div[data-testid="column"] div[data-testid^="baseButton"] button:focus-visible {
-                    outline: none !important;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-
             if is_admin:
                 header_cols = st.columns([3, 4, 4, 4, 1, 1, 1])
             else:
