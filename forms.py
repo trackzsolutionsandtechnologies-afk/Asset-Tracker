@@ -982,8 +982,8 @@ def category_form():
             div[data-testid="stForm"] {
                 background-color: white !important;
                 padding: 20px !important;
-                border-radius: 10px !important;
-                border: 1px solid #e0e0e0 !important;
+                
+                border: none !important;
             }
             /* Target the primary button in the subcategory form */
             div[data-testid="stForm"] button[kind="primary"],
@@ -1740,6 +1740,22 @@ def asset_master_form():
 
             view_placeholder = st.empty()
             edit_placeholder = st.empty()
+
+            st.markdown(
+                """
+                <style>
+                div[data-testid="column"] button[kind="secondary"] {
+                    border: none !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                }
+                div[data-testid="column"] button[kind="secondary"]:focus-visible {
+                    outline: none !important;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
 
             if is_admin:
                 header_cols = st.columns([3, 4, 4, 4, 1, 1, 1])
