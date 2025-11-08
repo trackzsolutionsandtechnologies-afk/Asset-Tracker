@@ -107,40 +107,41 @@ def location_form():
     
     with tab1:
         # Green Add Location button styling, white form background, and hide loading indicators
-        st.markdown("""
+        st.markdown(
+            """
             <style>
             /* White background for Add Location */
-            div[data-testid="stForm"] {
+            div[data-testid="stTabPanel"]:first-of-type div[data-testid="stForm"] {
                 background-color: white !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
-                width: 900px !important; 
+                width: 900px !important;
                 max-width: 900px !important;
                 margin-left: -120px !important;
                 border: 1px solid #e0e0e0 !important;
             }
             /* Target the primary button in the Location section */
-            div[data-testid="stForm"] button[kind="primary"],
-            button.stButton > button[kind="primary"] {
+            div[data-testid="stTabPanel"]:first-of-type div[data-testid="stForm"] button[kind="primary"],
+            div[data-testid="stTabPanel"]:first-of-type button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;
                 color: white !important;
                 border-color: #28a745 !important;
             }
-            div[data-testid="stForm"] button[kind="primary"]:hover,
-            button.stButton > button[kind="primary"]:hover {
+            div[data-testid="stTabPanel"]:first-of-type div[data-testid="stForm"] button[kind="primary"]:hover,
+            div[data-testid="stTabPanel"]:first-of-type button.stButton > button[kind="primary"]:hover {
                 background-color: #218838 !important;
                 border-color: #1e7e34 !important;
             }
             /* Hide loading indicators */
-            [data-testid="stStatusWidget"] {
-                display: none !important;
-            }
-            .stSpinner {
+            div[data-testid="stTabPanel"]:first-of-type [data-testid="stStatusWidget"],
+            div[data-testid="stTabPanel"]:first-of-type .stSpinner {
                 display: none !important;
             }
             </style>
-        """, unsafe_allow_html=True)
-        
+            """,
+            unsafe_allow_html=True,
+        )
+
         # Show success message if exists
         if "location_success_message" in st.session_state:
             st.success(st.session_state["location_success_message"])
@@ -191,6 +192,17 @@ def location_form():
                             st.error("Failed to add location")
     
     with tab2:
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stTabPanel"]:nth-of-type(2) > div:first-child {
+                max-width: 1100px !important;
+                margin-left: -80px !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
         # Show success message if exists
         if "location_success_message" in st.session_state:
             st.success(st.session_state["location_success_message"])
