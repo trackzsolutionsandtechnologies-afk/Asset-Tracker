@@ -1490,19 +1490,19 @@ def asset_master_form():
             div[data-testid="stTabPanel"] div[data-testid="stForm"] {
                 background-color: white !important;
                 padding: 20px !important;
-                border-radius: none !important;
-                border: none !important;
+                border-radius: 10px !important;
+                border: 1px solid #e0e0e0 !important;
             }
             div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"],
             button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;
                 color: white !important;
-                border-color: none !important;
+                border-color: #28a745 !important;
             }
             div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"]:hover,
             button.stButton > button[kind="primary"]:hover {
                 background-color: #218838 !important;
-                border-color: none !important;
+                border-color: #1e7e34 !important;
             }
             [data-testid="stStatusWidget"],
             .stSpinner {
@@ -3066,6 +3066,37 @@ def employee_assignment_form():
             background-color: #218838 !important;
             border-color: #1e7e34 !important;
         }
+/* Remove border from secondary buttons (e.g., 👁️, ✏️, 🗑️) */
+        div[data-testid="stForm"] button[kind="secondary"],
+        button.stButton > button[kind="secondary"],
+        [data-testid="stBaseButton-secondary"] {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent !important; /* optional: makes it flat */
+        }
+        div[data-testid="stForm"] button[kind="secondary"]:hover,
+        button.stButton > button[kind="secondary"]:hover {
+            border: none !important;
+            box-shadow: none !important;
+            background: #f9f9f9 !important; /* optional hover effect */
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         [data-testid="stStatusWidget"],
         .stSpinner {
             display: none !important;
