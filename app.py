@@ -212,10 +212,18 @@ def main():
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #2b1542, #3a2060);
         color: #e4d9f5;
+        width: 338px !important;
+        min-width: 338px !important;
+        max-width: 338px !important;
     }
     [data-testid="stSidebar"] * {
         color: #e4d9f5 !important;
     }
+    [data-testid="stSidebarResizeHandle"] {
+        display: none !important;
+    }
+
+
     </style>
     """,
     unsafe_allow_html=True
