@@ -248,7 +248,8 @@ def location_form():
                         margin-top: 20px;
                         margin-left: auto;
                         margin-right: auto;
-                        width: 95%;
+                        width: 100%;
+                        max-width: 1100px;
                         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
                         background-color: #fff;
                     }
@@ -256,6 +257,7 @@ def location_form():
                     /* === Table Row === */
                     .location-table-row {
                         display: grid;
+                        grid-template-columns: 220px 320px 220px 100px 100px 100px;
                         align-items: center;
                         border-bottom: 1px solid #eee;
                         font-family: "DIN", sans-serif;
