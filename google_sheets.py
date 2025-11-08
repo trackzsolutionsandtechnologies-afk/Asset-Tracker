@@ -219,6 +219,23 @@ def get_worksheet(sheet_name: str):
                     "Supplier", "Location", "Assigned To", "Condition", 
                     "Status", "Remarks", "Attachment"
                 ])
+            elif sheet_name == SHEETS["depreciation"]:
+                worksheet.append_row([
+                    "Schedule ID",
+                    "Asset ID",
+                    "Asset Name",
+                    "Purchase Date",
+                    "Purchase Cost",
+                    "Useful Life (Years)",
+                    "Salvage Value",
+                    "Method",
+                    "Period",
+                    "Period End",
+                    "Opening Value",
+                    "Depreciation",
+                    "Closing Value",
+                    "Generated On",
+                ])
             elif sheet_name == SHEETS["transfers"]:
                 worksheet.append_row([
                     "Transfer ID", "Asset ID", "From Location", "To Location", 

@@ -13,6 +13,7 @@ from forms import (
     asset_master_form,
     asset_transfer_form,
     asset_maintenance_form,
+    asset_depreciation_form,
     employee_assignment_form,
     user_management_form,
 )
@@ -87,6 +88,7 @@ def main():
                 "Asset Master",
                 "Asset Transfer",
                 "Asset Maintenance",
+                "Asset Depreciation",
                 "Employee Assignment",
                 "Users",
                 "Scan Barcode",
@@ -100,6 +102,7 @@ def main():
                 "box-seam",
                 "arrow-repeat",
                 "tools",
+                "graph-down",
                 "person-badge",
                 "people",
                 "search",
@@ -123,6 +126,8 @@ def main():
         asset_transfer_form()
     elif selected == "Asset Maintenance":
         asset_maintenance_form()
+    elif selected == "Asset Depreciation":
+        asset_depreciation_form()
     elif selected == "Employee Assignment":
         employee_assignment_form()
     elif selected == "Users":

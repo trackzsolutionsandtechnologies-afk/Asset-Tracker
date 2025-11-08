@@ -18,7 +18,8 @@ SHEETS = {
     "transfers": "Transfers",
     "maintenance": "AssetMaintenance",
     "assignments": "EmployeeAssignments",
-    "password_resets": "PasswordResets"
+    "password_resets": "PasswordResets",
+    "depreciation": "Depreciation",
 }
 
 def get_config():
@@ -53,7 +54,8 @@ def get_config():
                 "transfers": sheets_config.get("transfers", SHEETS["transfers"]),
                 "maintenance": sheets_config.get("maintenance", SHEETS["maintenance"]),
                 "assignments": sheets_config.get("assignments", SHEETS["assignments"]),
-                "password_resets": sheets_config.get("password_resets", SHEETS["password_resets"])
+                "password_resets": sheets_config.get("password_resets", SHEETS["password_resets"]),
+                "depreciation": sheets_config.get("depreciation", SHEETS["depreciation"]),
             }
     except Exception as e:
         # If secrets are not available, use defaults

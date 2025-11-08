@@ -344,6 +344,292 @@ def location_form():
         else:
             st.info("No locations found. Add a new location using the 'Add New Location' tab.")
 
+def asset_depreciation_form():
+    """Asset Depreciation schedules based on Asset Master data."""
+    st.header("📉 Asset Depreciation")
+
+    expected_headers = [
+        "Schedule ID",
+        "Asset ID",
+        "Asset Name",
+        "Purchase Date",
+        "Purchase Cost",
+        "Useful Life (Years)",
+        "Salvage Value",
+        "Method",
+        "Period",
+        "Period End",
+        "Opening Value",
+        "Depreciation",
+        "Closing Value",
+        "Generated On",
+    ]
+    ensure_sheet_headers(SHEETS["depreciation"], expected_headers)
+
+    assets_df = read_data(SHEETS["assets"])
+    depreciation_df = read_data(SHEETS["depreciation"])
+
+    def _get_asset_record(asset_id: str) -> Dict[str, str]:
+        if assets_df.empty or "Asset ID" not in assets_df.columns:
+            return {}
+        matches = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id)]
+        if matches.empty:
+            return {}
+        return matches.iloc[0].to_dict()
+
+    def _parse_purchase_date(value) -> Optional[datetime]:
+        if not value:
+            return None
+        try:
+            return pd.to_datetime(value, errors="coerce").to_pydatetime()
+        except Exception:
+            return None
+
+    def _calculate_schedule(
+        asset_id: str,
+        asset_name: str,
+        purchase_date: datetime,
+        purchase_cost: float,
+        useful_life: int,
+        salvage_value: float,
+    ) -> Dict[str, object]:
+        if useful_life <= 0:
+            return {"error": "Useful life must be greater than zero."}
+        if purchase_cost < 0:
+            return {"error": "Purchase cost cannot be negative."}
+        if salvage_value < 0:
+            return {"error": "Salvage value cannot be negative."}
+        if salvage_value > purchase_cost:
+            return {"error": "Salvage value cannot exceed purchase cost."}
+
+        cost = float(purchase_cost)
+        salvage = float(salvage_value)
+        straight_line = (cost - salvage) / useful_life if useful_life else 0.0
+        straight_line = max(straight_line, 0.0)
+
+        schedule_rows: List[Dict[str, object]] = []
+        opening_value = cost
+
+        for period_index in range(1, useful_life + 1):
+            depreciation_amount = straight_line
+            closing_value = opening_value - depreciation_amount
+            if period_index == useful_life:
+                # Force closing value to salvage to avoid rounding drift.
+                closing_value = salvage
+                depreciation_amount = opening_value - closing_value
+
+            period_end = purchase_date + pd.DateOffset(years=period_index)
+            schedule_rows.append(
+                {
+                    "Period": f"Year {period_index}",
+                    "Period End": period_end.strftime("%Y-%m-%d"),
+                    "Opening Value": round(opening_value, 2),
+                    "Depreciation": round(depreciation_amount, 2),
+                    "Closing Value": round(closing_value, 2),
+                }
+            )
+            opening_value = closing_value
+
+        schedule_df = pd.DataFrame(schedule_rows)
+        generated_on = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            import uuid
+
+            schedule_id = f"DEP-{uuid.uuid4().hex[:8].upper()}"
+        except Exception:
+            schedule_id = f"DEP-{int(datetime.now().timestamp())}"
+
+        sheet_rows = []
+        for row in schedule_rows:
+            sheet_rows.append(
+                [
+                    schedule_id,
+                    asset_id,
+                    asset_name,
+                    purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
+                    round(cost, 2),
+                    useful_life,
+                    round(salvage, 2),
+                    "Straight-Line",
+                    row["Period"],
+                    row["Period End"],
+                    row["Opening Value"],
+                    row["Depreciation"],
+                    row["Closing Value"],
+                    generated_on,
+                ]
+            )
+
+        return {
+            "schedule_id": schedule_id,
+            "dataframe": schedule_df,
+            "sheet_rows": sheet_rows,
+            "generated_on": generated_on,
+        }
+
+    tab_generate, tab_view = st.tabs(["Generate Schedule", "View Schedules"])
+
+    with tab_generate:
+        if assets_df.empty or "Asset ID" not in assets_df.columns:
+            st.info("No assets found. Add assets in the Asset Master first.")
+        else:
+            asset_options = []
+            for _, row in assets_df.iterrows():
+                asset_id = str(row.get("Asset ID", "")).strip()
+                asset_name = str(row.get("Asset Name", "")).strip()
+                if asset_id:
+                    label = f"{asset_id} – {asset_name}" if asset_name else asset_id
+                    asset_options.append((label, asset_id))
+
+            asset_options = sorted(asset_options, key=lambda x: x[0])
+
+            with st.form("depreciation_form"):
+                asset_labels = [option[0] for option in asset_options]
+                selection = st.selectbox(
+                    "Select Asset",
+                    asset_labels,
+                    help="Choose the asset to calculate depreciation for.",
+                )
+                selected_asset_id = next(
+                    (asset_id for label, asset_id in asset_options if label == selection),
+                    "",
+                )
+                asset_record = _get_asset_record(selected_asset_id)
+
+                default_cost = 0.0
+                if asset_record:
+                    try:
+                        default_cost = float(asset_record.get("Purchase Cost", 0) or 0)
+                    except Exception:
+                        default_cost = 0.0
+
+                default_purchase_date = _parse_purchase_date(asset_record.get("Purchase Date"))
+                if default_purchase_date is None:
+                    default_purchase_date = datetime.now()
+
+                purchase_date_input = st.date_input(
+                    "Purchase Date",
+                    value=default_purchase_date.date(),
+                    help="Adjust if the purchase date in Asset Master is incorrect.",
+                )
+                purchase_cost_input = st.number_input(
+                    "Purchase Cost",
+                    min_value=0.0,
+                    value=float(round(default_cost, 2)) if default_cost else 0.0,
+                    step=0.01,
+                )
+                useful_life_input = st.number_input(
+                    "Useful Life (years)",
+                    min_value=1,
+                    value=5,
+                    step=1,
+                )
+                salvage_value_input = st.number_input(
+                    "Salvage Value",
+                    min_value=0.0,
+                    value=0.0,
+                    step=0.01,
+                )
+                st.selectbox(
+                    "Depreciation Method",
+                    ["Straight-Line"],
+                    index=0,
+                    help="Straight-line depreciation spreads cost evenly across years.",
+                )
+
+                submitted = st.form_submit_button(
+                    "Calculate Depreciation", use_container_width=True
+                )
+
+            if submitted:
+                if not selected_asset_id:
+                    st.error("Please select an asset.")
+                else:
+                    asset_name = str(asset_record.get("Asset Name", "")).strip()
+                    schedule_result = _calculate_schedule(
+                        selected_asset_id,
+                        asset_name,
+                        datetime.combine(purchase_date_input, datetime.min.time()),
+                        purchase_cost_input,
+                        int(useful_life_input),
+                        salvage_value_input,
+                    )
+                    if isinstance(schedule_result, dict) and schedule_result.get("error"):
+                        st.error(schedule_result["error"])
+                    else:
+                        st.session_state["depreciation_generated_schedule"] = {
+                            "asset_id": selected_asset_id,
+                            "asset_name": asset_name,
+                            **schedule_result,
+                        }
+                        st.success("Depreciation schedule generated.")
+
+        state_key = "depreciation_generated_schedule"
+        if state_key in st.session_state:
+            schedule_state = st.session_state[state_key]
+            st.subheader(
+                f"Schedule Preview · {schedule_state['asset_id']} "
+                f"{'('+schedule_state['asset_name']+')' if schedule_state['asset_name'] else ''}"
+            )
+            st.dataframe(schedule_state["dataframe"], use_container_width=True)
+
+            csv_data = schedule_state["dataframe"].to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Download CSV",
+                csv_data,
+                file_name=f"{schedule_state['asset_id']}_depreciation.csv",
+                mime="text/csv",
+            )
+
+            if st.button("Save schedule to Google Sheet", use_container_width=True):
+                all_saved = True
+                for row in schedule_state["sheet_rows"]:
+                    if not append_data(SHEETS["depreciation"], row):
+                        all_saved = False
+                        break
+                if all_saved:
+                    st.success("Depreciation schedule saved to Google Sheet.")
+                    st.session_state.pop(state_key, None)
+                    st.rerun()
+                else:
+                    st.error("Failed to save the schedule. Please try again.")
+
+    with tab_view:
+        if depreciation_df.empty:
+            st.info("No depreciation schedules found. Generate one to get started.")
+            return
+
+        asset_filter_options = ["All Assets"] + sorted(
+            depreciation_df.get("Asset ID", pd.Series(dtype=str)).dropna().astype(str).unique().tolist()
+        )
+        asset_filter = st.selectbox("Filter by Asset", asset_filter_options)
+
+        filtered_df = depreciation_df.copy()
+        if asset_filter != "All Assets":
+            filtered_df = filtered_df[filtered_df["Asset ID"].astype(str) == asset_filter]
+
+        if filtered_df.empty:
+            st.info("No schedules match the selected filters.")
+            return
+
+        schedule_ids = filtered_df["Schedule ID"].dropna().unique().tolist()
+        schedule_filter_options = ["All Schedules"] + schedule_ids
+        schedule_filter = st.selectbox("Filter by Schedule", schedule_filter_options)
+
+        if schedule_filter != "All Schedules":
+            filtered_df = filtered_df[filtered_df["Schedule ID"] == schedule_filter]
+
+        st.caption(f"Showing {len(filtered_df)} depreciation row(s).")
+        st.dataframe(filtered_df, use_container_width=True)
+
+        csv_export = filtered_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download Filtered CSV",
+            csv_export,
+            file_name="depreciation_schedules.csv",
+            mime="text/csv",
+        )
+
 def supplier_form():
     """Supplier"""
     st.header("🚚 Supplier Management")
