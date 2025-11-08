@@ -201,7 +201,7 @@ def main():
                     "padding": "5px",
                  "background": "linear-gradient(180deg, #2b1542, #3a2060)",  # same as sidebar
                     "border-radius": "0px",
-                    "width": "338px",
+                    "width": "200px",
                     "font-family": "'DIN', sans-serif", 
                    
                 },
