@@ -1497,12 +1497,12 @@ def asset_master_form():
             button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;
                 color: white !important;
-                border-color: #28a745 !important;
+                border: none !important;
             }
             div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"]:hover,
             button.stButton > button[kind="primary"]:hover {
                 background-color: #218838 !important;
-                border-color: #1e7e34 !important;
+                border: none !important;
             }
             [data-testid="stStatusWidget"],
             .stSpinner {
