@@ -116,6 +116,7 @@ def location_form():
                 border-radius: 10px !important;
                 width: 900px !important; 
                 max-width: 900px !important;
+                margin-left: -120px !important;
                 border: 1px solid #e0e0e0 !important;
             }
             /* Target the primary button in the Location section */
