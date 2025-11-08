@@ -29,11 +29,6 @@ st.markdown("""
         color: #262730 !important;
     }
 
-    /* Sidebar also white */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff !important;
-    }
-
     /* Make buttons white with blue border */
     div.stButton > button {
         background-color: #B7A3E3 !important;
@@ -48,16 +43,6 @@ st.markdown("""
         background-color: #5C3E94 !important;
         color: #ffffff !important;
     }
-
- [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2b1542, #3a2060);
-        color: #e4d9f5;
-        width: 280px;  /* set your desired width */
-    }
-    [data-testid="stSidebar"] * {
-        color: #e4d9f5 !important;
-    }
-
 
 [data-testid="stToolbar"] {
         display: none !important;
@@ -80,10 +65,6 @@ st.markdown("""
     }
     [data-testid="appCreatorAvatar"],
     a[href*="share.streamlit.io"] {
-        display: none !important;
-    }
-
-    .link_gzau3_10 {
         display: none !important;
     }
 
@@ -248,32 +229,6 @@ def main():
                 },
             }
         )
-    st.markdown(
-    """
-    <style>
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2b1542, #3a2060);
-        color: #e4d9f5;
-        width: 338px !important;
-        min-width: 338px !important;
-        max-width: 338px !important;
-    }
-    [data-testid="collapsedControl"] {
-        display: none !important;
-    }
-    [data-testid="stSidebar"] * {
-        color: #e4d9f5 !important;
-    }
-    [data-testid="stSidebarResizeHandle"] {
-        display: none !important;
-    }
-
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
     # Main content area
     if selected == "Dashboard":
         dashboard_page()
