@@ -1744,12 +1744,16 @@ def asset_master_form():
             st.markdown(
                 """
                 <style>
-                div[data-testid="column"] button[kind="secondary"] {
+                div[data-testid="column"] button[kind="secondary"],
+                div[data-testid="column"] div[data-testid="stButton"] button,
+                div[data-testid="column"] div[data-testid="baseButton-secondary"] button {
                     border: none !important;
                     background: transparent !important;
                     box-shadow: none !important;
                 }
-                div[data-testid="column"] button[kind="secondary"]:focus-visible {
+                div[data-testid="column"] button[kind="secondary"]:focus-visible,
+                div[data-testid="column"] div[data-testid="stButton"] button:focus-visible,
+                div[data-testid="column"] div[data-testid="baseButton-secondary"] button:focus-visible {
                     outline: none !important;
                 }
                 </style>
