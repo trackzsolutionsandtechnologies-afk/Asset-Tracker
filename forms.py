@@ -244,7 +244,9 @@ def location_form():
                         border: 1px solid #b5d6eb;
                         border-radius: 8px;
                         overflow: hidden;
+                        margin-left: -10%;
                         margin-top: 12px;
+                        width: 120%;  
                     }
                     .location-table-row {
                         display: grid;
