@@ -1800,10 +1800,20 @@ def asset_master_form():
                     st.write(asset_id_value or "N/A")
                 with col_name:
                     st.write(row.get("Asset Name", row.get("Asset Name *", "N/A")))
+                category_display = "- " if is_editing else row.get("Category", row.get("Category Name", "N/A"))
+                status_value = row.get("Status", "N/A")
+                status_display = "- " if is_editing else status_value
+
                 with col_category:
-                    st.write("-" if is_editing else row.get("Category", row.get("Category Name", "N/A")))
+                    st.write(category_display)
                 with col_status:
-                    st.write("-" if is_editing else row.get("Status", "N/A"))
+                    if is_editing or str(status_display).strip().lower() != "active":
+                        st.write(status_display)
+                    else:
+                        st.markdown(
+                            f"<span style='color: #c1121f; font-weight: 600;'>{status_display}</span>",
+                            unsafe_allow_html=True,
+                        )
 
                 if is_editing:
                     col_view.write("-")
