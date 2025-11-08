@@ -238,258 +238,122 @@ def location_form():
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
                 is_admin = user_role.lower() == "admin"
 
-                st.markdown(
-                    """
-                    <style>
-                    .location-wide-layout {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-    }
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                view_placeholder = st.empty()
+                edit_placeholder = st.empty()
 
-                wide_container = st.container()
-                with wide_container:
-                    wide_container.markdown('<div class="location-wide-layout">', unsafe_allow_html=True)
+                # Table header - adjust columns based on admin status
+                if is_admin:
+                    header_cols = st.columns([3, 4, 3, 1, 1, 1])
+                else:
+                    header_cols = st.columns([3, 4, 3, 1, 1])
 
-                    st.markdown(
-                    """
-                    <style>
-                    /* === Table Wrapper === */
-                    .location-table-wrapper {
-                        border: 1.5px solid #e63946;
-                        border-radius: 10px;
-                        overflow: hidden;
-                        margin-top: 20px;
-                        margin-left: auto;
-                        margin-right: auto;
-                        width: 100%;
-                        max-width: 1100px;
-                        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-                        background-color: #fff;
-                    }
+                header_labels = ["**Location ID**", "**Location Name**", "**Department**", "**View**", "**Edit**"]
+                if is_admin:
+                    header_labels.append("**Delete**")
 
-                    /* === Table Row === */
-                    .location-table-row {
-                        display: grid;
-                        grid-template-columns: 220px 320px 220px 100px 100px 100px;
-                        align-items: center;
-                        border-bottom: 1px solid #eee;
-                        font-family: "DIN", sans-serif;
-                    }
+                for col_widget, label in zip(header_cols, header_labels):
+                    with col_widget:
+                        st.write(label)
+                st.divider()
 
-                    .location-table-row.header {
-                        background: linear-gradient(90deg, #fdf2f2, #fff5f5);
-                        font-weight: 700;
-                        color: #d90429;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    }
+                # Display table with edit/delete buttons
+                for idx, row in filtered_df.iterrows():
+                    if not df[df["Location ID"] == row.get("Location ID", "")].empty:
+                        original_idx = int(df[df["Location ID"] == row.get("Location ID", "")].index[0])
+                    else:
+                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
-                    .location-table-row.striped:nth-child(even) {
-                        background: #fafafa;
-                    }
-
-                    .location-table-row:not(.header):hover {
-                        background: #f8f9fa;
-                        transition: background 0.2s ease-in-out;
-                    }
-
-                    /* === Table Cell === */
-                    .location-table-cell {
-                        padding: 12px 14px;
-                        border-right: 1px solid #f0f0f0;
-                        display: flex;
-                        align-items: center;
-                        font-size: 15px;
-                        color: #222;
-                    }
-
-                    .location-table-cell:last-child {
-                        border-right: none;
-                    }
-
-                    /* === Icons/Actions === */
-                    .location-table-actions {
-                        display: flex;
-                        justify-content: center;
-                        gap: 8px;
-                    }
-
-                    .location-table-actions button,
-                    .location-table-actions button[data-testid^="stBaseButton"] {
-                        border: none !important;
-                        box-shadow: none !important;
-                        background: transparent !important;
-                        outline: none !important;
-                        border-radius: 6px !important;
-                        transition: all 0.2s ease-in-out;
-                    }
-
-                    .location-table-actions button:hover {
-                        background-color: rgba(230, 57, 70, 0.12) !important;
-                        transform: scale(1.1);
-                    }
-
-                    /* === Page alignment fix === */
-                    section.main > div {
-                        padding-left: 2rem !important;
-                        padding-right: 2rem !important;
-                    }
-
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                    base_columns = [1.8, 2.4, 1.8, 1, 1] + ([1] if is_admin else [])
-                    header_labels = ["Location ID", "Location Name", "Department", "View", "Edit"]
                     if is_admin:
-                        header_labels.append("Delete")
+                        col1, col2, col3, col_view, col_edit, col_delete = st.columns([3, 4, 3, 1, 1, 1])
+                    else:
+                        col1, col2, col3, col_view, col_edit = st.columns([3, 4, 3, 1, 1])
 
-                    grid_template = " ".join(f"{w}fr" for w in base_columns)
-                    st.markdown("<div class='location-table-wrapper'>", unsafe_allow_html=True)
-                    st.markdown(
-                        f"<div class='location-table-row header' style='grid-template-columns: {grid_template};'>",
-                        unsafe_allow_html=True,
-                    )
-                    header_cols = st.columns(len(base_columns), gap="small")
-                    for col, label in zip(header_cols, header_labels):
-                        with col:
-                            st.markdown(
-                                f"<div class='location-table-cell'>{label}</div>",
-                                unsafe_allow_html=True,
+                    with col1:
+                        st.write(row.get("Location ID", "N/A"))
+                    with col2:
+                        st.write(row.get("Location Name", "N/A"))
+                    with col3:
+                        st.write(row.get("Department", "N/A"))
+                    with col_view:
+                        if st.button("👁️", key=f"location_view_{row.get('Location ID', idx)}", use_container_width=True, help="View details"):
+                            record = {
+                                "Location ID": row.get("Location ID", ""),
+                                "Location Name": row.get("Location Name", ""),
+                                "Department": row.get("Department", ""),
+                            }
+                            _open_view_modal(
+                                "location",
+                                f"Location Details: {row.get('Location Name', '')}",
+                                record,
+                                ["Location ID", "Location Name", "Department"],
                             )
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    with col_edit:
+                        edit_key = f"location_edit_{row.get('Location ID', idx)}"
+                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
+                            st.session_state["edit_location_id"] = row.get("Location ID", "")
+                            st.session_state["edit_location_idx"] = int(original_idx)
+                            st.rerun()
+                    if is_admin:
+                        with col_delete:
+                            delete_key = f"location_delete_{row.get('Location ID', idx)}"
+                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
+                                location_name_to_delete = row.get("Location Name", "Unknown")
+                                location_id_to_delete = row.get("Location ID", "Unknown")
+                                if delete_data(SHEETS["locations"], original_idx):
+                                    st.session_state["location_success_message"] = (
+                                        f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
+                                    )
+                                    if "location_search" in st.session_state:
+                                        del st.session_state["location_search"]
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete location")
 
-                    for idx, row in filtered_df.iterrows():
-                        if not df[df["Location ID"] == row.get("Location ID", "")].empty:
-                            original_idx = int(df[df["Location ID"] == row.get("Location ID", "")].index[0])
-                        else:
-                            original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
+                    st.divider()
 
-                        row_class = "location-table-row"
-                        if idx % 2:
-                            row_class += " striped"
-
-                        st.markdown(
-                            f"<div class='{row_class}' style='grid-template-columns: {grid_template};'>",
-                            unsafe_allow_html=True,
-                        )
-
-                        row_cols = st.columns(len(base_columns), gap="small")
-                        with row_cols[0]:
-                            st.markdown(
-                                f"<div class='location-table-cell'>{row.get('Location ID', 'N/A')}</div>",
-                                unsafe_allow_html=True,
-                            )
-                        with row_cols[1]:
-                            st.markdown(
-                                f"<div class='location-table-cell'>{row.get('Location Name', 'N/A')}</div>",
-                                unsafe_allow_html=True,
-                            )
-                        with row_cols[2]:
-                            st.markdown(
-                                f"<div class='location-table-cell'>{row.get('Department', 'N/A')}</div>",
-                                unsafe_allow_html=True,
-                            )
-                        with row_cols[3]:
-                            st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
-                            if st.button("👁️", key=f"location_view_{row.get('Location ID', idx)}", help="View details"):
-                                record = {
-                                    "Location ID": row.get("Location ID", ""),
-                                    "Location Name": row.get("Location Name", ""),
-                                    "Department": row.get("Department", ""),
-                                }
-                                _open_view_modal(
-                                    "location",
-                                    f"Location Details: {row.get('Location Name', '')}",
-                                    record,
-                                    ["Location ID", "Location Name", "Department"],
-                                )
-                            st.markdown("</div>", unsafe_allow_html=True)
-                        with row_cols[4]:
-                            st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
-                            edit_key = f"edit_loc_{row.get('Location ID', idx)}"
-                            if st.button("✏️", key=edit_key, help="Edit this location"):
-                                st.session_state["edit_location_id"] = row.get("Location ID", "")
-                                st.session_state["edit_location_idx"] = int(original_idx)
-                                st.rerun()
-                            st.markdown("</div>", unsafe_allow_html=True)
-                        if is_admin:
-                            with row_cols[5]:
-                                st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
-                                delete_key = f"delete_loc_{row.get('Location ID', idx)}"
-                                if st.button("🗑️", key=delete_key, help="Delete this location"):
-                                    location_name_to_delete = row.get("Location Name", "Unknown")
-                                    location_id_to_delete = row.get("Location ID", "Unknown")
-                                    if delete_data(SHEETS["locations"], original_idx):
-                                        st.session_state["location_success_message"] = (
-                                            f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
-                                        )
-                                        if "location_search" in st.session_state:
-                                            del st.session_state["location_search"]
-                                        st.rerun()
-                                    else:
-                                        st.error("Failed to delete location")
-                                st.markdown("</div>", unsafe_allow_html=True)
-
-                        st.markdown("</div>", unsafe_allow_html=True)
-
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    wide_container.markdown("</div>", unsafe_allow_html=True)
+                _render_view_modal("location", view_placeholder)
             elif search_term:
                 # Search returned no results, but search was performed
                 pass
             else:
                 st.info("No locations found. Add a new location using the 'Add New Location' tab.")
 
-            _render_view_modal("location")
+            _render_view_modal("location", view_placeholder)
             
             # Edit form (shown when edit button is clicked)
             if "edit_location_id" in st.session_state and st.session_state["edit_location_id"]:
-                st.subheader("Edit Location")
-                edit_id = st.session_state["edit_location_id"]
-                edit_idx = st.session_state.get("edit_location_idx", 0)
-                
-                location_rows = df[df["Location ID"] == edit_id]
-                if not location_rows.empty:
-                    location = location_rows.iloc[0]
+                with edit_placeholder.container():
+                    st.subheader("Edit Location")
+                    edit_id = st.session_state["edit_location_id"]
+                    edit_idx = st.session_state.get("edit_location_idx", 0)
                     
-                    with st.form("edit_location_form"):
-                        new_location_id = st.text_input("Location ID", value=location.get("Location ID", ""), disabled=True)
-                        new_location_name = st.text_input("Location Name", value=location.get("Location Name", ""))
-                        new_department = st.text_input("Department", value=location.get("Department", ""))
+                    location_rows = df[df["Location ID"] == edit_id]
+                    if not location_rows.empty:
+                        location = location_rows.iloc[0]
                         
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.form_submit_button("Update Location", use_container_width=True):
-                                with st.spinner("Updating location..."):
-                                    if update_data(SHEETS["locations"], edit_idx, [new_location_id, new_location_name, new_department]):
-                                        # Set success message
-                                        st.session_state["location_success_message"] = f"✅ Location '{new_location_name}' (ID: {new_location_id}) updated successfully!"
-                                        if "edit_location_id" in st.session_state:
-                                            del st.session_state["edit_location_id"]
-                                        if "edit_location_idx" in st.session_state:
-                                            del st.session_state["edit_location_idx"]
-                                        # Clear search bar
-                                        if "location_search" in st.session_state:
-                                            del st.session_state["location_search"]
-                                        st.rerun()
-                                    else:
-                                        st.error("Failed to update location")
-                        with col2:
-                            if st.form_submit_button("Cancel", use_container_width=True):
-                                if "edit_location_id" in st.session_state:
-                                    del st.session_state["edit_location_id"]
-                                if "edit_location_idx" in st.session_state:
-                                    del st.session_state["edit_location_idx"]
-                                st.rerun()
+                        with st.form("edit_location_form"):
+                            new_location_id = st.text_input("Location ID", value=location.get("Location ID", ""), disabled=True)
+                            new_location_name = st.text_input("Location Name", value=location.get("Location Name", ""))
+                            new_department = st.text_input("Department", value=location.get("Department", ""))
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.form_submit_button("Update Location", use_container_width=True):
+                                    with st.spinner("Updating location..."):
+                                        if update_data(SHEETS["locations"], edit_idx, [new_location_id, new_location_name, new_department]):
+                                            st.session_state["location_success_message"] = f"✅ Location '{new_location_name}' (ID: {new_location_id}) updated successfully!"
+                                            st.session_state.pop("edit_location_id", None)
+                                            st.session_state.pop("edit_location_idx", None)
+                                            if "location_search" in st.session_state:
+                                                del st.session_state["location_search"]
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to update location")
+                            with col2:
+                                if st.form_submit_button("Cancel", use_container_width=True):
+                                    st.session_state.pop("edit_location_id", None)
+                                    st.session_state.pop("edit_location_idx", None)
+                                    st.rerun()
         else:
             st.info("No locations found. Add a new location using the 'Add New Location' tab.")
 
