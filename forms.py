@@ -2947,35 +2947,12 @@ def employee_assignment_form():
 
     issued_by_options = user_options.copy()
 
-    asset_label_to_id: Dict[str, str] = {}
-    asset_id_to_label: Dict[str, str] = {}
-    asset_options: List[str] = []
-    if not assets_df.empty:
-        id_column = asset_id_col or ("Asset ID" if "Asset ID" in assets_df.columns else None)
-        name_column = None
-        for candidate in ("Asset Name", "Asset Name *", "Name"):
-            if candidate in assets_df.columns:
-                name_column = candidate
-                break
-
-        asset_pairs: List[tuple[str, str]] = []
-        if id_column:
-            for _, row in assets_df.iterrows():
-                asset_id_val = str(row.get(id_column, "")).strip()
-                if not asset_id_val:
-                    continue
-                asset_name_val = ""
-                if name_column:
-                    asset_name_val = str(row.get(name_column, "")).strip()
-                label = asset_id_val if not asset_name_val else f"{asset_id_val} - {asset_name_val}"
-                asset_pairs.append((label, asset_id_val))
-                if asset_id_val not in asset_id_to_label:
-                    asset_id_to_label[asset_id_val] = label
-
-        if asset_pairs:
-            asset_pairs.sort(key=lambda pair: pair[0].lower())
-            asset_label_to_id = {label: asset_id for label, asset_id in asset_pairs}
-            asset_options = ["Select asset"] + [label for label, _ in asset_pairs]
+    asset_options = []
+    if not assets_df.empty and "Asset ID" in assets_df.columns:
+        asset_options = [
+            "Select asset",
+            *assets_df["Asset ID"].dropna().astype(str).str.strip().tolist(),
+        ]
 
     asset_id_col = None
     asset_assigned_col = None
@@ -3090,15 +3067,10 @@ def employee_assignment_form():
                 st.warning("No users found. Please add users first.")
 
             if asset_options:
-                selected_asset_label = st.selectbox(
+                asset_id = st.selectbox(
                     "Asset ID *",
                     asset_options,
                     key=f"assignment_asset_{form_key}",
-                )
-                asset_id = (
-                    ""
-                    if selected_asset_label == "Select asset"
-                    else asset_label_to_id.get(selected_asset_label, selected_asset_label)
                 )
             else:
                 asset_id = st.text_input(
@@ -3165,7 +3137,7 @@ def employee_assignment_form():
                     st.error("Please select a Username")
                 elif not username:
                     st.error("Please provide a Username")
-                elif asset_options and not asset_id:
+                elif asset_options and asset_id == "Select asset":
                     st.error("Please select an Asset")
                 elif not asset_id:
                     st.error("Please provide an Asset ID")
@@ -3384,21 +3356,14 @@ def employee_assignment_form():
                         )
 
                     if asset_options:
-                        current_asset_id = str(record.get("Asset ID", "")).strip()
-                        default_label = asset_id_to_label.get(current_asset_id, "Select asset")
                         try:
-                            default_asset_idx = asset_options.index(default_label)
+                            default_asset_idx = asset_options.index(record.get("Asset ID", ""))
                         except ValueError:
                             default_asset_idx = 0
-                        selected_asset_label = st.selectbox(
+                        asset_id_new = st.selectbox(
                             "Asset ID *",
                             asset_options,
                             index=default_asset_idx,
-                        )
-                        asset_id_new = (
-                            ""
-                            if selected_asset_label == "Select asset"
-                            else asset_label_to_id.get(selected_asset_label, selected_asset_label)
                         )
                     else:
                         asset_id_new = st.text_input(
@@ -3465,7 +3430,7 @@ def employee_assignment_form():
                                 st.error("Please select a Username")
                             elif not username_new:
                                 st.error("Please provide a Username")
-                            elif asset_options and not asset_id_new:
+                            elif asset_options and asset_id_new == "Select asset":
                                 st.error("Please select an Asset")
                             elif not asset_id_new:
                                 st.error("Please provide an Asset ID")
