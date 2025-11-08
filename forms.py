@@ -1742,15 +1742,14 @@ def asset_master_form():
             edit_placeholder = st.empty()
 
             if is_admin:
-                header_cols = st.columns([3, 4, 3, 3, 1, 1, 1])
+                header_cols = st.columns([3, 4, 4, 4, 1, 1, 1])
             else:
-                header_cols = st.columns([3, 4, 3, 3, 1, 1])
+                header_cols = st.columns([3, 4, 4, 4, 1, 1])
             header_labels = [
                 "**Asset ID**",
                 "**Asset Name**",
-                "**Category**",
                 "**Location**",
-                "**Warranty**",
+                "**Category**",
                 "**View**",
                 "**Edit**",
             ]
@@ -1773,85 +1772,94 @@ def asset_master_form():
                 original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
 
                 if is_admin:
-                    cols = st.columns([3, 4, 3, 3, 1, 1, 1])
+                    cols = st.columns([3, 4, 4, 4, 1, 1, 1])
+                    col_asset, col_name, col_location, col_category, col_view, col_edit, col_delete = cols
                 else:
-                    cols = st.columns([3, 4, 3, 3, 1, 1])
+                    cols = st.columns([3, 4, 4, 4, 1, 1])
+                    col_asset, col_name, col_location, col_category, col_view, col_edit = cols
+                    col_delete = None
 
-                col_asset, col_name, col_category, col_location, col_warranty = cols[:5]
-                col_view = cols[5]
-                col_edit = cols[6] if is_admin else cols[5]
-                col_delete = cols[6] if is_admin else None
+                is_editing = (
+                    st.session_state.get("edit_asset_id") == asset_id_value
+                    and st.session_state.get("edit_asset_idx") == original_idx
+                )
 
                 with col_asset:
                     st.write(asset_id_value or "N/A")
                 with col_name:
                     st.write(row.get("Asset Name", row.get("Asset Name *", "N/A")))
-                with col_category:
-                    st.write(row.get("Category", row.get("Category Name", "N/A")))
                 with col_location:
-                    st.write(row.get("Location", "N/A"))
-                with col_warranty:
-                    st.write(row.get("Warranty", "N/A"))
+                    st.write("-" if is_editing else row.get("Location", "N/A"))
+                with col_category:
+                    st.write("-" if is_editing else row.get("Category", row.get("Category Name", "N/A")))
 
-                with col_view:
-                    if st.button(
-                        "👁️",
-                        key=f"asset_view_{unique_suffix}",
-                        use_container_width=True,
-                        help="View details",
-                    ):
-                        record = {
-                            "Asset ID": asset_id_value,
-                            "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
-                            "Category": row.get("Category", row.get("Category Name", "")),
-                            "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
-                            "Location": row.get("Location", ""),
-                            "Assigned To": row.get("Assigned To", ""),
-                            "Status": row.get("Status", ""),
-                            "Condition": row.get("Condition", ""),
-                            "Supplier": row.get("Supplier", ""),
-                            "Model / Serial No": row.get("Model / Serial No", row.get("Model/Serial No", "")),
-                            "Purchase Date": row.get("Purchase Date", ""),
-                            "Purchase Cost": row.get("Purchase Cost", ""),
-                            "Warranty": row.get("Warranty", ""),
-                            "Remarks": row.get("Remarks", ""),
-                        }
-                        _open_view_modal(
-                            "asset",
-                            f"Asset Details: {asset_id_value}",
-                            record,
-                            [
-                                "Asset ID",
-                                "Asset Name",
-                                "Category",
-                                "Sub Category",
-                                "Location",
-                                "Assigned To",
-                                "Status",
-                                "Condition",
-                                "Supplier",
-                                "Model / Serial No",
-                                "Purchase Date",
-                                "Purchase Cost",
-                                "Warranty",
-                                "Remarks",
-                            ],
-                        )
+                if is_editing:
+                    col_view.write("-")
+                    with col_edit:
+                        st.write("-")
+                    if is_admin and col_delete is not None:
+                        with col_delete:
+                            st.write("-")
+                else:
+                    with col_view:
+                        if st.button(
+                            "👁️",
+                            key=f"asset_view_{unique_suffix}",
+                            use_container_width=True,
+                            help="View details",
+                        ):
+                            record = {
+                                "Asset ID": asset_id_value,
+                                "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
+                                "Category": row.get("Category", row.get("Category Name", "")),
+                                "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
+                                "Location": row.get("Location", ""),
+                                "Assigned To": row.get("Assigned To", ""),
+                                "Status": row.get("Status", ""),
+                                "Condition": row.get("Condition", ""),
+                                "Supplier": row.get("Supplier", ""),
+                                "Model / Serial No": row.get("Model / Serial No", row.get("Model/Serial No", "")),
+                                "Purchase Date": row.get("Purchase Date", ""),
+                                "Purchase Cost": row.get("Purchase Cost", ""),
+                                "Warranty": row.get("Warranty", ""),
+                                "Remarks": row.get("Remarks", ""),
+                            }
+                            _open_view_modal(
+                                "asset",
+                                f"Asset Details: {asset_id_value}",
+                                record,
+                                [
+                                    "Asset ID",
+                                    "Asset Name",
+                                    "Category",
+                                    "Sub Category",
+                                    "Location",
+                                    "Assigned To",
+                                    "Status",
+                                    "Condition",
+                                    "Supplier",
+                                    "Model / Serial No",
+                                    "Purchase Date",
+                                    "Purchase Cost",
+                                    "Warranty",
+                                    "Remarks",
+                                ],
+                            )
 
-                with col_edit:
-                    if st.button("✏️", key=f"asset_edit_{unique_suffix}", use_container_width=True, help="Edit this asset"):
-                        st.session_state["edit_asset_id"] = asset_id_value
-                        st.session_state["edit_asset_idx"] = original_idx
-                        st.rerun()
+                    with col_edit:
+                        if st.button("✏️", key=f"asset_edit_{unique_suffix}", use_container_width=True, help="Edit this asset"):
+                            st.session_state["edit_asset_id"] = asset_id_value
+                            st.session_state["edit_asset_idx"] = original_idx
+                            st.rerun()
 
-                if is_admin and col_delete is not None:
-                    with col_delete:
-                        if st.button("🗑️", key=f"asset_delete_{unique_suffix}", use_container_width=True, help="Delete this asset"):
-                            if delete_data(SHEETS["assets"], original_idx):
-                                st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete asset")
+                    if is_admin and col_delete is not None:
+                        with col_delete:
+                            if st.button("🗑️", key=f"asset_delete_{unique_suffix}", use_container_width=True, help="Delete this asset"):
+                                if delete_data(SHEETS["assets"], original_idx):
+                                    st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete asset")
 
                 st.divider()
 
