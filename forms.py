@@ -237,100 +237,100 @@ def location_form():
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
                 is_admin = user_role.lower() == "admin"
 
-               st.markdown(
-    """
-    <style>
-    /* === Table Wrapper === */
-    .location-table-wrapper {
-        border: 1.5px solid #e63946;
-        border-radius: 10px;
-        overflow: hidden;
-        margin-top: 20px;
-        margin-left: auto;
-        margin-right: auto;
-        width: 95%;   /* keeps it centered and responsive */
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        background-color: #fff;
-    }
+                st.markdown(
+                    """
+                    <style>
+                    /* === Table Wrapper === */
+                    .location-table-wrapper {
+                        border: 1.5px solid #e63946;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        margin-top: 20px;
+                        margin-left: auto;
+                        margin-right: auto;
+                        width: 95%;
+                        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+                        background-color: #fff;
+                    }
 
-    /* === Table Row === */
-    .location-table-row {
-        display: grid;
-        grid-template-columns: 60px 200px 250px 200px 80px 80px 80px;
-        align-items: center;
-        border-bottom: 1px solid #eee;
-        font-family: "DIN", sans-serif;
-    }
+                    /* === Table Row === */
+                    .location-table-row {
+                        display: grid;
+                        grid-template-columns: 60px 200px 250px 200px 80px 80px 80px;
+                        align-items: center;
+                        border-bottom: 1px solid #eee;
+                        font-family: "DIN", sans-serif;
+                    }
 
-    .location-table-row.header {
-        background: linear-gradient(90deg, #fdf2f2, #fff5f5);
-        font-weight: 700;
-        color: #d90429;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+                    .location-table-row.header {
+                        background: linear-gradient(90deg, #fdf2f2, #fff5f5);
+                        font-weight: 700;
+                        color: #d90429;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
 
-    .location-table-row.striped:nth-child(even) {
-        background: #fafafa;
-    }
+                    .location-table-row.striped:nth-child(even) {
+                        background: #fafafa;
+                    }
 
-    .location-table-row:not(.header):hover {
-        background: #f8f9fa;
-        transition: background 0.2s ease-in-out;
-    }
+                    .location-table-row:not(.header):hover {
+                        background: #f8f9fa;
+                        transition: background 0.2s ease-in-out;
+                    }
 
-    /* === Table Cell === */
-    .location-table-cell {
-        padding: 12px 14px;
-        border-right: 1px solid #f0f0f0;
-        display: flex;
-        align-items: center;
-        font-size: 15px;
-        color: #222;
-    }
+                    /* === Table Cell === */
+                    .location-table-cell {
+                        padding: 12px 14px;
+                        border-right: 1px solid #f0f0f0;
+                        display: flex;
+                        align-items: center;
+                        font-size: 15px;
+                        color: #222;
+                    }
 
-    .location-table-cell:last-child {
-        border-right: none;
-    }
+                    .location-table-cell:last-child {
+                        border-right: none;
+                    }
 
-    /* === Icons/Actions === */
-    .location-table-actions {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-    }
+                    /* === Icons/Actions === */
+                    .location-table-actions {
+                        display: flex;
+                        justify-content: center;
+                        gap: 8px;
+                    }
 
-    .location-table-actions button,
-    .location-table-actions button[data-testid^="stBaseButton"] {
-        border: none !important;
-        box-shadow: none !important;
-        background: transparent !important;
-        outline: none !important;
-        border-radius: 6px !important;
-        transition: all 0.2s ease-in-out;
-    }
+                    .location-table-actions button,
+                    .location-table-actions button[data-testid^="stBaseButton"] {
+                        border: none !important;
+                        box-shadow: none !important;
+                        background: transparent !important;
+                        outline: none !important;
+                        border-radius: 6px !important;
+                        transition: all 0.2s ease-in-out;
+                    }
 
-    .location-table-actions button:hover {
-        background-color: rgba(230, 57, 70, 0.12) !important;
-        transform: scale(1.1);
-    }
+                    .location-table-actions button:hover {
+                        background-color: rgba(230, 57, 70, 0.12) !important;
+                        transform: scale(1.1);
+                    }
 
-    /* === Checkbox Alignment === */
-    input[type="checkbox"] {
-        transform: scale(1.1);
-        accent-color: #e63946;
-    }
+                    /* === Checkbox Alignment === */
+                    input[type="checkbox"] {
+                        transform: scale(1.1);
+                        accent-color: #e63946;
+                    }
 
-    /* === Page alignment fix === */
-    section.main > div {
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
-    }
+                    /* === Page alignment fix === */
+                    section.main > div {
+                        padding-left: 2rem !important;
+                        padding-right: 2rem !important;
+                    }
 
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 
 
