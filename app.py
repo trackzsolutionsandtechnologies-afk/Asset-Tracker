@@ -59,7 +59,9 @@ st.markdown("""
     }
 
 
-
+[data-testid="stToolbar"] {
+        display: none !important;
+    }
 
 
 
@@ -74,7 +76,7 @@ st.markdown("""
 st.set_page_config(
     page_title="Asset Tracker",
     page_icon="📦",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="expanded"
 )
 
