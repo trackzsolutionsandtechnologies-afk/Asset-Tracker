@@ -1691,6 +1691,29 @@ def asset_master_form():
                         # Clear generated asset ID
                         if "generated_asset_id" in st.session_state:
                             del st.session_state["generated_asset_id"]
+
+                        st.session_state["asset_success_message"] = "Asset added successfully!"
+                        reset_keys = [
+                            "Asset ID / Barcode",
+                            "Asset ID / Barcode *",
+                            "Asset Name *",
+                            "Model / Serial No",
+                            "Purchase Cost",
+                            "Warranty",
+                            "Supplier",
+                            "Location",
+                            "Assigned To",
+                            "Condition",
+                            "Status",
+                            "Remarks",
+                            "Attachment (Image or File)",
+                            "Purchase Date",
+                        ]
+                        for state_key in reset_keys:
+                            st.session_state.pop(state_key, None)
+                        st.session_state.pop("asset_category_select", None)
+                        st.session_state.pop("asset_subcategory_select", None)
+                        st.session_state["Auto-generate Asset ID"] = True
                         st.rerun()
                     else:
                         st.error("Failed to add asset")
