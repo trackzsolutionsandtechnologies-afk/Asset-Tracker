@@ -240,72 +240,79 @@ def location_form():
                 st.markdown(
                     """
                     <style>
-                    .location-table-header, .location-table-row {
-                        display: grid;
-                        grid-template-columns: 2fr 3fr 2fr 1fr 1fr 1fr;
-                        align-items: center;
-                        gap: 0.5rem;
-                    }
-                    .location-table-header {
-                        background: #f7f5ff;
-                        padding: 12px 16px;
-                        border-radius: 10px;
-                         margin-bottom: 10px;
-                        font-weight: 600;
-                        color: #2b1542;
-                        width: 120%;
-                        margin-left: -10%;
-                    
+                    .location-table-wrapper {
+                        border: 1px solid #b5d6eb;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        margin-top: 12px;
                     }
                     .location-table-row {
-                        background: #ffffff;
-                        padding: 12px 16px;
-                        border: 1px solid #ececf5;
-                        border-radius: 10px;
-                        margin-bottom: 10px;
-                        width: 120%;
-                        margin-left: -10%;
-                        margin-top: -10px;
-                        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+                        display: grid;
+                        align-items: stretch;
+                        border-bottom: 1px solid #d4d4d4;
                     }
-                    .location-table-row.even {
-                        background: #faf8ff;
+                    .location-table-row.header {
+                        background: #d7effc;
+                        font-weight: 600;
+                        color: #21445b;
+                    }
+                    .location-table-row.striped {
+                        background: #f7f9fb;
+                    }
+                    .location-table-row:not(.header) {
+                        background: #ffffff;
                     }
                     .location-table-cell {
+                        padding: 10px 12px;
+                        border-right: 1px solid #d4d4d4;
+                        display: flex;
+                        align-items: center;
                         font-size: 15px;
                     }
+                    .location-table-cell:last-child {
+                        border-right: none;
+                    }
                     .location-table-actions {
+                        width: 100%;
                         display: flex;
                         justify-content: center;
                         gap: 6px;
                     }
                     .location-table-actions button,
                     .location-table-actions button[data-testid^="stBaseButton"] {
-                        border: 0 solid transparent !important;
+                        border: none !important;
                         box-shadow: none !important;
-                        background-color: transparent !important;
+                        background: transparent !important;
                         outline: none !important;
                         border-radius: 0 !important;
                     }
                     .location-table-actions button:hover {
-                        background-color: rgba(107, 70, 193, 0.1) !important;
+                        background-color: rgba(107, 70, 193, 0.12) !important;
                     }
                     </style>
                     """,
                     unsafe_allow_html=True,
                 )
 
-                base_columns = [2, 3, 2, 1, 1] + ([1] if is_admin else [])
-                header_labels = ["Location ID", "Location Name", "Department", "View", "Edit"]
+                base_columns = [0.6, 1.6, 1.8, 1.2, 0.8, 0.8] + ([0.8] if is_admin else [])
+                header_labels = ["", "Location ID", "Location Name", "Department", "View", "Edit"]
                 if is_admin:
                     header_labels.append("Delete")
 
+                grid_template = " ".join(f"{w}fr" for w in base_columns)
+                st.markdown("<div class='location-table-wrapper'>", unsafe_allow_html=True)
                 st.markdown(
-                    "<div class='location-table-header'>"
-                    + "".join(f"<div>{label}</div>" for label in header_labels)
-                    + "</div>",
+                    f"<div class='location-table-row header' style='grid-template-columns: {grid_template};'>",
                     unsafe_allow_html=True,
                 )
+                header_cols = st.columns(len(base_columns), gap="small")
+                for col, label in zip(header_cols, header_labels):
+                    with col:
+                        st.markdown(
+                            f"<div class='location-table-cell'>{label}</div>",
+                            unsafe_allow_html=True,
+                        )
+                st.markdown("</div>", unsafe_allow_html=True)
 
                 for idx, row in filtered_df.iterrows():
                     if not df[df["Location ID"] == row.get("Location ID", "")].empty:
@@ -313,27 +320,38 @@ def location_form():
                     else:
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
-                    row_class = "location-table-row even" if idx % 2 else "location-table-row"
-                    st.markdown(f"<div class='{row_class}'>", unsafe_allow_html=True)
+                    row_class = "location-table-row"
+                    if idx % 2:
+                        row_class += " striped"
 
-                    row_cols = st.columns(base_columns)
+                    st.markdown(
+                        f"<div class='{row_class}' style='grid-template-columns: {grid_template};'>",
+                        unsafe_allow_html=True,
+                    )
+
+                    row_cols = st.columns(len(base_columns), gap="small")
+                    select_key = f"location_select_{row.get('Location ID', idx)}"
                     with row_cols[0]:
+                        st.markdown("<div class='location-table-cell'>", unsafe_allow_html=True)
+                        st.checkbox("", key=select_key, value=False)
+                        st.markdown("</div>", unsafe_allow_html=True)
+                    with row_cols[1]:
                         st.markdown(
                             f"<div class='location-table-cell'>{row.get('Location ID', 'N/A')}</div>",
                             unsafe_allow_html=True,
                         )
-                    with row_cols[1]:
+                    with row_cols[2]:
                         st.markdown(
                             f"<div class='location-table-cell'>{row.get('Location Name', 'N/A')}</div>",
                             unsafe_allow_html=True,
                         )
-                    with row_cols[2]:
+                    with row_cols[3]:
                         st.markdown(
                             f"<div class='location-table-cell'>{row.get('Department', 'N/A')}</div>",
                             unsafe_allow_html=True,
                         )
-                    with row_cols[3]:
-                        st.markdown("<div class='location-table-actions'>", unsafe_allow_html=True)
+                    with row_cols[4]:
+                        st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
                         if st.button("👁️", key=f"location_view_{row.get('Location ID', idx)}", help="View details"):
                             record = {
                                 "Location ID": row.get("Location ID", ""),
@@ -347,8 +365,8 @@ def location_form():
                                 ["Location ID", "Location Name", "Department"],
                             )
                         st.markdown("</div>", unsafe_allow_html=True)
-                    with row_cols[4]:
-                        st.markdown("<div class='location-table-actions'>", unsafe_allow_html=True)
+                    with row_cols[5]:
+                        st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
                         edit_key = f"edit_loc_{row.get('Location ID', idx)}"
                         if st.button("✏️", key=edit_key, help="Edit this location"):
                             st.session_state["edit_location_id"] = row.get("Location ID", "")
@@ -356,8 +374,8 @@ def location_form():
                             st.rerun()
                         st.markdown("</div>", unsafe_allow_html=True)
                     if is_admin:
-                        with row_cols[5]:
-                            st.markdown("<div class='location-table-actions'>", unsafe_allow_html=True)
+                        with row_cols[6]:
+                            st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
                             delete_key = f"delete_loc_{row.get('Location ID', idx)}"
                             if st.button("🗑️", key=delete_key, help="Delete this location"):
                                 location_name_to_delete = row.get("Location Name", "Unknown")
@@ -375,9 +393,7 @@ def location_form():
 
                     st.markdown("</div>", unsafe_allow_html=True)
 
-                _render_view_modal("location")
-
-                _render_view_modal("location")
+                st.markdown("</div>", unsafe_allow_html=True)
             elif search_term:
                 # Search returned no results, but search was performed
                 pass
