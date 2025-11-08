@@ -257,9 +257,11 @@ def location_form():
                 st.divider()
 
                 # Display table with edit/delete buttons
+                button_counter = 0
                 for idx, row in filtered_df.iterrows():
                     location_id_value = row.get("Location ID", "")
-                    unique_suffix = f"{location_id_value}_{idx}"
+                    unique_suffix = f"{location_id_value}_{button_counter}"
+                    button_counter += 1
 
                     if not df[df["Location ID"] == location_id_value].empty:
                         original_idx = int(df[df["Location ID"] == location_id_value].index[0])
