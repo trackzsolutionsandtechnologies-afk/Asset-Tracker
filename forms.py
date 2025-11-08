@@ -1703,6 +1703,27 @@ def asset_master_form():
         if not assets_df.empty:
             st.subheader("All Assets")
 
+            st.markdown(
+                """
+                <style>
+                div[data-testid="column"] div[data-testid="stButton"] button,
+                div[data-testid="column"] button[kind="secondary"],
+                div[data-testid="column"] div[data-testid^="baseButton"] button {
+                    border: none !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    padding: 0 !important;
+                }
+                div[data-testid="column"] div[data-testid="stButton"] button:focus-visible,
+                div[data-testid="column"] button[kind="secondary"]:focus-visible,
+                div[data-testid="column"] div[data-testid^="baseButton"] button:focus-visible {
+                    outline: none !important;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+
             search_term = st.text_input(
                 "🔍 Search Assets",
                 placeholder="Search by Asset ID, Name, or Location...",
