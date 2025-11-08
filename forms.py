@@ -2806,18 +2806,11 @@ def employee_assignment_form():
                 value=assignment_date,
                 key=f"assignment_expected_return_{form_key}",
             )
-            include_return = st.checkbox(
-                "Specify a return date",
-                value=False,
-                key=f"assignment_include_return_{form_key}",
+            return_date = st.date_input(
+                "Return Date",
+                value=assignment_date,
+                key=f"assignment_return_date_{form_key}",
             )
-            return_date = None
-            if include_return:
-                return_date = st.date_input(
-                    "Return Date",
-                    value=assignment_date,
-                    key=f"assignment_return_date_{form_key}",
-                )
 
             status = st.selectbox(
                 "Status",
@@ -3105,16 +3098,10 @@ def employee_assignment_form():
                         "Expected Return Date",
                         value=parse_date_value(record.get("Expected Return Date")),
                     )
-                    include_return = st.checkbox(
-                        "Specify a return date",
-                        value=bool(record.get("Return Date")),
+                    return_date_new = st.date_input(
+                        "Return Date",
+                        value=parse_date_value(record.get("Return Date")) or parse_date_value(record.get("Assignment Date")),
                     )
-                    return_date_new = None
-                    if include_return:
-                        return_date_new = st.date_input(
-                            "Return Date",
-                            value=parse_date_value(record.get("Return Date")),
-                        )
 
                     status_new = st.selectbox(
                         "Status",
