@@ -272,14 +272,14 @@ def location_form():
                         justify-content: center;
                         gap: 6px;
                     }
-                   .location-table-actions button,
-.location-table-actions button[data-testid^="stBaseButton"] {
-    border: none !important;
-    box-shadow: none !important;
-    background-color: transparent !important;
-    outline: none !important;
-    border-radius: 0 !important;   /* force square buttons */
-}
+                    .location-table-actions button,
+                    .location-table-actions button[data-testid^="stBaseButton"] {
+                        border: 0 solid transparent !important;
+                        box-shadow: none !important;
+                        background-color: transparent !important;
+                        outline: none !important;
+                        border-radius: 0 !important;
+                    }
                     .location-table-actions button:hover {
                         background-color: rgba(107, 70, 193, 0.1) !important;
                     }
