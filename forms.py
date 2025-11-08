@@ -2089,35 +2089,27 @@ def asset_master_form():
                 st.caption(f"{len(report_df)} asset(s) match the current filters.")
                 st.dataframe(report_df, use_container_width=True)
 
-                excel_buffer = None
-                excel_written = False
-                for engine in ("xlsxwriter", "openpyxl", None):
-                    try:
-                        excel_buffer = BytesIO()
-                        if engine:
-                            with pd.ExcelWriter(excel_buffer, engine=engine) as writer:
-                                report_df.to_excel(writer, index=False, sheet_name="Assets")
-                        else:
-                            report_df.to_excel(excel_buffer, index=False)
-                        excel_written = True
-                        break
-                    except Exception:
-                        continue
-
-                if excel_written and excel_buffer is not None:
+                excel_buffer = BytesIO()
+                try:
+                    with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+                        report_df.to_excel(writer, index=False, sheet_name="Assets")
                     excel_buffer.seek(0)
-                    st.download_button(
-                        "Download Excel Report",
-                        data=excel_buffer,
-                        file_name="asset_master_report.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True,
-                    )
-                else:
-                    st.warning(
-                        "Unable to generate an Excel file. Please ensure that the 'openpyxl' or 'xlsxwriter' "
-                        "package is available in the environment."
-                    )
+                    excel_mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    excel_filename = "asset_master_report.xlsx"
+                except Exception:
+                    excel_buffer = BytesIO()
+                    report_df.to_csv(excel_buffer, index=False)
+                    excel_buffer.seek(0)
+                    excel_mime = "text/csv"
+                    excel_filename = "asset_master_report.csv"
+
+                st.download_button(
+                    "Download Asset Report",
+                    data=excel_buffer,
+                    file_name=excel_filename,
+                    mime=excel_mime,
+                    use_container_width=True,
+                )
 
 def asset_transfer_form():
     """Asset Transfer Form"""
