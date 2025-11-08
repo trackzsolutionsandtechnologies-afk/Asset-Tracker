@@ -256,7 +256,6 @@ def location_form():
                     /* === Table Row === */
                     .location-table-row {
                         display: grid;
-                        grid-template-columns: 60px 200px 250px 200px 80px 80px 80px;
                         align-items: center;
                         border-bottom: 1px solid #eee;
                         font-family: "DIN", sans-serif;
@@ -315,12 +314,6 @@ def location_form():
                         transform: scale(1.1);
                     }
 
-                    /* === Checkbox Alignment === */
-                    input[type="checkbox"] {
-                        transform: scale(1.1);
-                        accent-color: #e63946;
-                    }
-
                     /* === Page alignment fix === */
                     section.main > div {
                         padding-left: 2rem !important;
@@ -334,8 +327,8 @@ def location_form():
 
 
 
-                base_columns = [0.6, 1.6, 1.8, 1.2, 0.8, 0.8] + ([0.8] if is_admin else [])
-                header_labels = ["", "Location ID", "Location Name", "Department", "View", "Edit"]
+                base_columns = [1.8, 2.4, 1.8, 1, 1] + ([1] if is_admin else [])
+                header_labels = ["Location ID", "Location Name", "Department", "View", "Edit"]
                 if is_admin:
                     header_labels.append("Delete")
 
@@ -370,27 +363,22 @@ def location_form():
                     )
 
                     row_cols = st.columns(len(base_columns), gap="small")
-                    select_key = f"location_select_{row.get('Location ID', idx)}"
                     with row_cols[0]:
-                        st.markdown("<div class='location-table-cell'>", unsafe_allow_html=True)
-                        st.checkbox("", key=select_key, value=False)
-                        st.markdown("</div>", unsafe_allow_html=True)
-                    with row_cols[1]:
                         st.markdown(
                             f"<div class='location-table-cell'>{row.get('Location ID', 'N/A')}</div>",
                             unsafe_allow_html=True,
                         )
-                    with row_cols[2]:
+                    with row_cols[1]:
                         st.markdown(
                             f"<div class='location-table-cell'>{row.get('Location Name', 'N/A')}</div>",
                             unsafe_allow_html=True,
                         )
-                    with row_cols[3]:
+                    with row_cols[2]:
                         st.markdown(
                             f"<div class='location-table-cell'>{row.get('Department', 'N/A')}</div>",
                             unsafe_allow_html=True,
                         )
-                    with row_cols[4]:
+                    with row_cols[3]:
                         st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
                         if st.button("👁️", key=f"location_view_{row.get('Location ID', idx)}", help="View details"):
                             record = {
@@ -405,7 +393,7 @@ def location_form():
                                 ["Location ID", "Location Name", "Department"],
                             )
                         st.markdown("</div>", unsafe_allow_html=True)
-                    with row_cols[5]:
+                    with row_cols[4]:
                         st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
                         edit_key = f"edit_loc_{row.get('Location ID', idx)}"
                         if st.button("✏️", key=edit_key, help="Edit this location"):
@@ -414,7 +402,7 @@ def location_form():
                             st.rerun()
                         st.markdown("</div>", unsafe_allow_html=True)
                     if is_admin:
-                        with row_cols[6]:
+                        with row_cols[5]:
                             st.markdown("<div class='location-table-cell location-table-actions'>", unsafe_allow_html=True)
                             delete_key = f"delete_loc_{row.get('Location ID', idx)}"
                             if st.button("🗑️", key=delete_key, help="Delete this location"):
