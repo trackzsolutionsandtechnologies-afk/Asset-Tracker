@@ -1763,22 +1763,14 @@ def asset_master_form():
             edit_placeholder = st.empty()
 
             if is_admin:
-                header_cols = st.columns([3, 4, 4, 4, 1, 1, 1])
+                header_cols = st.columns([3, 4, 4, 3, 1, 1, 1])
             else:
-                header_cols = st.columns([3, 4, 4, 4, 1, 1])
-            header_labels = [
-                "**Asset ID**",
-                "**Asset Name**",
-                "**Location**",
-                "**Category**",
-            ]
+                header_cols = st.columns([3, 4, 4, 3, 1, 1])
 
-            for idx, col in enumerate(header_cols):
+            header_labels = ["**Asset ID**", "**Asset Name**", "**Category**", "**Status**"]
+            for col, label in zip(header_cols, header_labels):
                 with col:
-                    if idx < len(header_labels):
-                        st.write(header_labels[idx])
-                    else:
-                        st.write("")
+                    st.write(label)
 
             st.divider()
 
@@ -1792,11 +1784,11 @@ def asset_master_form():
                 original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
 
                 if is_admin:
-                    cols = st.columns([3, 4, 4, 4, 1, 1, 1])
-                    col_asset, col_name, col_location, col_category, col_view, col_edit, col_delete = cols
+                    cols = st.columns([3, 4, 4, 3, 1, 1, 1])
+                    col_asset, col_name, col_category, col_status, col_view, col_edit, col_delete = cols
                 else:
-                    cols = st.columns([3, 4, 4, 4, 1, 1])
-                    col_asset, col_name, col_location, col_category, col_view, col_edit = cols
+                    cols = st.columns([3, 4, 4, 3, 1, 1])
+                    col_asset, col_name, col_category, col_status, col_view, col_edit = cols
                     col_delete = None
 
                 is_editing = (
@@ -1808,10 +1800,10 @@ def asset_master_form():
                     st.write(asset_id_value or "N/A")
                 with col_name:
                     st.write(row.get("Asset Name", row.get("Asset Name *", "N/A")))
-                with col_location:
-                    st.write("-" if is_editing else row.get("Location", "N/A"))
                 with col_category:
                     st.write("-" if is_editing else row.get("Category", row.get("Category Name", "N/A")))
+                with col_status:
+                    st.write("-" if is_editing else row.get("Status", "N/A"))
 
                 if is_editing:
                     col_view.write("-")
