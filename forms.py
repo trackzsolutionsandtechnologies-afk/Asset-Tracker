@@ -17,7 +17,7 @@ def _open_view_modal(prefix: str, title: str, record: Dict[str, str], order: Opt
     st.rerun()
 
 
-def _render_view_modal(prefix: str) -> None:
+def _render_view_modal(prefix: str, placeholder: Optional["st.delta_generator.DeltaGenerator"] = None) -> None:
     if not st.session_state.get(f"{prefix}_view_open"):
         return
 
@@ -26,7 +26,11 @@ def _render_view_modal(prefix: str) -> None:
     order = st.session_state.get(f"{prefix}_view_order")
 
     modal_ctx = getattr(st, "modal", None)
-    ctx_manager = modal_ctx(title) if callable(modal_ctx) else st.container()
+    if callable(modal_ctx):
+        ctx_manager = modal_ctx(title)
+    else:
+        container_parent = placeholder if placeholder is not None else st
+        ctx_manager = container_parent.container()
 
     with ctx_manager:
         if modal_ctx is None:
@@ -462,6 +466,9 @@ def supplier_form():
             if not filtered_df.empty:
                 # Show count
                 st.caption(f"Showing {len(filtered_df)} of {len(df)} supplier(s)")
+
+                view_placeholder = st.empty()
+                edit_placeholder = st.empty()
                 
                 # Check if user is admin
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
@@ -536,7 +543,7 @@ def supplier_form():
                                     st.error("Failed to delete supplier")
                     
                     st.divider()
-                _render_view_modal("supplier")
+                _render_view_modal("supplier", view_placeholder)
             elif search_term:
                 # Search returned no results, but search was performed
                 pass
@@ -545,44 +552,45 @@ def supplier_form():
 
             # Edit form (shown when edit button is clicked)
             if "edit_supplier_id" in st.session_state and st.session_state["edit_supplier_id"]:
-                st.subheader("Edit Supplier")
-                edit_id = st.session_state["edit_supplier_id"]
-                edit_idx = st.session_state.get("edit_supplier_idx", 0)
-                
-                supplier_rows = df[df["Supplier ID"] == edit_id]
-                if not supplier_rows.empty:
-                    supplier = supplier_rows.iloc[0]
+                with edit_placeholder.container():
+                    st.subheader("Edit Supplier")
+                    edit_id = st.session_state["edit_supplier_id"]
+                    edit_idx = st.session_state.get("edit_supplier_idx", 0)
                     
-                    with st.form("edit_supplier_form"):
-                        new_supplier_id = st.text_input("Supplier ID", value=supplier.get("Supplier ID", ""), disabled=True)
-                        new_supplier_name = st.text_input("Supplier Name", value=supplier.get("Supplier Name", ""))
+                    supplier_rows = df[df["Supplier ID"] == edit_id]
+                    if not supplier_rows.empty:
+                        supplier = supplier_rows.iloc[0]
                         
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.form_submit_button("Update Supplier", use_container_width=True):
-                                with st.spinner("Updating supplier..."):
-                                    if update_data(SHEETS["suppliers"], edit_idx, [new_supplier_id, new_supplier_name]):
-                                        # Set success message
-                                        st.session_state["supplier_success_message"] = f"✅ Supplier '{new_supplier_name}' (ID: {new_supplier_id}) updated successfully!"
-                                        if "edit_supplier_id" in st.session_state:
-                                            del st.session_state["edit_supplier_id"]
-                                        if "edit_supplier_idx" in st.session_state:
-                                            del st.session_state["edit_supplier_idx"]
-                                        # Clear search bar
-                                        if "supplier_search" in st.session_state:
-                                            del st.session_state["supplier_search"]
-                                        st.rerun()
-                                    else:
-                                        st.error("Failed to update supplier")
-                        with col2:
-                            if st.form_submit_button("Cancel", use_container_width=True):
-                                if "edit_supplier_id" in st.session_state:
-                                    del st.session_state["edit_supplier_id"]
-                                if "edit_supplier_idx" in st.session_state:
-                                    del st.session_state["edit_supplier_idx"]
-                                st.rerun()
-                else:
-                    st.warning("Selected supplier not found in data.")
+                        with st.form("edit_supplier_form"):
+                            new_supplier_id = st.text_input("Supplier ID", value=supplier.get("Supplier ID", ""), disabled=True)
+                            new_supplier_name = st.text_input("Supplier Name", value=supplier.get("Supplier Name", ""))
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.form_submit_button("Update Supplier", use_container_width=True):
+                                    with st.spinner("Updating supplier..."):
+                                        if update_data(SHEETS["suppliers"], edit_idx, [new_supplier_id, new_supplier_name]):
+                                            # Set success message
+                                            st.session_state["supplier_success_message"] = f"✅ Supplier '{new_supplier_name}' (ID: {new_supplier_id}) updated successfully!"
+                                            if "edit_supplier_id" in st.session_state:
+                                                del st.session_state["edit_supplier_id"]
+                                            if "edit_supplier_idx" in st.session_state:
+                                                del st.session_state["edit_supplier_idx"]
+                                            # Clear search bar
+                                            if "supplier_search" in st.session_state:
+                                                del st.session_state["supplier_search"]
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to update supplier")
+                            with col2:
+                                if st.form_submit_button("Cancel", use_container_width=True):
+                                    if "edit_supplier_id" in st.session_state:
+                                        del st.session_state["edit_supplier_id"]
+                                    if "edit_supplier_idx" in st.session_state:
+                                        del st.session_state["edit_supplier_idx"]
+                                    st.rerun()
+                    else:
+                        st.warning("Selected supplier not found in data.")
         else:
             st.info("No suppliers found. Add a new supplier using the 'Add New Supplier' tab.")
 
