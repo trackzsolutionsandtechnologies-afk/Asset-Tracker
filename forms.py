@@ -106,36 +106,29 @@ def location_form():
     tab1, tab2 = st.tabs(["Add New Location", "View/Edit Locations"])
     
     with tab1:
-        # Green Add Location button styling, white form background, and hide loading indicators
+        # Align styling with supplier form (white card, green primary button, hide spinners)
         st.markdown(
             """
             <style>
-            
-            /* White background for Add Location */
-            div[data-testid="stTabPanel"]:first-of-type div[data-testid="stForm"] {
+            div[data-testid="stTabPanel"] div[data-testid="stForm"] {
                 background-color: white !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
-                width: 900px !important;
-                max-width: 900px !important;
-                margin-left: -120px !important;
                 border: 1px solid #e0e0e0 !important;
             }
-            /* Target the primary button in the Location section */
-            div[data-testid="stTabPanel"]:first-of-type div[data-testid="stForm"] button[kind="primary"],
-            div[data-testid="stTabPanel"]:first-of-type button.stButton > button[kind="primary"] {
+            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"],
+            button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;
                 color: white !important;
                 border-color: #28a745 !important;
             }
-            div[data-testid="stTabPanel"]:first-of-type div[data-testid="stForm"] button[kind="primary"]:hover,
-            div[data-testid="stTabPanel"]:first-of-type button.stButton > button[kind="primary"]:hover {
+            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"]:hover,
+            button.stButton > button[kind="primary"]:hover {
                 background-color: #218838 !important;
                 border-color: #1e7e34 !important;
             }
-            /* Hide loading indicators */
-            div[data-testid="stTabPanel"]:first-of-type [data-testid="stStatusWidget"],
-            div[data-testid="stTabPanel"]:first-of-type .stSpinner {
+            [data-testid="stStatusWidget"],
+            .stSpinner {
                 display: none !important;
             }
             </style>
@@ -193,17 +186,6 @@ def location_form():
                             st.error("Failed to add location")
     
     with tab2:
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stTabPanel"]:nth-of-type(2) > div:first-child {
-                max-width: 1100px !important;
-                margin-left: -80px !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
         # Show success message if exists
         if "location_success_message" in st.session_state:
             st.success(st.session_state["location_success_message"])
@@ -317,14 +299,13 @@ def location_form():
                     st.divider()
 
                 _render_view_modal("location", view_placeholder)
+
             elif search_term:
                 # Search returned no results, but search was performed
                 pass
             else:
                 st.info("No locations found. Add a new location using the 'Add New Location' tab.")
 
-            _render_view_modal("location", view_placeholder)
-            
             # Edit form (shown when edit button is clicked)
             if "edit_location_id" in st.session_state and st.session_state["edit_location_id"]:
                 with edit_placeholder.container():
@@ -359,6 +340,7 @@ def location_form():
                                     st.session_state.pop("edit_location_id", None)
                                     st.session_state.pop("edit_location_idx", None)
                                     st.rerun()
+
         else:
             st.info("No locations found. Add a new location using the 'Add New Location' tab.")
 
