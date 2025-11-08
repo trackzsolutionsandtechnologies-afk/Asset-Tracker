@@ -2,6 +2,7 @@
 Forms module for Asset Tracker
 """
 import base64
+from io import BytesIO
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -1461,7 +1462,7 @@ def asset_master_form():
     if not subcategories_df.empty and subcat_cat_name_col:
         subcat_cat_name_norm_series = subcategories_df[subcat_cat_name_col].astype(str).str.strip().str.lower()
 
-    tab1, tab2 = st.tabs(["Add New Asset", "View/Edit Assets"])
+    tab1, tab2, tab3 = st.tabs(["Add New Asset", "View/Edit Assets", "Reports"])
     
     with tab1:
         with st.form("asset_form"):
@@ -2032,6 +2033,91 @@ def asset_master_form():
 
         else:
             st.info("No assets found. Add a new asset using the 'Add New Asset' tab.")
+
+    with tab3:
+        if assets_df.empty:
+            st.info("No assets available to generate a report.")
+        else:
+            st.subheader("Asset Master Report")
+
+            status_series = assets_df.get("Status", pd.Series(dtype=str))
+            location_series = assets_df.get("Location", pd.Series(dtype=str))
+            category_series = assets_df.get("Category", assets_df.get("Category Name", pd.Series(dtype=str)))
+
+            status_options = (
+                sorted(status_series.dropna().astype(str).str.strip().unique().tolist())
+                if not status_series.empty
+                else []
+            )
+            location_options = (
+                sorted(location_series.dropna().astype(str).str.strip().unique().tolist())
+                if not location_series.empty
+                else []
+            )
+            category_options = (
+                sorted(category_series.dropna().astype(str).str.strip().unique().tolist())
+                if isinstance(category_series, pd.Series) and not category_series.empty
+                else []
+            )
+
+            col_filters = st.columns(3)
+            with col_filters[0]:
+                selected_status = st.multiselect("Filter by Status", status_options)
+            with col_filters[1]:
+                selected_location = st.multiselect("Filter by Location", location_options)
+            with col_filters[2]:
+                selected_category = st.multiselect("Filter by Category", category_options)
+
+            report_df = assets_df.copy()
+            if selected_status and not status_series.empty:
+                report_df = report_df[
+                    report_df["Status"].astype(str).str.strip().isin(selected_status)
+                ]
+            if selected_location and not location_series.empty:
+                report_df = report_df[
+                    report_df["Location"].astype(str).str.strip().isin(selected_location)
+                ]
+            if selected_category and isinstance(category_series, pd.Series):
+                category_column_name = category_series.name
+                report_df = report_df[
+                    report_df[category_column_name].astype(str).str.strip().isin(selected_category)
+                ]
+
+            if report_df.empty:
+                st.warning("No records match the selected filters.")
+            else:
+                st.caption(f"{len(report_df)} asset(s) match the current filters.")
+                st.dataframe(report_df, use_container_width=True)
+
+                excel_buffer = None
+                excel_written = False
+                for engine in ("xlsxwriter", "openpyxl", None):
+                    try:
+                        excel_buffer = BytesIO()
+                        if engine:
+                            with pd.ExcelWriter(excel_buffer, engine=engine) as writer:
+                                report_df.to_excel(writer, index=False, sheet_name="Assets")
+                        else:
+                            report_df.to_excel(excel_buffer, index=False)
+                        excel_written = True
+                        break
+                    except Exception:
+                        continue
+
+                if excel_written and excel_buffer is not None:
+                    excel_buffer.seek(0)
+                    st.download_button(
+                        "Download Excel Report",
+                        data=excel_buffer,
+                        file_name="asset_master_report.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True,
+                    )
+                else:
+                    st.warning(
+                        "Unable to generate an Excel file. Please ensure that the 'openpyxl' or 'xlsxwriter' "
+                        "package is available in the environment."
+                    )
 
 def asset_transfer_form():
     """Asset Transfer Form"""
