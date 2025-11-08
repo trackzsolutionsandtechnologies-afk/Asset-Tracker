@@ -1738,13 +1738,16 @@ def asset_master_form():
                 "Under Repair",
             ]
 
+            view_placeholder = st.empty()
+            edit_placeholder = st.empty()
+
             if is_admin:
-                header_cols = st.columns([2, 3, 2, 2, 1, 1, 1, 1])
+                header_cols = st.columns([3, 4, 3, 3, 1, 1, 1])
             else:
-                header_cols = st.columns([2, 3, 2, 2, 1, 1, 1])
+                header_cols = st.columns([3, 4, 3, 3, 1, 1])
             header_labels = [
                 "**Asset ID**",
-                "**Name**",
+                "**Asset Name**",
                 "**Category**",
                 "**Location**",
                 "**Warranty**",
@@ -1760,133 +1763,183 @@ def asset_master_form():
 
             st.divider()
 
+            button_counter = 0
             for idx, row in filtered_df.iterrows():
-                asset_id_value = row.get("Asset ID")
+                asset_id_value = row.get("Asset ID", "")
+                unique_suffix = f"{asset_id_value}_{button_counter}"
+                button_counter += 1
+
                 matching_rows = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id_value)]
                 original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
 
                 if is_admin:
-                    cols = st.columns([2, 3, 2, 2, 1, 1, 1, 1])
+                    cols = st.columns([3, 4, 3, 3, 1, 1, 1])
                 else:
-                    cols = st.columns([2, 3, 2, 2, 1, 1, 1])
+                    cols = st.columns([3, 4, 3, 3, 1, 1])
 
                 col_asset, col_name, col_category, col_location, col_warranty = cols[:5]
                 col_view = cols[5]
-                col_edit = cols[6]
-                col_delete = cols[7] if is_admin else None
+                col_edit = cols[6] if is_admin else cols[5]
+                col_delete = cols[6] if is_admin else None
 
                 with col_asset:
-                    st.write(asset_id_value or "-")
+                    st.write(asset_id_value or "N/A")
                 with col_name:
-                    st.write(row.get("Asset Name", row.get("Asset Name *", "-")))
+                    st.write(row.get("Asset Name", row.get("Asset Name *", "N/A")))
                 with col_category:
-                    st.write(row.get("Category", row.get("Category Name", "-")))
+                    st.write(row.get("Category", row.get("Category Name", "N/A")))
                 with col_location:
-                    st.write(row.get("Location", "-"))
+                    st.write(row.get("Location", "N/A"))
+                with col_warranty:
+                    st.write(row.get("Warranty", "N/A"))
 
-                if st.session_state.get("edit_asset_id") == asset_id_value:
-                    col_warranty.write("-")
-                    col_view.write("-")
-                    edit_form_key = f"asset_edit_form_{asset_id_value}"
-                    with st.form(edit_form_key):
-                        col_left, col_right = st.columns(2)
-
-                        with col_left:
-                            st.text_input("Asset ID", value=asset_id_value, disabled=True)
-                            new_name = st.text_input("Asset Name *", value=row.get("Asset Name", row.get("Asset Name *", "")))
-
-                            edit_subcategory_name_options = []
-                            if not subcategories_df.empty and subcat_name_col:
-                                edit_subcategory_name_options.extend(subcategories_df[subcat_name_col].dropna().astype(str).str.strip().tolist())
-                            current_category_value = row.get("Category", row.get("Category Name", ""))
-                            if current_category_value and current_category_value not in edit_subcategory_name_options:
-                                edit_subcategory_name_options.append(current_category_value)
-                            edit_subcategory_name_options = sorted(dict.fromkeys(edit_subcategory_name_options))
-
-                            if edit_subcategory_name_options:
-                                cat_list = ["Select sub category"] + edit_subcategory_name_options
-                                try:
-                                    default_cat_index = cat_list.index(current_category_value) if current_category_value in cat_list else 0
-                                except ValueError:
-                                    default_cat_index = 0
-                                selected_category = st.selectbox("Category (Sub Category Name)", cat_list, index=default_cat_index)
-                            else:
-                                selected_category = st.selectbox(
-                                    "Category (Sub Category Name)",
-                                    ["No subcategories available"],
-                                    disabled=True,
-                                )
-                                selected_category = ""
-
-                            category_names_for_selected_edit = []
-                            selected_category_norm = str(selected_category).strip().lower()
-                            matching_rows_edit = pd.DataFrame()
-                            if (
-                                selected_category
-                                and selected_category not in ("Select sub category", "")
-                                and subcat_name_norm_series is not None
-                            ):
-                                matching_rows_edit = subcategories_df[
-                                    subcat_name_norm_series == selected_category_norm
-                                ]
-                                if not matching_rows_edit.empty:
-                                    if subcat_cat_name_col:
-                                        category_names_for_selected_edit = unique_clean(
-                                            matching_rows_edit[subcat_cat_name_col]
-                                        )
-                                    elif (
-                                        subcat_cat_id_col
-                                        and category_id_col
-                                        and category_name_col
-                                        and category_norm_series is not None
-                                    ):
-                                        ids_edit = matching_rows_edit[subcat_cat_id_col].dropna().astype(str)
-                                        cat_matches_edit = categories_df[
-                                            categories_df[category_id_col]
-                                            .astype(str)
-                                            .str.strip()
-                                            .str.lower()
-                                            .isin(ids_edit.str.strip().str.lower())
-                                        ]
-                                        if not cat_matches_edit.empty:
-                                            category_names_for_selected_edit = unique_clean(
-                                                cat_matches_edit[category_name_col]
-                                            )
-
-                            current_subcat_value = row.get(
+                with col_view:
+                    if st.button(
+                        "👁️",
+                        key=f"asset_view_{unique_suffix}",
+                        use_container_width=True,
+                        help="View details",
+                    ):
+                        record = {
+                            "Asset ID": asset_id_value,
+                            "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
+                            "Category": row.get("Category", row.get("Category Name", "")),
+                            "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
+                            "Location": row.get("Location", ""),
+                            "Assigned To": row.get("Assigned To", ""),
+                            "Status": row.get("Status", ""),
+                            "Condition": row.get("Condition", ""),
+                            "Supplier": row.get("Supplier", ""),
+                            "Model / Serial No": row.get("Model / Serial No", row.get("Model/Serial No", "")),
+                            "Purchase Date": row.get("Purchase Date", ""),
+                            "Purchase Cost": row.get("Purchase Cost", ""),
+                            "Warranty": row.get("Warranty", ""),
+                            "Remarks": row.get("Remarks", ""),
+                        }
+                        _open_view_modal(
+                            "asset",
+                            f"Asset Details: {asset_id_value}",
+                            record,
+                            [
+                                "Asset ID",
+                                "Asset Name",
+                                "Category",
                                 "Sub Category",
-                                row.get("SubCategory Name", row.get("Sub Category Name", "")),
-                            )
-                            if current_subcat_value and current_subcat_value not in category_names_for_selected_edit:
-                                category_names_for_selected_edit.append(current_subcat_value)
-                            category_names_for_selected_edit = sorted(
-                                dict.fromkeys(category_names_for_selected_edit)
-                            )
+                                "Location",
+                                "Assigned To",
+                                "Status",
+                                "Condition",
+                                "Supplier",
+                                "Model / Serial No",
+                                "Purchase Date",
+                                "Purchase Cost",
+                                "Warranty",
+                                "Remarks",
+                            ],
+                        )
 
-                            try:
-                                default_subcat_index = (
-                                    category_names_for_selected_edit.index(current_subcat_value)
-                                    if current_subcat_value in category_names_for_selected_edit
-                                    else 0
-                                )
-                            except ValueError:
-                                default_subcat_index = 0
+                with col_edit:
+                    if st.button("✏️", key=f"asset_edit_{unique_suffix}", use_container_width=True, help="Edit this asset"):
+                        st.session_state["edit_asset_id"] = asset_id_value
+                        st.session_state["edit_asset_idx"] = original_idx
+                        st.rerun()
 
-                            subcategory_help_edit_final = None
-                            if not category_names_for_selected_edit:
-                                if selected_category in ("Select sub category", ""):
-                                    subcategory_help_edit_final = "Please select a sub category first."
+                if is_admin and col_delete is not None:
+                    with col_delete:
+                        if st.button("🗑️", key=f"asset_delete_{unique_suffix}", use_container_width=True, help="Delete this asset"):
+                            if delete_data(SHEETS["assets"], original_idx):
+                                st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete asset")
+
+                st.divider()
+
+            _render_view_modal("asset", view_placeholder)
+
+            if "edit_asset_id" in st.session_state and st.session_state["edit_asset_id"]:
+                with edit_placeholder.container():
+                    edit_id = st.session_state["edit_asset_id"]
+                    edit_idx = st.session_state.get("edit_asset_idx", 0)
+                    edit_rows = assets_df[assets_df["Asset ID"].astype(str) == str(edit_id)]
+                    if edit_rows.empty:
+                        st.warning("Selected asset not found in data.")
+                    else:
+                        row = edit_rows.iloc[0]
+                        st.subheader(f"Edit Asset: {edit_id}")
+                        with st.form(f"asset_edit_form_{edit_id}"):
+                            col_left, col_right = st.columns(2)
+
+                            with col_left:
+                                st.text_input("Asset ID", value=edit_id, disabled=True)
+                                new_name = st.text_input("Asset Name *", value=row.get("Asset Name", row.get("Asset Name *", "")))
+
+                                edit_subcategory_name_options = []
+                                if not subcategories_df.empty and subcat_name_col:
+                                    edit_subcategory_name_options.extend(
+                                        subcategories_df[subcat_name_col].dropna().astype(str).str.strip().tolist()
+                                    )
+                                current_category_value = row.get("Category", row.get("Category Name", ""))
+                                if current_category_value and current_category_value not in edit_subcategory_name_options:
+                                    edit_subcategory_name_options.append(current_category_value)
+                                edit_subcategory_name_options = sorted(dict.fromkeys(edit_subcategory_name_options))
+
+                                if edit_subcategory_name_options:
+                                    cat_list = ["Select sub category"] + edit_subcategory_name_options
+                                    try:
+                                        default_cat_index = cat_list.index(current_category_value) if current_category_value in cat_list else 0
+                                    except ValueError:
+                                        default_cat_index = 0
+                                    selected_category = st.selectbox("Category (Sub Category Name)", cat_list, index=default_cat_index)
                                 else:
-                                    subcategory_help_edit_final = "No category mapping found for the selected sub category."
+                                    selected_category = st.selectbox(
+                                        "Category (Sub Category Name)",
+                                        ["No subcategories available"],
+                                        disabled=True,
+                                    )
+                                    selected_category = ""
 
-                            edit_subcategory_options = (
-                                ["Select category name"] + category_names_for_selected_edit
-                                if category_names_for_selected_edit
-                                else ["None"]
-                            )
+                                category_names_for_selected_edit = []
+                                selected_category_norm = str(selected_category).strip().lower()
+                                if (
+                                    selected_category
+                                    and selected_category not in ("Select sub category", "")
+                                    and subcat_name_norm_series is not None
+                                ):
+                                    matching_rows_edit = subcategories_df[subcat_name_norm_series == selected_category_norm]
+                                    if not matching_rows_edit.empty:
+                                        if subcat_cat_name_col:
+                                            category_names_for_selected_edit = unique_clean(matching_rows_edit[subcat_cat_name_col])
+                                        elif (
+                                            subcat_cat_id_col
+                                            and category_id_col
+                                            and category_name_col
+                                            and category_norm_series is not None
+                                        ):
+                                            ids_edit = matching_rows_edit[subcat_cat_id_col].dropna().astype(str)
+                                            cat_matches_edit = categories_df[
+                                                categories_df[category_id_col]
+                                                .astype(str)
+                                                .str.strip()
+                                                .str.lower()
+                                                .isin(ids_edit.str.strip().str.lower())
+                                            ]
+                                            if not cat_matches_edit.empty:
+                                                category_names_for_selected_edit = unique_clean(cat_matches_edit[category_name_col])
 
-                            # Adjust default index when using options with placeholder
-                            if category_names_for_selected_edit:
+                                current_subcat_value = row.get(
+                                    "Sub Category",
+                                    row.get("SubCategory Name", row.get("Sub Category Name", "")),
+                                )
+                                if current_subcat_value and current_subcat_value not in category_names_for_selected_edit:
+                                    category_names_for_selected_edit.append(current_subcat_value)
+                                category_names_for_selected_edit = sorted(dict.fromkeys(category_names_for_selected_edit))
+
+                                edit_subcategory_options = (
+                                    ["Select category name"] + category_names_for_selected_edit
+                                    if category_names_for_selected_edit
+                                    else ["None"]
+                                )
                                 try:
                                     default_subcat_index = (
                                         edit_subcategory_options.index(current_subcat_value)
@@ -1895,207 +1948,153 @@ def asset_master_form():
                                     )
                                 except ValueError:
                                     default_subcat_index = 0
-                            else:
-                                default_subcat_index = 0
 
-                            selected_subcategory = st.selectbox(
-                                "Sub Category (Category Name)",
-                                edit_subcategory_options,
-                                index=default_subcat_index,
-                                key=f"asset_edit_subcategory_final_{asset_id_value}",
-                                help=subcategory_help_edit_final,
-                            )
+                                subcategory_help_edit_final = None
+                                if not category_names_for_selected_edit:
+                                    if selected_category in ("Select sub category", ""):
+                                        subcategory_help_edit_final = "Please select a sub category first."
+                                    else:
+                                        subcategory_help_edit_final = "No category mapping found for the selected sub category."
 
-                            model_serial = st.text_input(
-                                "Model / Serial No",
-                                value=row.get("Model / Serial No", row.get("Model/Serial No", "")),
-                            )
+                                selected_subcategory = st.selectbox(
+                                    "Sub Category (Category Name)",
+                                    edit_subcategory_options,
+                                    index=default_subcat_index,
+                                    key=f"asset_edit_subcategory_final_{edit_id}",
+                                    help=subcategory_help_edit_final,
+                                )
 
-                            purchase_date_value = row.get("Purchase Date", "")
-                            try:
-                                default_date = datetime.strptime(purchase_date_value, "%Y-%m-%d").date() if purchase_date_value else datetime.now().date()
-                            except Exception:
-                                default_date = datetime.now().date()
-                            new_purchase_date = st.date_input("Purchase Date", value=default_date)
+                                model_serial = st.text_input(
+                                    "Model / Serial No",
+                                    value=row.get("Model / Serial No", row.get("Model/Serial No", "")),
+                                )
 
-                        with col_right:
-                            purchase_cost = st.number_input(
-                                "Purchase Cost",
-                                min_value=0.0,
-                                value=float(str(row.get("Purchase Cost", 0)).replace(",", "") or 0),
-                                step=0.01,
-                            )
-                            warranty_existing = str(row.get("Warranty", "")).strip().lower()
-                            warranty_edit = st.selectbox(
-                                "Warranty",
-                                ["No", "Yes"],
-                                index=1 if warranty_existing == "yes" else 0,
-                            )
-
-                            if not suppliers_df.empty:
-                                supplier_options = suppliers_df["Supplier Name"].tolist()
-                                supplier_list = ["None"] + supplier_options
+                                purchase_date_value = row.get("Purchase Date", "")
                                 try:
-                                    default_supplier_index = supplier_list.index(row.get("Supplier", "None"))
-                                except ValueError:
-                                    default_supplier_index = 0
-                                new_supplier = st.selectbox("Supplier", supplier_list, index=default_supplier_index)
-                            else:
-                                new_supplier = st.text_input("Supplier", value=row.get("Supplier", ""))
+                                    default_date = (
+                                        datetime.strptime(purchase_date_value, "%Y-%m-%d").date()
+                                        if purchase_date_value
+                                        else datetime.now().date()
+                                    )
+                                except Exception:
+                                    default_date = datetime.now().date()
+                                new_purchase_date = st.date_input("Purchase Date", value=default_date)
 
-                            if not locations_df.empty:
-                                location_options = locations_df["Location Name"].tolist()
-                                location_list = ["None"] + location_options
-                                try:
-                                    default_location_index = location_list.index(row.get("Location", "None"))
-                                except ValueError:
-                                    default_location_index = 0
-                                new_location = st.selectbox("Location", location_list, index=default_location_index)
-                            else:
-                                new_location = st.text_input("Location", value=row.get("Location", ""))
+                            with col_right:
+                                purchase_cost = st.number_input(
+                                    "Purchase Cost",
+                                    min_value=0.0,
+                                    value=float(str(row.get("Purchase Cost", 0)).replace(",", "") or 0),
+                                    step=0.01,
+                                )
+                                warranty_existing = str(row.get("Warranty", "")).strip().lower()
+                                warranty_edit = st.selectbox(
+                                    "Warranty",
+                                    ["No", "Yes"],
+                                    index=1 if warranty_existing == "yes" else 0,
+                                )
 
-                            if not users_df.empty and "Username" in users_df.columns:
-                                user_options_edit = ["None"] + users_df["Username"].dropna().astype(str).tolist()
-                                try:
-                                    assigned_default = user_options_edit.index(str(row.get("Assigned To", "None")))
-                                except ValueError:
-                                    assigned_default = 0
-                                assigned_to = st.selectbox("Assigned To", user_options_edit, index=assigned_default)
-                            else:
-                                assigned_to = st.text_input("Assigned To", value=row.get("Assigned To", ""))
-                            condition = st.selectbox(
-                                "Condition",
-                                condition_options,
-                                index=condition_options.index(str(row.get("Condition", "Good"))) if str(row.get("Condition", "Good")) in condition_options else 1,
-                            )
-                            status = st.selectbox(
-                                "Status",
-                                status_options,
-                                index=status_options.index(str(row.get("Status", "Active"))) if str(row.get("Status", "Active")) in status_options else 0,
-                            )
-                            remarks = st.text_area("Remarks", value=row.get("Remarks", ""))
-                            existing_attachment = row.get("Attachment", "")
-                            if existing_attachment:
-                                st.caption("Existing attachment on file. Upload a new one to replace it.")
-                            attachment_upload = st.file_uploader(
-                                "Attachment (Image or File)",
-                                type=None,
-                                key=f"asset_attachment_{asset_id_value}",
-                            )
-                            attachment_value = existing_attachment
-                            attachment_too_large_edit = False
-                            if attachment_upload is not None:
-                                encoded_edit = base64.b64encode(attachment_upload.getvalue()).decode("utf-8")
-                                if len(encoded_edit) > MAX_ATTACHMENT_CHARS:
-                                    st.warning("Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).", icon="⚠️")
-                                    attachment_too_large_edit = True
+                                if not suppliers_df.empty:
+                                    supplier_options = suppliers_df["Supplier Name"].tolist()
+                                    supplier_list = ["None"] + supplier_options
+                                    try:
+                                        default_supplier_index = supplier_list.index(row.get("Supplier", "None"))
+                                    except ValueError:
+                                        default_supplier_index = 0
+                                    new_supplier = st.selectbox("Supplier", supplier_list, index=default_supplier_index)
                                 else:
-                                    attachment_value = f"data:{attachment_upload.type};name={attachment_upload.name};base64,{encoded_edit}"
+                                    new_supplier = st.text_input("Supplier", value=row.get("Supplier", ""))
 
-                        col_save, col_cancel = st.columns(2)
-                        with col_save:
-                            if st.form_submit_button("Update Asset", use_container_width=True):
-                                if attachment_upload is not None and attachment_too_large_edit:
-                                    st.error("Attachment was not updated because it exceeds the allowed size. Please upload a smaller file.")
-                                    st.stop()
-                                updated_data = [
-                                    asset_id_value,
-                                    new_name,
-                                    selected_category if selected_category not in ("", "Select sub category") else row.get("Category", ""),
-                                    selected_subcategory
-                                    if selected_subcategory not in ("", "None", "Select category", "Select category name")
-                                    else row.get("Sub Category", row.get("SubCategory Name", "")),
-                                    model_serial,
-                                    new_purchase_date.strftime("%Y-%m-%d"),
-                                    purchase_cost,
-                                    warranty_edit,
-                                    new_supplier if new_supplier != "None" else "",
-                                    new_location if new_location != "None" else "",
-                                    assigned_to if assigned_to != "None" else "",
-                                    condition,
-                                    status,
-                                    remarks,
-                                    attachment_value,
-                                ]
+                                if not locations_df.empty:
+                                    location_options = locations_df["Location Name"].tolist()
+                                    location_list = ["None"] + location_options
+                                    try:
+                                        default_location_index = location_list.index(row.get("Location", "None"))
+                                    except ValueError:
+                                        default_location_index = 0
+                                    new_location = st.selectbox("Location", location_list, index=default_location_index)
+                                else:
+                                    new_location = st.text_input("Location", value=row.get("Location", ""))
 
-                                if update_data(SHEETS["assets"], original_idx, updated_data):
-                                    st.session_state["asset_success_message"] = f"✅ Asset '{asset_id_value}' updated successfully!"
+                                if not users_df.empty and "Username" in users_df.columns:
+                                    user_options_edit = ["None"] + users_df["Username"].dropna().astype(str).tolist()
+                                    try:
+                                        assigned_default = user_options_edit.index(str(row.get("Assigned To", "None")))
+                                    except ValueError:
+                                        assigned_default = 0
+                                    assigned_to = st.selectbox("Assigned To", user_options_edit, index=assigned_default)
+                                else:
+                                    assigned_to = st.text_input("Assigned To", value=row.get("Assigned To", ""))
+
+                                condition = st.selectbox(
+                                    "Condition",
+                                    condition_options,
+                                    index=condition_options.index(str(row.get("Condition", "Good"))) if str(row.get("Condition", "Good")) in condition_options else 1,
+                                )
+                                status = st.selectbox(
+                                    "Status",
+                                    status_options,
+                                    index=status_options.index(str(row.get("Status", "Active"))) if str(row.get("Status", "Active")) in status_options else 0,
+                                )
+                                remarks = st.text_area("Remarks", value=row.get("Remarks", ""))
+                                existing_attachment = row.get("Attachment", "")
+                                if existing_attachment:
+                                    st.caption("Existing attachment on file. Upload a new one to replace it.")
+                                attachment_upload = st.file_uploader(
+                                    "Attachment (Image or File)",
+                                    type=None,
+                                    key=f"asset_attachment_{edit_id}",
+                                )
+                                attachment_value = existing_attachment
+                                attachment_too_large_edit = False
+                                if attachment_upload is not None:
+                                    encoded_edit = base64.b64encode(attachment_upload.getvalue()).decode("utf-8")
+                                    if len(encoded_edit) > MAX_ATTACHMENT_CHARS:
+                                        st.warning("Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).", icon="⚠️")
+                                        attachment_too_large_edit = True
+                                    else:
+                                        attachment_value = f"data:{attachment_upload.type};name={attachment_upload.name};base64,{encoded_edit}"
+
+                            col_save, col_cancel = st.columns(2)
+                            with col_save:
+                                if st.form_submit_button("Update Asset", use_container_width=True):
+                                    if attachment_upload is not None and attachment_too_large_edit:
+                                        st.error("Attachment was not updated because it exceeds the allowed size. Please upload a smaller file.")
+                                        st.stop()
+                                    updated_data = [
+                                        edit_id,
+                                        new_name,
+                                        selected_category if selected_category not in ("", "Select sub category") else row.get("Category", ""),
+                                        selected_subcategory
+                                        if selected_subcategory not in ("", "None", "Select category", "Select category name")
+                                        else row.get("Sub Category", row.get("SubCategory Name", "")),
+                                        model_serial,
+                                        new_purchase_date.strftime("%Y-%m-%d"),
+                                        purchase_cost,
+                                        warranty_edit,
+                                        new_supplier if new_supplier != "None" else "",
+                                        new_location if new_location != "None" else "",
+                                        assigned_to if assigned_to != "None" else "",
+                                        condition,
+                                        status,
+                                        remarks,
+                                        attachment_value,
+                                    ]
+
+                                    if update_data(SHEETS["assets"], edit_idx, updated_data):
+                                        st.session_state["asset_success_message"] = f"✅ Asset '{edit_id}' updated successfully!"
+                                        st.session_state.pop("edit_asset_id", None)
+                                        st.session_state.pop("edit_asset_idx", None)
+                                        if "asset_search" in st.session_state:
+                                            del st.session_state["asset_search"]
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to update asset")
+                            with col_cancel:
+                                if st.form_submit_button("Cancel", use_container_width=True):
                                     st.session_state.pop("edit_asset_id", None)
                                     st.session_state.pop("edit_asset_idx", None)
-                                    if "asset_search" in st.session_state:
-                                        del st.session_state["asset_search"]
                                     st.rerun()
-                                else:
-                                    st.error("Failed to update asset")
-                        with col_cancel:
-                            if st.form_submit_button("Cancel", use_container_width=True):
-                                st.session_state.pop("edit_asset_id", None)
-                                st.session_state.pop("edit_asset_idx", None)
-                                st.rerun()
-                else:
-                    with col_warranty:
-                        st.write(row.get("Warranty", "N/A"))
-                    with col_view:
-                        if st.button(
-                            "👁️",
-                            key=f"asset_view_{asset_id_value}_{idx}",
-                            use_container_width=True,
-                            help="View asset details",
-                        ):
-                            record = {
-                                "Asset ID": asset_id_value,
-                                "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
-                                "Category": row.get("Category", row.get("Category Name", "")),
-                                "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
-                                "Location": row.get("Location", ""),
-                                "Assigned To": row.get("Assigned To", ""),
-                                "Status": row.get("Status", ""),
-                                "Condition": row.get("Condition", ""),
-                                "Supplier": row.get("Supplier", ""),
-                                "Model / Serial No": row.get("Model / Serial No", row.get("Model/Serial No", "")),
-                                "Purchase Date": row.get("Purchase Date", ""),
-                                "Purchase Cost": row.get("Purchase Cost", ""),
-                                "Warranty": row.get("Warranty", ""),
-                                "Remarks": row.get("Remarks", ""),
-                            }
-                            _open_view_modal(
-                                "asset",
-                                f"Asset Details: {asset_id_value}",
-                                record,
-                                [
-                                    "Asset ID",
-                                    "Asset Name",
-                                    "Category",
-                                    "Sub Category",
-                                    "Location",
-                                    "Assigned To",
-                                    "Status",
-                                    "Condition",
-                                    "Supplier",
-                                    "Model / Serial No",
-                                    "Purchase Date",
-                                    "Purchase Cost",
-                                    "Warranty",
-                                    "Remarks",
-                                ],
-                            )
-
-                    with col_edit:
-                        if st.button("✏️", key=f"asset_edit_{asset_id_value}", use_container_width=True, help="Edit this asset"):
-                            st.session_state["edit_asset_id"] = asset_id_value
-                            st.session_state["edit_asset_idx"] = original_idx
-                            st.rerun()
-                    if is_admin and col_delete is not None:
-                        with col_delete:
-                            if st.button("🗑️", key=f"asset_delete_{asset_id_value}", use_container_width=True, help="Delete this asset"):
-                                if delete_data(SHEETS["assets"], original_idx):
-                                    st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete asset")
-
-                st.divider()
-            _render_view_modal("asset")
 
         else:
             st.info("No assets found. Add a new asset using the 'Add New Asset' tab.")
