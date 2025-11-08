@@ -1807,13 +1807,24 @@ def asset_master_form():
                 with col_category:
                     st.write(category_display)
                 with col_status:
-                    if is_editing or str(status_display).strip().lower() != "active":
+                    if not is_editing:
+                        status_lower = str(status_display).strip().lower()
+                        color_map = {
+                            "active": "#2d9c4b",
+                            "maintenance": "#c1121f",
+                            "assigned": "#1f6feb",
+                            "inactive": "#c1121f",
+                        }
+                        status_color = color_map.get(status_lower)
+                        if status_color:
+                            st.markdown(
+                                f"<span style='color: {status_color}; font-weight: 600;'>{status_display}</span>",
+                                unsafe_allow_html=True,
+                            )
+                            status_display = None
+
+                    if status_display is not None:
                         st.write(status_display)
-                    else:
-                        st.markdown(
-                            f"<span style='color: #c1121f; font-weight: 600;'>{status_display}</span>",
-                            unsafe_allow_html=True,
-                        )
 
                 if is_editing:
                     col_view.write("-")
