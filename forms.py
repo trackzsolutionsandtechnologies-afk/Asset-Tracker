@@ -1792,6 +1792,16 @@ def asset_master_form():
                 div[data-testid="column"] div[data-testid^="baseButton"] button:focus-visible {
                     outline: none !important;
                 }
+                div[data-testid="stTabPanel"] div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] {
+                    margin-bottom: 0.35rem !important;
+                }
+                div[data-testid="stTabPanel"] div[data-testid="stHorizontalBlock"] div[data-testid="column"] {
+                    padding-top: 0.1rem !important;
+                    padding-bottom: 0.1rem !important;
+                }
+                div[data-testid="stTabPanel"] div[data-testid="stMarkdown"] p {
+                    margin-bottom: 0.25rem !important;
+                }
                 </style>
                 """,
                 unsafe_allow_html=True,
