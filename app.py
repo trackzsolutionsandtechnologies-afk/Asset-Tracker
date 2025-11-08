@@ -44,6 +44,30 @@ st.markdown("""
         color: #ffffff !important;
     }
 
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2b1542, #3a2060);
+        color: #e4d9f5 !important;
+        width: 338px !important;
+        min-width: 338px !important;
+        max-width: 338px !important;
+        border-right: 1px solid rgba(255,255,255,0.1);
+    }
+    [data-testid="stSidebar"] * {
+        color: #e4d9f5 !important;
+    }
+
+    /* Keep sidebar toggle arrow visible but styled */
+    [data-testid="collapsedControl"] button {
+        background-color: #6f42c1 !important;
+        border: none !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+    }
+    [data-testid="collapsedControl"] button:hover {
+        background-color: #4c2a85 !important;
+    }
+
 [data-testid="stToolbar"] {
         display: none !important;
     }
@@ -180,13 +204,13 @@ def main():
             styles={
                 "container": {
                     "padding": "5px",
-                    "background": "#ffffff",
+                    "background": "transparent",
                     "border-radius": "0px",
                     "width": "200px",
                     "font-family": "'DIN', sans-serif",
                 },
                 "icon": {
-                    "color": "#31333F",
+                    "color": "#c3aed6",
                     "font-size": "20px",
                     "font-family": "'DIN', sans-serif",
                 },
@@ -195,26 +219,26 @@ def main():
                     "text-align": "left",
                     "margin": "5px 0",
                     "padding": "10px 18px",
-                    "color": "#31333F",
+                    "color": "#e4d9f5",
                     "border-radius": "8px",
                     "background-color": "transparent",
                     "transition": "all 0.3s ease",
                     "font-family": "'D-DIN', sans-serif",
                 },
                 "nav-link-hover": {
-                    "background-color": "#f0f2f6",
-                    "color": "#0d6efd",
+                    "background-color": "#4c2a85",
+                    "color": "#ffffff",
                     "font-family": "'D-DIN', sans-serif",
                 },
                 "nav-link-selected": {
-                    "background-color": "#0d6efd",
+                    "background-color": "#6f42c1",
                     "color": "#ffffff",
                     "font-weight": "600",
                     "box-shadow": "none",
                     "font-family": "'D-DIN', sans-serif",
                 },
                 "menu-title": {
-                    "color": "#31333F",
+                    "color": "#e4d9f5",
                     "font-size": "18px",
                     "font-weight": "600",
                     "margin-bottom": "10px",
