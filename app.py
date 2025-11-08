@@ -63,7 +63,6 @@ st.markdown("""
         display: none !important;
     }
 
- 
     [data-testid="Manage app button"] {
         display: none !important;
     }
@@ -79,7 +78,10 @@ st.markdown("""
     .viewer-badge {
         display: none !important;
     }
-
+    [data-testid="appCreatorAvatar"],
+    a[href*="share.streamlit.io"] {
+        display: none !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
