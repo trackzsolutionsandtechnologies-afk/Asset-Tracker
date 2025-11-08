@@ -48,6 +48,22 @@ st.markdown("""
         background-color: #5C3E94 !important;
         color: #ffffff !important;
     }
+
+ [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2b1542, #3a2060);
+        color: #e4d9f5;
+        width: 280px;  /* set your desired width */
+    }
+    [data-testid="stSidebar"] * {
+        color: #e4d9f5 !important;
+    }
+
+
+
+
+
+
+
     </style>
 """, unsafe_allow_html=True)
 
