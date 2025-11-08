@@ -1750,15 +1750,14 @@ def asset_master_form():
                 "**Asset Name**",
                 "**Location**",
                 "**Category**",
-                "**View**",
-                "**Edit**",
             ]
-            if is_admin:
-                header_labels.append("**Delete**")
 
-            for col, label in zip(header_cols, header_labels):
+            for idx, col in enumerate(header_cols):
                 with col:
-                    st.write(label)
+                    if idx < len(header_labels):
+                        st.write(header_labels[idx])
+                    else:
+                        st.write("")
 
             st.divider()
 
