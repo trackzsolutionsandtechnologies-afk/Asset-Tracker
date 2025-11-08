@@ -114,6 +114,8 @@ def location_form():
                 background-color: white !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
+                width: 900px !important; 
+                max-width: 900px !important;
                 border: 1px solid #e0e0e0 !important;
             }
             /* Target the primary button in the Location section */
