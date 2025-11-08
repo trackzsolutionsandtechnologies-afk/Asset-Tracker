@@ -252,6 +252,8 @@ def location_form():
                         border-radius: 10px;
                         font-weight: 600;
                         color: #2b1542;
+                        width: 120%;
+                        margin-left: -10%;
                     }
                     .location-table-row {
                         background: #ffffff;
@@ -259,6 +261,8 @@ def location_form():
                         border: 1px solid #ececf5;
                         border-radius: 10px;
                         margin-bottom: 10px;
+                        width: 120%;
+                        margin-left: -10%;
                         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
                     }
                     .location-table-row.even {
