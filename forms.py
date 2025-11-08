@@ -238,70 +238,92 @@ def location_form():
                 is_admin = user_role.lower() == "admin"
 
                 st.markdown(
-                    """
-                    <style>
-                    .location-table-wrapper {
-                        border: 1px solid #ee0000;
-                        border-radius: 8px;
-                        overflow: hidden;
-                        margin-left: -10%;
-                        margin-top: 12px;
-                        width: 130%;  
-                        flex-direction: row;
-                        align-items: flex-start;
-                    }
-                    .location-table-row {
-                        display: grid;
-                        align-items: stretch;
-                        border-bottom: 1px solid #d4d4d4;
-                        width: 130%; 
-                    }
-                    .location-table-row.header {
-                        background: #d7effc;
-                        font-weight: 600;
-                        color: #21445b;
-                        width: 130%; 
-                    }
-                    .location-table-row.striped {
-                        background: #f7f9fb;
-                        width: 130%; 
-                    }
-                    .location-table-row:not(.header) {
-                        background: #d7effc;
-                        width: 130%; 
-                    }
-                    .location-table-cell {
-                        padding: 10px 12px;
-                        border-right: 1px solid #d4d4d4;
-                        display: flex;
-                        align-items: center;
-                        font-size: 15px;
-                        width: 130%; 
-                    }
-                    .location-table-cell:last-child {
-                        border-right: none;
-                    }
-                    .location-table-actions {
-                        width: 130%;
-                        display: flex;
-                        justify-content: center;
-                        gap: 6px;
-                    }
-                    .location-table-actions button,
-                    .location-table-actions button[data-testid^="stBaseButton"] {
-                        border: none !important;
-                        box-shadow: none !important;
-                        background: transparent !important;
-                        outline: none !important;
-                        border-radius: 0 !important;
-                    }
-                    .location-table-actions button:hover {
-                        background-color: rgba(107, 70, 193, 0.12) !important;
-                    }
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
+    """
+    <style>
+    /* === Table Wrapper === */
+    .location-table-wrapper {
+        border: 1.5px solid #e63946;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 20px 0;
+        width: 100%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        background-color: #fff;
+    }
+
+    /* === Table Row === */
+    .location-table-row {
+        display: grid;
+        grid-template-columns: 60px 200px 250px 200px 80px 80px 80px;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        font-family: "DIN", sans-serif;
+    }
+
+    .location-table-row.header {
+        background: linear-gradient(90deg, #fdf2f2, #fff5f5);
+        font-weight: 700;
+        color: #d90429;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .location-table-row.striped:nth-child(even) {
+        background: #fafafa;
+    }
+
+    .location-table-row:not(.header):hover {
+        background: #f8f9fa;
+        transition: background 0.2s ease-in-out;
+    }
+
+    /* === Table Cell === */
+    .location-table-cell {
+        padding: 12px 14px;
+        border-right: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        font-size: 15px;
+        color: #222;
+    }
+
+    .location-table-cell:last-child {
+        border-right: none;
+    }
+
+    /* === Icons/Actions === */
+    .location-table-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .location-table-actions button,
+    .location-table-actions button[data-testid^="stBaseButton"] {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        outline: none !important;
+        border-radius: 6px !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .location-table-actions button:hover {
+        background-color: rgba(230, 57, 70, 0.12) !important;
+        transform: scale(1.1);
+    }
+
+    /* === Checkbox Alignment === */
+    input[type="checkbox"] {
+        transform: scale(1.1);
+        accent-color: #e63946;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
                 base_columns = [0.6, 1.6, 1.8, 1.2, 0.8, 0.8] + ([0.8] if is_admin else [])
                 header_labels = ["", "Location ID", "Location Name", "Department", "View", "Edit"]
