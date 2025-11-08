@@ -1497,12 +1497,12 @@ def asset_master_form():
             button.stButton > button[kind="primary"] {
                 background-color: #28a745 !important;
                 color: white !important;
-                border: none !important;
+                border-color: #28a745 !important;
             }
             div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"]:hover,
             button.stButton > button[kind="primary"]:hover {
                 background-color: #218838 !important;
-                border: none !important;
+                border-color: #1e7e34 !important;
             }
             [data-testid="stStatusWidget"],
             .stSpinner {
@@ -1748,7 +1748,7 @@ def asset_master_form():
                 div[data-testid="column"] div[data-testid="stButton"] button,
                 div[data-testid="column"] div[data-testid="baseButton-secondary"] button {
                     border: none !important;
-                    background: transparent !important;
+                    background: none !important;
                     box-shadow: none !important;
                 }
                 div[data-testid="column"] button[kind="secondary"]:focus-visible,
