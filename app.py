@@ -63,7 +63,20 @@ st.markdown("""
         display: none !important;
     }
 
-
+ [data-testid="stSidebar"] { ... }  /* your existing styles */
+    [data-testid="stSidebar"] * { ... }
+    [data-testid="stSidebarResizeHandle"] { display: none !important; }
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stAppViewContainer"] > .main .block-container {
+        padding-bottom: 2rem;  # optional tweaking
+    }
+    [data-testid="Manage app button"] {
+        display: none !important;
+    }
+    /* Some versions use a different test id */
+    [data-testid="stActionButton"] button[aria-label="Manage app"] {
+        display: none !important;
+    }
 
 
     </style>
