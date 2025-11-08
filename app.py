@@ -38,8 +38,8 @@ st.markdown("""
     div.stButton > button {
         background-color: #B7A3E3 !important;
         color: #1f77b4 !important;
-        border: 2px solid #1f77b4 !important;
-        border-radius: 8px !important;
+        border: none !important;
+        border-radius: 0px !important;
         font-weight: 600 !important;
     }
 
