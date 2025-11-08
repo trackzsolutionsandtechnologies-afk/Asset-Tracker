@@ -272,6 +272,14 @@ def location_form():
                         justify-content: center;
                         gap: 6px;
                     }
+                    .location-table-actions button {
+                        border: none !important;
+                        box-shadow: none !important;
+                        background-color: transparent !important;
+                    }
+                    .location-table-actions button:hover {
+                        background-color: rgba(107, 70, 193, 0.1) !important;
+                    }
                     </style>
                     """,
                     unsafe_allow_html=True,
