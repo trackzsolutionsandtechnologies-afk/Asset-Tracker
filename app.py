@@ -46,26 +46,26 @@ st.markdown("""
 
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2b1542, #3a2060);
-        color: #e4d9f5 !important;
+        background: linear-gradient(180deg, #8b0000, #c1121f);
+        color: #ffe8e8 !important;
         width: 338px !important;
         min-width: 338px !important;
         max-width: 338px !important;
         border-right: 1px solid rgba(255,255,255,0.1);
     }
     [data-testid="stSidebar"] * {
-        color: #e4d9f5 !important;
+        color: #ffe8e8 !important;
     }
 
     /* Keep sidebar toggle arrow visible but styled */
     [data-testid="collapsedControl"] button {
-        background-color: #6f42c1 !important;
+        background-color: #9d0208 !important;
         border: none !important;
         color: #ffffff !important;
         box-shadow: none !important;
     }
     [data-testid="collapsedControl"] button:hover {
-        background-color: #4c2a85 !important;
+        background-color: #d00000 !important;
     }
 
 [data-testid="stToolbar"] {
@@ -210,7 +210,7 @@ def main():
                     "font-family": "'DIN', sans-serif",
                 },
                 "icon": {
-                    "color": "#c3aed6",
+                    "color": "#ffd6d6",
                     "font-size": "20px",
                     "font-family": "'DIN', sans-serif",
                 },
@@ -219,26 +219,26 @@ def main():
                     "text-align": "left",
                     "margin": "5px 0",
                     "padding": "10px 18px",
-                    "color": "#e4d9f5",
+                    "color": "#ffe8e8",
                     "border-radius": "8px",
                     "background-color": "transparent",
                     "transition": "all 0.3s ease",
                     "font-family": "'D-DIN', sans-serif",
                 },
                 "nav-link-hover": {
-                    "background-color": "#4c2a85",
+                    "background-color": "rgba(255, 255, 255, 0.2)",
                     "color": "#ffffff",
                     "font-family": "'D-DIN', sans-serif",
                 },
                 "nav-link-selected": {
-                    "background-color": "#6f42c1",
+                    "background-color": "#9d0208",
                     "color": "#ffffff",
                     "font-weight": "600",
                     "box-shadow": "none",
                     "font-family": "'D-DIN', sans-serif",
                 },
                 "menu-title": {
-                    "color": "#e4d9f5",
+                    "color": "#ffe8e8",
                     "font-size": "18px",
                     "font-weight": "600",
                     "margin-bottom": "10px",
