@@ -237,7 +237,7 @@ def location_form():
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
                 is_admin = user_role.lower() == "admin"
 
-                st.markdown(
+               st.markdown(
     """
     <style>
     /* === Table Wrapper === */
@@ -245,8 +245,10 @@ def location_form():
         border: 1.5px solid #e63946;
         border-radius: 10px;
         overflow: hidden;
-        margin: 20px 0;
-        width: 100%;
+        margin-top: 20px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 95%;   /* keeps it centered and responsive */
         box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         background-color: #fff;
     }
@@ -319,10 +321,17 @@ def location_form():
         accent-color: #e63946;
     }
 
+    /* === Page alignment fix === */
+    section.main > div {
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 
                 base_columns = [0.6, 1.6, 1.8, 1.2, 0.8, 0.8] + ([0.8] if is_admin else [])
