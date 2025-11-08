@@ -232,48 +232,30 @@ def location_form():
             if not filtered_df.empty:
                 # Show count
                 st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
-                
-                # Check if user is admin
+
+                # Build base table for display
+                display_df = filtered_df[
+                    ["Location ID", "Location Name", "Department"]
+                ].reset_index(drop=True)
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+                # Action buttons beneath table
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
                 is_admin = user_role.lower() == "admin"
-                
-                # Table header - adjust columns based on admin status
-                header_cols = st.columns([2, 3, 3, 1, 1] + ([1] if is_admin else []))
-                header_labels = [
-                    "**Location ID**",
-                    "**Location Name**",
-                    "**Department**",
-                    "**View**",
-                    "**Edit**",
-                ]
-                if is_admin:
-                    header_labels.append("**Delete**")
 
-                for col_widget, label in zip(header_cols, header_labels):
-                    with col_widget:
-                        st.write(label)
-                st.divider()
+                st.markdown("#### Actions")
+                st.caption("Select a row in the table above, then use the buttons below.")
 
-                # Display table with edit/delete buttons
                 for idx, row in filtered_df.iterrows():
-                    # Get original index from df for delete/update operations
-                    # Convert to Python int to avoid JSON serialization issues
-                    if not df[df["Location ID"] == row.get('Location ID', '')].empty:
-                        original_idx = int(df[df["Location ID"] == row.get('Location ID', '')].index[0])
+                    if not df[df["Location ID"] == row.get("Location ID", "")].empty:
+                        original_idx = int(df[df["Location ID"] == row.get("Location ID", "")].index[0])
                     else:
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
-                    cols = st.columns([2, 3, 3, 1, 1] + ([1] if is_admin else []))
-                    col1, col2, col3, col_view, col_edit = cols[:5]
-                    col_delete = cols[5] if is_admin else None
-
-                    with col1:
-                        st.write(row.get('Location ID', 'N/A'))
-                    with col2:
-                        st.write(row.get('Location Name', 'N/A'))
-                    with col3:
-                        st.write(row.get('Department', 'N/A'))
-                    with col_view:
+                    cols = st.columns([4, 1, 1] + ([1] if is_admin else []))
+                    with cols[0]:
+                        st.write(f"**{row.get('Location ID', 'N/A')}** – {row.get('Location Name', 'N/A')} ({row.get('Department', 'N/A')})")
+                    with cols[1]:
                         if st.button("👁️", key=f"location_view_{row.get('Location ID', idx)}", use_container_width=True, help="View details"):
                             record = {
                                 "Location ID": row.get("Location ID", ""),
@@ -286,30 +268,28 @@ def location_form():
                                 record,
                                 ["Location ID", "Location Name", "Department"],
                             )
-                    with col_edit:
+                    with cols[2]:
                         edit_key = f"edit_loc_{row.get('Location ID', idx)}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
-                            st.session_state["edit_location_id"] = row.get('Location ID', '')
-                            st.session_state["edit_location_idx"] = int(original_idx)  # Ensure it's a Python int
+                            st.session_state["edit_location_id"] = row.get("Location ID", "")
+                            st.session_state["edit_location_idx"] = int(original_idx)
                             st.rerun()
-                    # Only show delete button for admin users
                     if is_admin:
-                        col_delete = cols[-1]
-                        with col_delete:
+                        with cols[3]:
                             delete_key = f"delete_loc_{row.get('Location ID', idx)}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
-                                location_name_to_delete = row.get('Location Name', 'Unknown')
-                                location_id_to_delete = row.get('Location ID', 'Unknown')
+                                location_name_to_delete = row.get("Location Name", "Unknown")
+                                location_id_to_delete = row.get("Location ID", "Unknown")
                                 if delete_data(SHEETS["locations"], original_idx):
-                                    # Set success message
-                                    st.session_state["location_success_message"] = f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
-                                    # Clear search bar
+                                    st.session_state["location_success_message"] = (
+                                        f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
+                                    )
                                     if "location_search" in st.session_state:
                                         del st.session_state["location_search"]
                                     st.rerun()
                                 else:
                                     st.error("Failed to delete location")
-                    
+
                     st.divider()
 
                 _render_view_modal("location")
