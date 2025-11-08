@@ -89,7 +89,7 @@ st.markdown("""
 
     /* Custom footer */
     footer {
-        visibility: hidden;
+        visibility: visible;
     }
     footer:after {
         content: "Trackz Solutions & Technologies";
