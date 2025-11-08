@@ -87,9 +87,9 @@ def main():
                 "Category",
                 "Asset Master",
                 "Asset Transfer",
-                "Asset Maintenance",
-                "Asset Depreciation",
-                "Employee Assignment",
+                "Maintenance",
+                "Depreciation",
+                "Assignment",
                 "Users",
                 "Scan Barcode",
                 "Print Barcodes"
@@ -124,11 +124,11 @@ def main():
         asset_master_form()
     elif selected == "Asset Transfer":
         asset_transfer_form()
-    elif selected == "Asset Maintenance":
+    elif selected == "Maintenance":
         asset_maintenance_form()
-    elif selected == "Asset Depreciation":
+    elif selected == "Depreciation":
         asset_depreciation_form()
-    elif selected == "Employee Assignment":
+    elif selected == "Assignment":
         employee_assignment_form()
     elif selected == "Users":
         user_management_form()

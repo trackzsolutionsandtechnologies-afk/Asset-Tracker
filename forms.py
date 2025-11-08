@@ -346,8 +346,8 @@ def location_form():
             st.info("No locations found. Add a new location using the 'Add New Location' tab.")
 
 def asset_depreciation_form():
-    """Asset Depreciation schedules based on Asset Master data."""
-    st.header("📉 Asset Depreciation")
+    """Depreciation schedules based on Asset Master data."""
+    st.header("📉 Depreciation")
 
     expected_headers = [
         "Schedule ID",
@@ -2539,8 +2539,8 @@ def asset_transfer_form():
 
 
 def asset_maintenance_form():
-    """Asset Maintenance Form"""
-    st.header("🛠️ Asset Maintenance")
+    """Maintenance Form"""
+    st.header("🛠️ Maintenance")
 
     maintenance_headers = [
         "Maintenance ID",
@@ -2952,8 +2952,8 @@ def asset_maintenance_form():
 
 
 def employee_assignment_form():
-    """Employee Assignment Form"""
-    st.header("🧑‍💼 Employee Assignment")
+    """Assignment Form"""
+    st.header("🧑‍💼 Assignment")
 
     assignment_headers = [
         "Assignment ID",
