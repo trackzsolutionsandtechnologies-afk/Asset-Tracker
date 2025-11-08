@@ -242,9 +242,12 @@ def location_form():
                     """
                     <style>
                     .location-wide-layout {
-                        max-width: 1100px;
-                        margin: 0 auto;
-                    }
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+    }
                     </style>
                     """,
                     unsafe_allow_html=True,
