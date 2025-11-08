@@ -6,9 +6,13 @@ import bcrypt
 import hashlib
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict
 from google_sheets import read_data, append_data, update_data, find_row
 from config import SHEETS, SESSION_KEYS
+
+# In-memory token store for maintaining sessions across reruns
+TOKEN_STORE: Dict[str, Dict[str, str]] = {}
+TOKEN_EXPIRY_HOURS = 12
 
 
 def hash_password(password: str) -> str:
@@ -174,7 +178,19 @@ def login_page():
             if authenticate_user(username, password):
                 st.session_state[SESSION_KEYS["authenticated"]] = True
                 st.session_state[SESSION_KEYS["username"]] = username
-                st.session_state[SESSION_KEYS["user_role"]] = get_user_role(username)
+                user_role = get_user_role(username)
+                st.session_state[SESSION_KEYS["user_role"]] = user_role
+
+                # Generate persistent auth token
+                token = secrets.token_urlsafe(32)
+                TOKEN_STORE[token] = {
+                    "username": username,
+                    "role": user_role,
+                    "expires": (datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat(),
+                }
+                st.session_state[SESSION_KEYS["auth_token"]] = token
+                st.experimental_set_query_params(auth=token)
+
                 st.success("Login successful!")
                 st.rerun()
             else:
@@ -245,13 +261,56 @@ def forgot_password_page():
 
 def check_authentication():
     """Check if user is authenticated"""
+    # Ensure flag exists
     if SESSION_KEYS["authenticated"] not in st.session_state:
         st.session_state[SESSION_KEYS["authenticated"]] = False
+
+    # Validate existing session token
+    token = st.session_state.get(SESSION_KEYS["auth_token"])
+    if token and _validate_and_refresh_token(token):
+        return True
+
+    # Attempt to restore from query parameters
+    params = st.experimental_get_query_params()
+    token_from_url = params.get("auth", [None])[0] if params else None
+    if token_from_url and _validate_and_refresh_token(token_from_url):
+        token_info = TOKEN_STORE.get(token_from_url, {})
+        st.session_state[SESSION_KEYS["authenticated"]] = True
+        st.session_state[SESSION_KEYS["username"]] = token_info.get("username", "User")
+        st.session_state[SESSION_KEYS["user_role"]] = token_info.get("role", "user")
+        st.session_state[SESSION_KEYS["auth_token"]] = token_from_url
+        return True
+
     return st.session_state[SESSION_KEYS["authenticated"]]
+
+
+def _validate_and_refresh_token(token: str) -> bool:
+    """Validate a stored token and refresh expiry if valid."""
+    token_info = TOKEN_STORE.get(token)
+    if not token_info:
+        return False
+
+    expires_at = token_info.get("expires")
+    try:
+        expires_dt = datetime.fromisoformat(expires_at) if isinstance(expires_at, str) else expires_at
+    except Exception:
+        expires_dt = None
+
+    if not expires_dt or datetime.utcnow() > expires_dt:
+        TOKEN_STORE.pop(token, None)
+        return False
+
+    # Refresh expiry to extend active sessions
+    token_info["expires"] = (datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat()
+    return True
 
 
 def logout():
     """Logout user"""
+    token = st.session_state.get(SESSION_KEYS["auth_token"])
+    if token and token in TOKEN_STORE:
+        TOKEN_STORE.pop(token, None)
+    st.experimental_set_query_params()
     for key in SESSION_KEYS.values():
         if key in st.session_state:
             del st.session_state[key]

@@ -64,5 +64,6 @@ def get_config():
 SESSION_KEYS = {
     "authenticated": "authenticated",
     "username": "username",
-    "user_role": "user_role"
+    "user_role": "user_role",
+    "auth_token": "auth_token",
 }
