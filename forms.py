@@ -258,8 +258,11 @@ def location_form():
 
                 # Display table with edit/delete buttons
                 for idx, row in filtered_df.iterrows():
-                    if not df[df["Location ID"] == row.get("Location ID", "")].empty:
-                        original_idx = int(df[df["Location ID"] == row.get("Location ID", "")].index[0])
+                    location_id_value = row.get("Location ID", "")
+                    unique_suffix = f"{location_id_value}_{idx}"
+
+                    if not df[df["Location ID"] == location_id_value].empty:
+                        original_idx = int(df[df["Location ID"] == location_id_value].index[0])
                     else:
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
@@ -275,9 +278,9 @@ def location_form():
                     with col3:
                         st.write(row.get("Department", "N/A"))
                     with col_view:
-                        if st.button("👁️", key=f"location_view_{row.get('Location ID', idx)}", use_container_width=True, help="View details"):
+                        if st.button("👁️", key=f"location_view_{unique_suffix}", use_container_width=True, help="View details"):
                             record = {
-                                "Location ID": row.get("Location ID", ""),
+                                "Location ID": location_id_value,
                                 "Location Name": row.get("Location Name", ""),
                                 "Department": row.get("Department", ""),
                             }
@@ -288,17 +291,17 @@ def location_form():
                                 ["Location ID", "Location Name", "Department"],
                             )
                     with col_edit:
-                        edit_key = f"location_edit_{row.get('Location ID', idx)}"
+                        edit_key = f"location_edit_{unique_suffix}"
                         if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
-                            st.session_state["edit_location_id"] = row.get("Location ID", "")
+                            st.session_state["edit_location_id"] = location_id_value
                             st.session_state["edit_location_idx"] = int(original_idx)
                             st.rerun()
                     if is_admin:
                         with col_delete:
-                            delete_key = f"location_delete_{row.get('Location ID', idx)}"
+                            delete_key = f"location_delete_{unique_suffix}"
                             if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
                                 location_name_to_delete = row.get("Location Name", "Unknown")
-                                location_id_to_delete = row.get("Location ID", "Unknown")
+                                location_id_to_delete = location_id_value or "Unknown"
                                 if delete_data(SHEETS["locations"], original_idx):
                                     st.session_state["location_success_message"] = (
                                         f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
