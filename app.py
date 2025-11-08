@@ -82,6 +82,9 @@ st.markdown("""
     a[href*="share.streamlit.io"] {
         display: none !important;
     }
+
+    .link_gzau3_10 {
+        display: none !important;
     </style>
 """, unsafe_allow_html=True)
 
