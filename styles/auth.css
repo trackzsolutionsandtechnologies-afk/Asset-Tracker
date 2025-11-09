@@ -13,57 +13,44 @@ body {
     margin: 10vh auto !important;
 }
 
-
-.auth-form-wrapper div[data-testid="stForm"] {
-    background-color: #ffffff !important;
-    border-radius: 16px;
-    padding: 20px;
-}
-
 .auth-form-wrapper form[data-testid="stForm"] {
-    background: rgba(43, 10, 226, 0.95) !important;
+    background-color: #ffffff !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
 }
 
-/* Label styling */
 .auth-form-wrapper label {
     color: #1a2240 !important;
     font-weight: 600 !important;
 }
 
-/* Input fields */
 .auth-form-wrapper div[data-baseweb="input"] > div {
     border-radius: 8px !important;
     background-color: #1f51ff !important;
 }
 
-.auth-form-wrapper div[data-baseweb="input"] > div > input {
+.auth-form-wrapper div[data-baseweb="input"] input {
     background-color: transparent !important;
     color: #ffffff !important;
 }
 
-.auth-form-wrapper div[data-testid="stForm"] button,
-.auth-form-wrapper .stButton>button,
+.auth-form-wrapper .stButton > button,
+.auth-form-wrapper [data-baseweb="button"],
 .auth-form-wrapper button[kind="primary"],
 .auth-form-wrapper button[kind="secondary"],
-.auth-form-wrapper button[data-testid="baseButton-primary"],
-.auth-form-wrapper button[data-testid="baseButton-secondary"],
-.auth-form-wrapper [data-baseweb="button"] {
+.auth-form-wrapper button[data-testid^="baseButton-"] {
     width: 100% !important;
     margin-top: 12px !important;
-    background: #28a745 !important;
     background-color: #28a745 !important;
     border: 1px solid #1e7e34 !important;
     color: #ffffff !important;
 }
 
-.auth-form-wrapper div[data-testid="stForm"] button:hover,
-.auth-form-wrapper .stButton>button:hover,
+.auth-form-wrapper .stButton > button:hover,
+.auth-form-wrapper [data-baseweb="button"]:hover,
 .auth-form-wrapper button[kind="primary"]:hover,
 .auth-form-wrapper button[kind="secondary"]:hover,
-.auth-form-wrapper button[data-testid="baseButton-primary"]:hover,
-.auth-form-wrapper button[data-testid="baseButton-secondary"]:hover,
-.auth-form-wrapper [data-baseweb="button"]:hover {
-    background: #218838 !important;
+.auth-form-wrapper button[data-testid^="baseButton-"]:hover {
     background-color: #218838 !important;
     border-color: #19692c !important;
 }
