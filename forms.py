@@ -3041,7 +3041,9 @@ def asset_maintenance_form():
                                         )
                                 else:
                                     st.error("Failed to update maintenance record")
-                        st.rerun()
+                        if "maintenance_table_view" in st.session_state:
+                            st.session_state["maintenance_table_view"]["edited_rows"] = {}
+                            st.session_state["maintenance_table_view"]["edited_cells"] = {}
 
                     if added_rows:
                         st.warning("New rows must be added from the 'Add Maintenance Record' tab.")
