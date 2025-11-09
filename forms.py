@@ -2610,6 +2610,18 @@ def asset_maintenance_form():
                 suppliers_df["Supplier Name"].dropna().astype(str).str.strip().tolist()
             )
 
+        form_css = f"""
+        <style>
+        div[data-testid="stForm"][aria-label="maintenance_form_{form_key}"] {{
+            background-color: #ffffff !important;
+            padding: 1.5rem !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        }}
+        </style>
+        """
+        st.markdown(form_css, unsafe_allow_html=True)
+
         with st.form(f"maintenance_form_{form_key}"):
             auto_generate = st.checkbox(
                 "Auto-generate Maintenance ID",
@@ -2882,6 +2894,9 @@ def asset_maintenance_form():
                         border-radius: 20px;
                         padding: 0.1rem 0.65rem;
                         text-align: center;
+                    }
+                    [data-testid="stDataEditor"] div[data-baseweb="select"] > div {
+                        background-color: #ffffff !important;
                     }
                     </style>
                     """,
