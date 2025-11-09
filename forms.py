@@ -2769,11 +2769,12 @@ def asset_maintenance_form():
                 else:
                     st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
             else:
+                columns_config = [2, 2, 2, 1, 1.5, 2, 0.4, 1]
                 if is_admin:
-                    header_cols = st.columns([2, 2, 2, 1, 1.5, 2, 1, 1])
-                else:
-                    header_cols = st.columns([2, 2, 2, 1, 1.5, 2, 1])
+                    columns_config.append(0.4)
+                    columns_config.append(1)
 
+                header_cols = st.columns(columns_config)
                 header_style = "color: #1f7830; font-weight: 600;"
                 header_labels = [
                     f"<span style='{header_style}'>Maintenance ID</span>",
@@ -2782,17 +2783,20 @@ def asset_maintenance_form():
                     f"<span style='{header_style}'>Cost</span>",
                     f"<span style='{header_style}'>Status</span>",
                     f"<span style='{header_style}'>Next Due Date</span>",
+                    "<div style='border-left: 1px solid #b5d3b6; height: 20px; margin: 0 auto;'></div>",
                     "",
                 ]
                 if is_admin:
+                    header_labels.append("<div style='border-left: 1px solid #b5d3b6; height: 20px; margin: 0 auto;'></div>")
                     header_labels.append("")
 
                 for col_widget, label in zip(header_cols, header_labels):
                     with col_widget:
                         st.markdown(f"<div style='text-align: left;'>{label}</div>", unsafe_allow_html=True)
-                st.divider()
+                st.markdown("<hr style='margin: 0.5rem 0; border: 0; border-top: 1px solid #b5d3b6;' />", unsafe_allow_html=True)
 
                 asset_label_list = asset_option_labels[1:] if len(asset_option_labels) > 1 else []
+                divider_style = "border-left: 1px solid #e0e0e0; height: 100%; margin: 0 auto;"
                 for idx, row in filtered_df.iterrows():
                     if (
                         "Maintenance ID" in maintenance_df.columns
@@ -2809,11 +2813,7 @@ def asset_maintenance_form():
                     else:
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
-                    cols = (
-                        st.columns([2, 2, 2, 1, 1.5, 2, 1, 1])
-                        if is_admin
-                        else st.columns([2, 2, 2, 1, 1.5, 2, 1])
-                    )
+                    cols = st.columns(columns_config)
                     asset_id_value = row.get("Asset ID", "")
                     asset_name_value = asset_id_to_name.get(str(asset_id_value).strip().lower(), "")
                     display_values = [
@@ -2826,9 +2826,12 @@ def asset_maintenance_form():
                     ]
                     for col_widget, value in zip(cols[: len(display_values)], display_values):
                         with col_widget:
-                            st.write(value if value not in ("", None) else "N/A")
+                            st.markdown(f"<div style='padding-right: 8px;'>{value if value not in ('', None) else 'N/A'}</div>", unsafe_allow_html=True)
 
-                    edit_placeholder = cols[len(display_values)]
+                    with cols[len(display_values)]:
+                        st.markdown(f"<div style='{divider_style}'></div>", unsafe_allow_html=True)
+
+                    edit_placeholder = cols[len(display_values) + 1]
                     with edit_placeholder:
                         if st.button("✏️", key=f"maintenance_edit_{row.get('Maintenance ID', idx)}"):
                             st.session_state["edit_maintenance_id"] = row.get("Maintenance ID", "")
@@ -2836,7 +2839,9 @@ def asset_maintenance_form():
                             st.rerun()
 
                     if is_admin:
-                        with cols[-1]:
+                        with cols[len(display_values) + 2]:
+                            st.markdown(f"<div style='{divider_style}'></div>", unsafe_allow_html=True)
+                        with cols[len(display_values) + 3]:
                             if st.button(
                                 "🗑️",
                                 key=f"maintenance_delete_{row.get('Maintenance ID', idx)}",
@@ -2849,7 +2854,7 @@ def asset_maintenance_form():
                                 else:
                                     st.error("Failed to delete maintenance record")
 
-                    st.divider()
+                    st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #f0f0f0;' />", unsafe_allow_html=True)
 
         else:
             st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
