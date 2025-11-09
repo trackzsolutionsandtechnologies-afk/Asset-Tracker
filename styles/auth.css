@@ -38,10 +38,12 @@ body {
 }
 
 .auth-form-wrapper div[data-testid="stForm"] button,
+.auth-form-wrapper .stButton>button,
 .auth-form-wrapper button[kind="primary"],
 .auth-form-wrapper button[kind="secondary"],
 .auth-form-wrapper button[data-testid="baseButton-primary"],
-.auth-form-wrapper button[data-testid="baseButton-secondary"] {
+.auth-form-wrapper button[data-testid="baseButton-secondary"],
+.auth-form-wrapper [data-baseweb="button"] {
     width: 100% !important;
     margin-top: 12px !important;
     background: #28a745 !important;
@@ -51,10 +53,12 @@ body {
 }
 
 .auth-form-wrapper div[data-testid="stForm"] button:hover,
+.auth-form-wrapper .stButton>button:hover,
 .auth-form-wrapper button[kind="primary"]:hover,
 .auth-form-wrapper button[kind="secondary"]:hover,
 .auth-form-wrapper button[data-testid="baseButton-primary"]:hover,
-.auth-form-wrapper button[data-testid="baseButton-secondary"]:hover {
+.auth-form-wrapper button[data-testid="baseButton-secondary"]:hover,
+.auth-form-wrapper [data-baseweb="button"]:hover {
     background: #218838 !important;
     background-color: #218838 !important;
     border-color: #19692c !important;
