@@ -2778,13 +2778,9 @@ def asset_maintenance_form():
                     "**Maintenance ID**",
                     "**Asset ID**",
                     "**Asset Name**",
-                    "**Type**",
-                    "**Date**",
-                    "**Description**",
                     "**Cost**",
-                    "**Supplier**",
-                    "**Next Due Date**",
                     "**Status**",
+                    "**Next Due Date**",
                     "**Edit**",
                 ]
                 if is_admin:
@@ -2813,9 +2809,9 @@ def asset_maintenance_form():
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
                     cols = (
-                        st.columns([2, 2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+                        st.columns([2, 2, 2, 1, 2, 2, 1, 1])
                         if is_admin
-                        else st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+                        else st.columns([2, 2, 2, 1, 2, 2, 1])
                     )
                     asset_id_value = row.get("Asset ID", "")
                     asset_name_value = asset_id_to_name.get(str(asset_id_value).strip().lower(), "")
@@ -2823,13 +2819,9 @@ def asset_maintenance_form():
                         row.get("Maintenance ID", "N/A"),
                         asset_id_value or "N/A",
                         asset_name_value,
-                        row.get("Maintenance Type", ""),
-                        row.get("Maintenance Date", "N/A"),
-                        row.get("Description", ""),
                         row.get("Cost", ""),
-                        row.get("Supplier", ""),
-                        row.get("Next Due Date", ""),
                         row.get("Status", ""),
+                        row.get("Next Due Date", ""),
                     ]
                     for col_widget, value in zip(cols[: len(display_values)], display_values):
                         with col_widget:
