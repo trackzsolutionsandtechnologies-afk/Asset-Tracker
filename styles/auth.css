@@ -47,7 +47,7 @@ div[data-testid="stForm"] {
 }
 
 .auth-form-wrapper button[kind="primary"]:hover {
-    background-color: #cc187b !important;
+    background-color: #18cc45 !important;
     border-color: #1841cc !important;
 }
 
