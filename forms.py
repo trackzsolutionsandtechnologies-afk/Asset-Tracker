@@ -2836,10 +2836,14 @@ def asset_maintenance_form():
                 st.markdown(
                     """
                     <style>
-                    [data-testid="stDataEditor"] thead th {
+                    [data-testid="stDataEditor"] thead th,
+                    [data-testid="stDataEditor"] div[role="columnheader"] {
                         background-color: red !important;
                         color: #1A202C !important;
                         font-weight: 600 !important;
+                    }
+                    [data-testid="stDataEditor"] div[role="columnheader"] * {
+                        color: #1A202C !important;
                     }
                     [data-testid="stDataEditor"] tbody td {
                         border-right: 1px solid #f0f0f0 !important;
