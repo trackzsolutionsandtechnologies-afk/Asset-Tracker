@@ -3031,6 +3031,10 @@ def asset_maintenance_form():
                                     st.session_state["maintenance_success_message"] = (
                                         f"✅ Maintenance record '{current_row.get('Maintenance ID', '')}' updated successfully!"
                                     )
+                                    maintenance_df.loc[original_idx, column_order] = updated_row
+                                    for col_name, val in zip(column_order, updated_row):
+                                        if col_name in filtered_df.columns and idx < len(filtered_df):
+                                            filtered_df.at[filtered_df.index[idx], col_name] = val
                                     if update_map["Status"] == "In Progress" and asset_status_col:
                                         _update_asset_status_for_maintenance(
                                             assets_df, asset_status_col, update_map["Asset ID"], "Maintenance"
