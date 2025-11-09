@@ -31,6 +31,8 @@ body {
 .auth-form-wrapper button[kind="primary"] {
     width: 100% !important;
     margin-top: 12px !important;
+    background-color: #1f51ff !important;
+    
 }
 
 .auth-form-wrapper button[kind="secondary"] {
@@ -39,6 +41,11 @@ body {
     background: transparent !important;
     color: #1a2240 !important;
     border: 1px solid #1a2240 !important;
+}
+
+.auth-form-wrapper button[kind="primary"]:hover {
+    background-color: #cc187b !important;
+    border-color: #1841cc !important;
 }
 
 .auth-form-wrapper button[kind="secondary"]:hover {
