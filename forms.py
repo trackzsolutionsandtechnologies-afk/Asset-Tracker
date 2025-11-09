@@ -1358,6 +1358,7 @@ def asset_master_form():
         "Asset ID",
         "Asset Name",
         "Category",
+        "Sub Category",
         "Model/Serial No",
         "Purchase Date",
         "Purchase Cost",
@@ -1420,6 +1421,7 @@ def asset_master_form():
             "asset_id": "asset_id_input",
             "asset_name": "asset_name_input",
             "category_select": "asset_category_select",
+            "subcategory_select": "asset_subcategory_select",
             "model_serial": "asset_model_serial",
             "purchase_date": "asset_purchase_date",
             "purchase_cost": "asset_purchase_cost",
@@ -1469,6 +1471,7 @@ def asset_master_form():
                 asset_name = st.text_input("Asset Name *", key=asset_form_keys["asset_name"])
                 
                 category_placeholder = "Select category"
+                subcategory_placeholder = "Select sub category"
                 if not categories_df.empty and category_name_col:
                     category_options = unique_clean(categories_df[category_name_col])
                 else:
@@ -1488,6 +1491,25 @@ def asset_master_form():
                         key=asset_form_keys["category_select"],
                     )
                     category = ""
+
+                subcategory_options = []
+                if not subcategories_df.empty and subcat_name_col:
+                    subcategory_options = unique_clean(subcategories_df[subcat_name_col])
+
+                if subcategory_options:
+                    subcategory = st.selectbox(
+                        "Sub Category *",
+                        [subcategory_placeholder] + subcategory_options,
+                        key=asset_form_keys["subcategory_select"],
+                    )
+                else:
+                    subcategory = st.selectbox(
+                        "Sub Category *",
+                        ["No sub categories available"],
+                        disabled=True,
+                        key=asset_form_keys["subcategory_select"],
+                    )
+                    subcategory = ""
                 
                 model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
                 purchase_date = st.date_input(
@@ -1570,11 +1592,14 @@ def asset_master_form():
                     st.error("Asset ID already exists")
                 elif category in ("", category_placeholder):
                     st.error("Please select a category")
+                elif subcategory in ("", subcategory_placeholder):
+                    st.error("Please select a sub category")
                 else:
                     data = [
                         asset_id,
                         asset_name,
                         category if category not in ("", category_placeholder) else "",
+                        subcategory if subcategory not in ("", subcategory_placeholder) else "",
                         model_serial,
                         purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
                         purchase_cost,
@@ -1598,6 +1623,7 @@ def asset_master_form():
                             asset_form_keys["asset_id"],
                             asset_form_keys["asset_name"],
                             asset_form_keys["category_select"],
+                            asset_form_keys["subcategory_select"],
                             asset_form_keys["model_serial"],
                             asset_form_keys["purchase_cost"],
                             asset_form_keys["warranty"],
@@ -1712,6 +1738,7 @@ def asset_master_form():
                                 "Asset ID": asset_id_value,
                                 "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
                                 "Category": row.get("Category", row.get("Category Name", "")),
+                            "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
                                 "Location": row.get("Location", ""),
                                 "Assigned To": row.get("Assigned To", ""),
                                 "Status": row.get("Status", ""),
@@ -1731,6 +1758,7 @@ def asset_master_form():
                                     "Asset ID",
                                     "Asset Name",
                                     "Category",
+                                    "Sub Category",
                                     "Location",
                                     "Assigned To",
                                     "Status",
@@ -1824,6 +1852,44 @@ def asset_master_form():
                                         key=f"asset_edit_category_{edit_id}",
                                     )
                                     selected_category = ""
+
+                                subcategory_placeholder = "Select sub category"
+                                edit_subcategory_options = []
+                                if not subcategories_df.empty and subcat_name_col:
+                                    edit_subcategory_options = unique_clean(subcategories_df[subcat_name_col])
+
+                                current_subcategory_value = row.get(
+                                    "Sub Category",
+                                    row.get("SubCategory Name", row.get("Sub Category Name", "")),
+                                )
+                                if current_subcategory_value and current_subcategory_value not in edit_subcategory_options:
+                                    edit_subcategory_options.append(current_subcategory_value)
+                                edit_subcategory_options = sorted(dict.fromkeys(edit_subcategory_options))
+
+                                if edit_subcategory_options:
+                                    subcategory_choices = [subcategory_placeholder] + edit_subcategory_options
+                                    try:
+                                        default_subcat_index = (
+                                            subcategory_choices.index(current_subcategory_value)
+                                            if current_subcategory_value in subcategory_choices
+                                            else 0
+                                        )
+                                    except ValueError:
+                                        default_subcat_index = 0
+                                    selected_subcategory = st.selectbox(
+                                        "Sub Category *",
+                                        subcategory_choices,
+                                        index=default_subcat_index,
+                                        key=f"asset_edit_subcategory_{edit_id}",
+                                    )
+                                else:
+                                    selected_subcategory = st.selectbox(
+                                        "Sub Category *",
+                                        ["No sub categories available"],
+                                        disabled=True,
+                                        key=f"asset_edit_subcategory_{edit_id}",
+                                    )
+                                    selected_subcategory = ""
 
                                 model_serial = st.text_input(
                                     "Model / Serial No",
@@ -1926,6 +1992,7 @@ def asset_master_form():
                                         edit_id,
                                         new_name,
                                         selected_category if selected_category not in ("", category_placeholder) else row.get("Category", ""),
+                                        selected_subcategory if selected_subcategory not in ("", subcategory_placeholder) else row.get("Sub Category", ""),
                                         model_serial,
                                         new_purchase_date.strftime("%Y-%m-%d"),
                                         purchase_cost,
