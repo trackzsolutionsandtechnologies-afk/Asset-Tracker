@@ -2769,6 +2769,30 @@ def asset_maintenance_form():
                 else:
                     st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
             else:
+                if is_admin:
+                    header_cols = st.columns([2, 2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+                else:
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+
+                header_labels = [
+                    "**Maintenance ID**",
+                    "**Asset ID**",
+                    "**Asset Name**",
+                    "**Type**",
+                    "**Date**",
+                    "**Description**",
+                    "**Cost**",
+                    "**Supplier**",
+                    "**Next Due Date**",
+                    "**Status**",
+                    "**Edit**",
+                ]
+                if is_admin:
+                    header_labels.append("**Delete**")
+
+                for col_widget, label in zip(header_cols, header_labels):
+                    with col_widget:
+                        st.markdown(f"<div style='text-align: left;'>{label}</div>", unsafe_allow_html=True)
                 st.divider()
 
                 asset_label_list = asset_option_labels[1:] if len(asset_option_labels) > 1 else []
