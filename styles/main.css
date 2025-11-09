@@ -7,7 +7,8 @@ div[data-testid="stForm"] {
     border: 1px solid #e0e0e0 !important;
 }
 
-/* Primary buttons */
+/* Primary buttons (global) */
+button[kind="primary"],
 div[data-testid="stForm"] button[kind="primary"],
 button.stButton > button[kind="primary"] {
     background-color: #28a745 !important;
@@ -15,6 +16,7 @@ button.stButton > button[kind="primary"] {
     border-color: #28a745 !important;
 }
 
+button[kind="primary"]:hover,
 div[data-testid="stForm"] button[kind="primary"]:hover,
 button.stButton > button[kind="primary"]:hover {
     background-color: #218838 !important;
@@ -22,6 +24,7 @@ button.stButton > button[kind="primary"]:hover {
 }
 
 /* Secondary/icon buttons */
+button[kind="secondary"],
 div[data-testid="stForm"] button[kind="secondary"],
 button.stButton > button[kind="secondary"],
 [data-testid="stBaseButton-secondary"] {
@@ -31,11 +34,25 @@ button.stButton > button[kind="secondary"],
     background: transparent !important;
 }
 
+form button[kind="secondary"] {
+    background: #ffffff !important;
+    color: #28a745 !important;
+    border: 1px solid #28a745 !important;
+    border-radius: 6px !important;
+}
+
+button[kind="secondary"]:hover,
 div[data-testid="stForm"] button[kind="secondary"]:hover,
 button.stButton > button[kind="secondary"]:hover {
     border: none !important;
     box-shadow: none !important;
     background: #f9f9f9 !important;
+}
+
+form button[kind="secondary"]:hover {
+    background: #f4fff4 !important;
+    border-color: #1e7e34 !important;
+    box-shadow: none !important;
 }
 
 /* Hide Streamlit status widget/spinners */
