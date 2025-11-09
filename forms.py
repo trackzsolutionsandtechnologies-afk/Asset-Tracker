@@ -2842,22 +2842,19 @@ def asset_maintenance_form():
                     table_df,
                     hide_index=True,
                     use_container_width=True,
-                    disabled={
-                        "Maintenance ID": True,
-                        "Asset ID": True,
-                        "Asset Name": True,
-                    },
+                    disabled=False,
                     column_config={
-                        "Maintenance ID": st.column_config.TextColumn("Maintenance ID"),
-                        "Asset ID": st.column_config.TextColumn("Asset ID"),
-                        "Asset Name": st.column_config.TextColumn("Asset Name"),
-                        "Cost": st.column_config.NumberColumn("Cost", format="%.2f", step=0.01),
+                        "Maintenance ID": st.column_config.TextColumn("Maintenance ID", disabled=True),
+                        "Asset ID": st.column_config.TextColumn("Asset ID", disabled=True),
+                        "Asset Name": st.column_config.TextColumn("Asset Name", disabled=True),
+                        "Cost": st.column_config.NumberColumn("Cost", format="%.2f", step=0.01, disabled=True),
                         "Status": st.column_config.SelectboxColumn(
                             "Status",
                             options=["Pending", "In Progress", "Completed"],
+                            disabled=False,
                         ),
                         "Next Due Date": st.column_config.DateColumn(
-                            "Next Due Date", format="YYYY-MM-DD"
+                            "Next Due Date", format="YYYY-MM-DD", disabled=False
                         ),
                     },
                     num_rows="dynamic" if is_admin else "fixed",
