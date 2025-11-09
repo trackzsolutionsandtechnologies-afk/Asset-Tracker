@@ -3020,8 +3020,12 @@ def asset_maintenance_form():
                 summary_df["Next Due Date"] = summary_df["Maintenance ID"].map(next_due_map).fillna("")
             else:
                 summary_df["Next Due Date"] = ""
+            summary_df["Asset"] = summary_df.apply(
+                lambda row: asset_id_to_label.get(str(row["Asset ID"]).strip().lower(), str(row["Asset ID"])),
+                axis=1
+            )
             summary_df["Total Cost"] = summary_df["Total Cost"].map(lambda v: f"{v:.2f}")
-            st.dataframe(summary_df[["Maintenance ID", "Asset ID", "Total Cost", "Next Due Date"]], use_container_width=True)
+            st.dataframe(summary_df[["Maintenance ID", "Asset", "Total Cost", "Next Due Date"]], use_container_width=True)
 
 
 def employee_assignment_form():
