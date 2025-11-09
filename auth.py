@@ -13,17 +13,6 @@ from config import SHEETS, SESSION_KEYS
 # In-memory token store for maintaining sessions across reruns
 TOKEN_STORE: Dict[str, Dict[str, str]] = {}
 TOKEN_EXPIRY_HOURS = 12
-st.markdown(
-    """
-    <style>
-    .auth-form-wrapper form[data-testid="stForm"] input {
-        background-color: #0000ff !important;
-        color: #ffffff !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt"""
@@ -173,6 +162,19 @@ def login_page():
     from app import load_auth_css  # avoid circular import at module load time
 
     load_auth_css()
+
+    st.markdown(
+    """
+    <style>
+    .auth-form-wrapper form[data-testid="stForm"] input {
+        background-color: #0000ff !important;
+        color: #ffffff !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
     st.title("🔐 Asset Tracker - Sign In")
 
     st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
