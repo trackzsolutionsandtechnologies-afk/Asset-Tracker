@@ -44,3 +44,18 @@ button.stButton > button[kind="secondary"]:hover {
     display: none !important;
 }
 
+/* Sidebar buttons (e.g., Logout) */
+section[data-testid="stSidebar"] button,
+section[data-testid="stSidebar"] button[kind="secondary"] {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+    border: 1px solid #28a745 !important;
+    border-radius: 6px !important;
+}
+
+section[data-testid="stSidebar"] button:hover,
+section[data-testid="stSidebar"] button[kind="secondary"]:hover {
+    background-color: #218838 !important;
+    border-color: #1e7e34 !important;
+}
+
