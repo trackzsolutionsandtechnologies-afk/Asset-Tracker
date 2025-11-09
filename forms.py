@@ -2812,6 +2812,9 @@ def asset_maintenance_form():
                     display_df["Cost"].replace("", 0).astype(str).str.replace(",", ""),
                     errors="coerce",
                 ).fillna(0.0)
+                display_df["Next Due Date"] = pd.to_datetime(
+                    display_df["Next Due Date"], errors="coerce"
+                ).dt.date
                 table_df = display_df[
                     ["Maintenance ID", "Asset ID", "Asset Name", "Cost", "Status", "Next Due Date"]
                 ]
@@ -2839,14 +2842,23 @@ def asset_maintenance_form():
                     table_df,
                     hide_index=True,
                     use_container_width=True,
-                    disabled=["Maintenance ID", "Asset ID", "Asset Name", "Cost", "Status", "Next Due Date"],
+                    disabled={
+                        "Maintenance ID": True,
+                        "Asset ID": True,
+                        "Asset Name": True,
+                    },
                     column_config={
                         "Maintenance ID": st.column_config.TextColumn("Maintenance ID"),
                         "Asset ID": st.column_config.TextColumn("Asset ID"),
                         "Asset Name": st.column_config.TextColumn("Asset Name"),
-                        "Cost": st.column_config.NumberColumn("Cost", format="%.2f"),
-                        "Status": st.column_config.TextColumn("Status"),
-                        "Next Due Date": st.column_config.TextColumn("Next Due Date"),
+                        "Cost": st.column_config.NumberColumn("Cost", format="%.2f", step=0.01),
+                        "Status": st.column_config.SelectboxColumn(
+                            "Status",
+                            options=["Pending", "In Progress", "Completed"],
+                        ),
+                        "Next Due Date": st.column_config.DateColumn(
+                            "Next Due Date", format="YYYY-MM-DD"
+                        ),
                     },
                     num_rows="dynamic" if is_admin else "fixed",
                     key="maintenance_table_view",
@@ -2893,6 +2905,19 @@ def asset_maintenance_form():
                                     edits[column] = value
                             for column, new_value in edits.items():
                                 current_row[column] = new_value
+                            next_due_value = current_row.get("Next Due Date", "")
+                            if isinstance(next_due_value, datetime):
+                                next_due_str = next_due_value.strftime("%Y-%m-%d")
+                            elif hasattr(next_due_value, "isoformat"):
+                                try:
+                                    next_due_str = next_due_value.isoformat()
+                                except Exception:
+                                    next_due_str = str(next_due_value)
+                            else:
+                                next_due_str = str(next_due_value)
+                                if next_due_str.lower() in ("nat", "nan", "none"):
+                                    next_due_str = ""
+
                             update_map = {
                                 "Maintenance ID": current_row.get("Maintenance ID", ""),
                                 "Asset ID": current_row.get("Asset ID", ""),
@@ -2901,7 +2926,7 @@ def asset_maintenance_form():
                                 "Description": current_row.get("Description", ""),
                                 "Cost": f"{pd.to_numeric(str(current_row.get('Cost', 0)).replace(',', ''), errors='coerce') or 0:.2f}",
                                 "Supplier": current_row.get("Supplier", ""),
-                                "Next Due Date": current_row.get("Next Due Date", ""),
+                                "Next Due Date": next_due_str,
                                 "Status": current_row.get("Status", ""),
                             }
                             match_df = maintenance_df[
