@@ -1416,30 +1416,33 @@ def asset_master_form():
     
     with tab1:
         
+        if "asset_form_version" not in st.session_state:
+            st.session_state["asset_form_version"] = 0
+        form_version = st.session_state["asset_form_version"]
+
+        def _key(name: str) -> str:
+            return f"{name}_{form_version}"
+
         asset_form_keys = {
-            "auto_generate": "asset_auto_generate",
-            "asset_id": "asset_id_input",
-            "asset_name": "asset_name_input",
-            "category_select": "asset_category_select",
-            "subcategory_select": "asset_subcategory_select",
-            "model_serial": "asset_model_serial",
-            "purchase_date": "asset_purchase_date",
-            "purchase_cost": "asset_purchase_cost",
-            "warranty": "asset_warranty",
-            "supplier": "asset_supplier",
-            "location": "asset_location",
-            "assigned_to": "asset_assigned_to",
-            "condition": "asset_condition",
-            "status": "asset_status",
-            "remarks": "asset_remarks",
-            "attachment": "asset_attachment",
+            "auto_generate": _key("asset_auto_generate"),
+            "asset_id": _key("asset_id_input"),
+            "asset_name": _key("asset_name_input"),
+            "category_select": _key("asset_category_select"),
+            "subcategory_select": _key("asset_subcategory_select"),
+            "model_serial": _key("asset_model_serial"),
+            "purchase_date": _key("asset_purchase_date"),
+            "purchase_cost": _key("asset_purchase_cost"),
+            "warranty": _key("asset_warranty"),
+            "supplier": _key("asset_supplier"),
+            "location": _key("asset_location"),
+            "assigned_to": _key("asset_assigned_to"),
+            "condition": _key("asset_condition"),
+            "status": _key("asset_status"),
+            "remarks": _key("asset_remarks"),
+            "attachment": _key("asset_attachment"),
         }
 
-        if asset_form_keys["auto_generate"] not in st.session_state:
-            st.session_state[asset_form_keys["auto_generate"]] = True
-        else:
-            st.session_state[asset_form_keys["auto_generate"]] = True
-
+        st.session_state.setdefault(asset_form_keys["auto_generate"], True)
         st.session_state.setdefault(asset_form_keys["purchase_date"], datetime.now().date())
         st.session_state.setdefault(asset_form_keys["purchase_cost"], 0.0)
 
@@ -1620,26 +1623,10 @@ def asset_master_form():
                             del st.session_state["generated_asset_id"]
 
                         st.session_state["asset_success_message"] = "Asset added successfully!"
-                        reset_keys = [
-                            asset_form_keys["auto_generate"],
-                            asset_form_keys["asset_id"],
-                            asset_form_keys["asset_name"],
-                            asset_form_keys["category_select"],
-                            asset_form_keys["subcategory_select"],
-                            asset_form_keys["model_serial"],
-                            asset_form_keys["purchase_cost"],
-                            asset_form_keys["warranty"],
-                            asset_form_keys["supplier"],
-                            asset_form_keys["location"],
-                            asset_form_keys["assigned_to"],
-                            asset_form_keys["condition"],
-                            asset_form_keys["status"],
-                            asset_form_keys["remarks"],
-                            asset_form_keys["attachment"],
-                            asset_form_keys["purchase_date"],
-                        ]
+                        reset_keys = list(asset_form_keys.values())
                         for state_key in reset_keys:
                             st.session_state.pop(state_key, None)
+                        st.session_state["asset_form_version"] = form_version + 1
                         st.rerun()
                     else:
                         st.error("Failed to add asset")
