@@ -2,6 +2,7 @@
 Main Streamlit Application for Asset Tracker
 """
 import streamlit as st
+from pathlib import Path
 from streamlit_option_menu import option_menu
 from config import get_config
 from auth import login_page, forgot_password_page, check_authentication, logout, SESSION_KEYS
@@ -29,9 +30,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+def load_custom_css() -> None:
+    css_path = Path(__file__).parent / "styles" / "main.css"
+    if css_path.exists():
+        with css_path.open("r", encoding="utf-8") as css_file:
+            st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
+
 
 def main():
     """Main application function"""
+    
+    load_custom_css()
     
     # Initialize configuration from secrets (after Streamlit is initialized)
     try:

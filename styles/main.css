@@ -1,0 +1,46 @@
+/* Global form styling */
+div[data-testid="stTabPanel"] div[data-testid="stForm"],
+div[data-testid="stForm"] {
+    background-color: #ffffff !important;
+    padding: 20px !important;
+    border-radius: 10px !important;
+    border: 1px solid #e0e0e0 !important;
+}
+
+/* Primary buttons */
+div[data-testid="stForm"] button[kind="primary"],
+button.stButton > button[kind="primary"] {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+    border-color: #28a745 !important;
+}
+
+div[data-testid="stForm"] button[kind="primary"]:hover,
+button.stButton > button[kind="primary"]:hover {
+    background-color: #218838 !important;
+    border-color: #1e7e34 !important;
+}
+
+/* Secondary/icon buttons */
+div[data-testid="stForm"] button[kind="secondary"],
+button.stButton > button[kind="secondary"],
+[data-testid="stBaseButton-secondary"] {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+div[data-testid="stForm"] button[kind="secondary"]:hover,
+button.stButton > button[kind="secondary"]:hover {
+    border: none !important;
+    box-shadow: none !important;
+    background: #f9f9f9 !important;
+}
+
+/* Hide Streamlit status widget/spinners */
+[data-testid="stStatusWidget"],
+.stSpinner {
+    display: none !important;
+}
+

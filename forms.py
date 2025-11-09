@@ -143,35 +143,6 @@ def location_form():
     tab1, tab2 = st.tabs(["Add New Location", "View/Edit Locations"])
     
     with tab1:
-        # Align styling with supplier form (white card, green primary button, hide spinners)
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stTabPanel"] div[data-testid="stForm"] {
-                background-color: white !important;
-                padding: 20px !important;
-                border-radius: 10px !important;
-                border: 1px solid #e0e0e0 !important;
-            }
-            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"],
-            button.stButton > button[kind="primary"] {
-                background-color: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
-            }
-            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"]:hover,
-            button.stButton > button[kind="primary"]:hover {
-                background-color: #218838 !important;
-                border-color: #1e7e34 !important;
-            }
-            [data-testid="stStatusWidget"],
-            .stSpinner {
-                display: none !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
 
         # Show success message if exists
         if "location_success_message" in st.session_state:
@@ -687,37 +658,6 @@ def supplier_form():
     tab1, tab2 = st.tabs(["Add New Supplier", "View/Edit Suppliers"])
     
     with tab1:
-        # Green Add Supplier button styling, white form background, and hide loading indicators
-        st.markdown("""
-            <style>
-            /* White background for Add Supplier */
-            div[data-testid="stForm"] {
-                background-color: white !important;
-                padding: 20px !important;
-                border-radius: 10px !important;
-                border: 1px solid #e0e0e0 !important;
-            }
-            /* Target the primary button in the Supplier section */
-            div[data-testid="stForm"] button[kind="primary"],
-            button.stButton > button[kind="primary"] {
-                background-color: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
-            }
-            div[data-testid="stForm"] button[kind="primary"]:hover,
-            button.stButton > button[kind="primary"]:hover {
-                background-color: #218838 !important;
-                border-color: #1e7e34 !important;
-            }
-            /* Hide loading indicators */
-            [data-testid="stStatusWidget"] {
-                display: none !important;
-            }
-            .stSpinner {
-                display: none !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
         
         # Show success message if exists
         if "supplier_success_message" in st.session_state:
@@ -941,37 +881,6 @@ def category_form():
     tab1, tab2, tab3, tab4 = st.tabs(["Add Category", "Add Sub Category", "View/Edit Categories", "View/Edit Sub Categories"])
     
     with tab1:
-        # Green Add Category button styling, white form background, and hide loading indicators
-        st.markdown("""
-            <style>
-            /* White background for Add Category */
-            div[data-testid="stForm"] {
-                background-color: white !important;
-                padding: 20px !important;
-                border-radius: 10px !important;
-                border: 1px solid #e0e0e0 !important;
-            }
-            /* Target the primary button in the Category section */
-            div[data-testid="stForm"] button[kind="primary"],
-            button.stButton > button[kind="primary"] {
-                background-color: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
-            }
-            div[data-testid="stForm"] button[kind="primary"]:hover,
-            button.stButton > button[kind="primary"]:hover {
-                background-color: #218838 !important;
-                border-color: #1e7e34 !important;
-            }
-            /* Hide loading indicators */
-            [data-testid="stStatusWidget"] {
-                display: none !important;
-            }
-            .stSpinner {
-                display: none !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
         
         # Show success message if exists
         if "category_success_message" in st.session_state:
@@ -1022,37 +931,6 @@ def category_form():
                             st.error("Failed to add category")
     
     with tab2:
-        # Green Add Sub Category button styling, white form background, and hide loading indicators
-        st.markdown("""
-            <style>
-            /* White background for Add Sub Category form */
-            div[data-testid="stForm"] {
-                background-color: white !important;
-                padding: 20px !important;
-                
-                border: none !important;
-            }
-            /* Target the primary button in the subcategory form */
-            div[data-testid="stForm"] button[kind="primary"],
-            button.stButton > button[kind="primary"] {
-                background-color: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
-            }
-            div[data-testid="stForm"] button[kind="primary"]:hover,
-            button.stButton > button[kind="primary"]:hover {
-                background-color: #218838 !important;
-                border-color: #1e7e34 !important;
-            }
-            /* Hide loading indicators */
-            [data-testid="stStatusWidget"] {
-                display: none !important;
-            }
-            .stSpinner {
-                display: none !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
 
         # Show success message if exists
         if "subcategory_success_message" in st.session_state:
@@ -1534,34 +1412,6 @@ def asset_master_form():
     tab1, tab2, tab3 = st.tabs(["Add New Asset", "View/Edit Assets", "Reports"])
     
     with tab1:
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stTabPanel"] div[data-testid="stForm"] {
-                background-color: white !important;
-                padding: 20px !important;
-                border-radius: 10px !important;
-                border: 1px solid #e0e0e0 !important;
-            }
-            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"],
-            button.stButton > button[kind="primary"] {
-                background-color: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
-            }
-            div[data-testid="stTabPanel"] div[data-testid="stForm"] button[kind="primary"]:hover,
-            button.stButton > button[kind="primary"]:hover {
-                background-color: #218838 !important;
-                border-color: #1e7e34 !important;
-            }
-            [data-testid="stStatusWidget"],
-            .stSpinner {
-                display: none !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
         
         asset_form_keys = {
             "auto_generate": "asset_auto_generate",
@@ -2413,34 +2263,6 @@ def asset_transfer_form():
     tab1, tab2 = st.tabs(["New Transfer", "View Transfers"])
     
     with tab1:
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stForm"] {
-                background-color: white !important;
-                padding: 20px !important;
-                border-radius: 10px !important;
-                border: 1px solid #e0e0e0 !important;
-            }
-            div[data-testid="stForm"] button[kind="primary"],
-            button.stButton > button[kind="primary"] {
-                background-color: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
-            }
-            div[data-testid="stForm"] button[kind="primary"]:hover,
-            button.stButton > button[kind="primary"]:hover {
-                background-color: #218838 !important;
-                border-color: #1e7e34 !important;
-            }
-            [data-testid="stStatusWidget"],
-            .stSpinner {
-                display: none !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
 
         if "transfer_success_message" in st.session_state:
             st.success(st.session_state["transfer_success_message"])
@@ -2740,32 +2562,6 @@ def asset_maintenance_form():
 
     tab1, tab2 = st.tabs(["Add Maintenance Record", "View/Edit Maintenance"])
 
-    style_block = """
-        <style>
-        div[data-testid="stForm"] {
-            background-color: white !important;
-            padding: 20px !important;
-            border-radius: 10px !important;
-            border: 1px solid #e0e0e0 !important;
-        }
-        div[data-testid="stForm"] button[kind="primary"],
-        button.stButton > button[kind="primary"] {
-            background-color: #28a745 !important;
-            color: white !important;
-            border-color: #28a745 !important;
-        }
-        div[data-testid="stForm"] button[kind="primary"]:hover,
-        button.stButton > button[kind="primary"]:hover {
-            background-color: #218838 !important;
-            border-color: #1e7e34 !important;
-        }
-        [data-testid="stStatusWidget"],
-        .stSpinner {
-            display: none !important;
-        }
-        </style>
-    """
-
     def parse_date_value(value, fallback=None):
         if fallback is None:
             fallback = datetime.now().date()
@@ -2782,7 +2578,6 @@ def asset_maintenance_form():
                 return fallback
 
     with tab1:
-        st.markdown(style_block, unsafe_allow_html=True)
 
         if "maintenance_success_message" in st.session_state:
             st.success(st.session_state["maintenance_success_message"])
@@ -3156,62 +2951,7 @@ def employee_assignment_form():
 
     tab1, tab2 = st.tabs(["Add Assignment", "View/Edit Assignments"])
 
-    style_block = """
-        <style>
-        div[data-testid="stForm"] {
-            background-color: white !important;
-            padding: 20px !important;
-            border-radius: 10px !important;
-            border: 1px solid #e0e0e0 !important;
-        }
-        div[data-testid="stForm"] button[kind="primary"],
-        button.stButton > button[kind="primary"] {
-            background-color: #28a745 !important;
-            color: white !important;
-            border-color: #28a745 !important;
-        }
-        div[data-testid="stForm"] button[kind="primary"]:hover,
-        button.stButton > button[kind="primary"]:hover {
-            background-color: #218838 !important;
-            border-color: #1e7e34 !important;
-        }
-/* Remove border from secondary buttons (e.g., 👁️, ✏️, 🗑️) */
-        div[data-testid="stForm"] button[kind="secondary"],
-        button.stButton > button[kind="secondary"],
-        [data-testid="stBaseButton-secondary"] {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-            background: transparent !important; /* optional: makes it flat */
-        }
-        div[data-testid="stForm"] button[kind="secondary"]:hover,
-        button.stButton > button[kind="secondary"]:hover {
-            border: none !important;
-            box-shadow: none !important;
-            background: #f9f9f9 !important; /* optional hover effect */
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        [data-testid="stStatusWidget"],
-        .stSpinner {
-            display: none !important;
-        }
-        </style>
-    """
+    # Styles are applied globally via styles/main.css
 
     def parse_date_value(value, fallback=None):
         if fallback is None:
@@ -3309,8 +3049,6 @@ def employee_assignment_form():
             st.warning(f"Unable to update asset assignment: {err}")
 
     with tab1:
-        st.markdown(style_block, unsafe_allow_html=True)
-
         if "assignment_success_message" in st.session_state:
             st.success(st.session_state["assignment_success_message"])
             del st.session_state["assignment_success_message"]
