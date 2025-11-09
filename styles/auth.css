@@ -5,7 +5,7 @@ body {
 }
 
 form[data-testid="stForm"] {
-    background: rgba(255, 255, 255, 0.92) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
     max-width: 420px !important;
     margin: 10vh auto !important;
     border-radius: 18px !important;
@@ -13,9 +13,14 @@ form[data-testid="stForm"] {
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35) !important;
 }
 
-form[data-testid="stForm"] label {
+/* Label styling */
+div[data-testid="stForm"] label {
     color: #1a2240 !important;
-    font-weight: 600 !important;
+    font-weight: 600 !important;}
+
+    /* Input fields */
+div[data-baseweb="input"] > div {
+    border-radius: 8px !important;
 }
 
 form[data-testid="stForm"] button[kind="primary"] {
