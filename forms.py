@@ -2899,6 +2899,9 @@ def asset_maintenance_form():
                     [data-testid="stDataEditor"] div[data-baseweb="select"] > div {
                         background-color: #ffffff !important;
                     }
+                    [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                        display: none !important;
+                    }
                     </style>
                     """,
                     unsafe_allow_html=True,
@@ -2927,7 +2930,7 @@ def asset_maintenance_form():
                             "Next Due Date", format="YYYY-MM-DD", disabled=False
                         ),
                     },
-                    num_rows="fixed",
+                    num_rows="dynamic",
                     key="maintenance_table_view",
                 )
 
