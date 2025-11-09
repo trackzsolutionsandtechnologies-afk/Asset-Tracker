@@ -3014,7 +3014,6 @@ def asset_maintenance_form():
                         table_state["edited_cells"] = {}
                         table_state["deleted_rows"] = []
                         table_state["added_rows"] = []
-                    st.rerun()
 
                 if save_clicked and has_changes:
                     success = True
@@ -3137,7 +3136,6 @@ def asset_maintenance_form():
                             table_state["deleted_rows"] = []
                             table_state["added_rows"] = []
                         st.session_state["maintenance_last_save_ts"] = time.time()
-                        st.rerun()
 
         else:
             st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
