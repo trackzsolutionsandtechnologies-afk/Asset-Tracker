@@ -4,21 +4,21 @@ body {
     color: #ffffff;
 }
 
-.auth-form-wrapper div[data-testid="stForm"] {
-    background-color: #ffffff !important;
-    border-radius: 16px;
-    padding: 20px;
-}
-
-
 .auth-form-wrapper {
     max-width: 420px !important;
     margin: 10vh auto !important;
 }
 
 
+.auth-form-wrapper div[data-testid="stForm"] {
+    background-color: #ffffff !important;
+    border-radius: 16px;
+    padding: 20px;
+}
+
 .auth-form-wrapper form[data-testid="stForm"] {
-    background: rgba(43, 10, 226, 0.95) !important;}
+    background: rgba(43, 10, 226, 0.95) !important;
+}
 
 /* Label styling */
 .auth-form-wrapper label {
@@ -37,17 +37,25 @@ body {
     color: #ffffff !important;
 }
 
-div[data-testid="stForm"] button[kind="primary"],
-div[data-testid="stForm"] button[kind="secondary"] {
+.auth-form-wrapper div[data-testid="stForm"] button,
+.auth-form-wrapper button[kind="primary"],
+.auth-form-wrapper button[kind="secondary"],
+.auth-form-wrapper button[data-testid="baseButton-primary"],
+.auth-form-wrapper button[data-testid="baseButton-secondary"] {
     width: 100% !important;
     margin-top: 12px !important;
+    background: #28a745 !important;
     background-color: #28a745 !important;
     border: 1px solid #1e7e34 !important;
     color: #ffffff !important;
 }
 
-div[data-testid="stForm"] button[kind="primary"]:hover,
-div[data-testid="stForm"] button[kind="secondary"]:hover {
+.auth-form-wrapper div[data-testid="stForm"] button:hover,
+.auth-form-wrapper button[kind="primary"]:hover,
+.auth-form-wrapper button[kind="secondary"]:hover,
+.auth-form-wrapper button[data-testid="baseButton-primary"]:hover,
+.auth-form-wrapper button[data-testid="baseButton-secondary"]:hover {
+    background: #218838 !important;
     background-color: #218838 !important;
     border-color: #19692c !important;
 }
