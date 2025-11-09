@@ -2984,12 +2984,12 @@ def asset_maintenance_form():
                     )
 
                 if discard_clicked and has_changes:
-                    table_state = st.session_state.get("maintenance_table_view", {})
-                    table_state["edited_rows"] = {}
-                    table_state["edited_cells"] = {}
-                    table_state["deleted_rows"] = []
-                    table_state["added_rows"] = []
-                    st.session_state["maintenance_table_view"] = table_state
+                    table_state = st.session_state.get("maintenance_table_view")
+                    if isinstance(table_state, dict):
+                        table_state["edited_rows"] = {}
+                        table_state["edited_cells"] = {}
+                        table_state["deleted_rows"] = []
+                        table_state["added_rows"] = []
                     st.rerun()
 
                 if save_clicked and has_changes:
@@ -3106,12 +3106,12 @@ def asset_maintenance_form():
                         st.warning("New rows must be added from the 'Add Maintenance Record' tab.")
 
                     if success:
-                        table_state = st.session_state.get("maintenance_table_view", {})
-                        table_state["edited_rows"] = {}
-                        table_state["edited_cells"] = {}
-                        table_state["deleted_rows"] = []
-                        table_state["added_rows"] = []
-                        st.session_state["maintenance_table_view"] = table_state
+                        table_state = st.session_state.get("maintenance_table_view")
+                        if isinstance(table_state, dict):
+                            table_state["edited_rows"] = {}
+                            table_state["edited_cells"] = {}
+                            table_state["deleted_rows"] = []
+                            table_state["added_rows"] = []
                         st.rerun()
 
         else:
