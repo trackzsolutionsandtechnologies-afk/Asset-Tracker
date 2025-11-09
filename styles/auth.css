@@ -4,7 +4,11 @@ body {
     color: #ffffff;
 }
 
-
+.auth-form-wrapper div[data-testid="stForm"] {
+    background-color: #ffffff !important;
+    border-radius: 16px;
+    padding: 20px;
+}
 
 
 .auth-form-wrapper {
@@ -33,26 +37,17 @@ body {
     color: #ffffff !important;
 }
 
-.auth-form-wrapper button[kind="primary"] {
-    width: 100% !important;
-    margin-top: 12px !important;
-    background-color: #1f51ff !important;
-    
-}
-
+.auth-form-wrapper button[kind="primary"],
 .auth-form-wrapper button[kind="secondary"] {
     width: 100% !important;
     margin-top: 12px !important;
-    background: rgb(230 255 244);
-    color: #1a2240 !important;
-    border: 1px solid #1a2240 !important;
+    background-color: #28a745 !important;
+    border: 1px solid #1e7e34 !important;
+    color: #ffffff !important;
 }
 
-.auth-form-wrapper button[kind="primary"]:hover {
-    background-color: #18cc45 !important;
-    border-color: #1841cc !important;
-}
-
+.auth-form-wrapper button[kind="primary"]:hover,
 .auth-form-wrapper button[kind="secondary"]:hover {
-    background: rgba(26, 34, 64, 0.08) !important;
+    background-color: #218838 !important;
+    border-color: #19692c !important;
 }
