@@ -5,7 +5,7 @@ body {
 }
 
 form[data-testid="stForm"] {
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: rgba(223, 170, 170, 0.95) !important;
     max-width: 420px !important;
     margin: 10vh auto !important;
     border-radius: 18px !important;
