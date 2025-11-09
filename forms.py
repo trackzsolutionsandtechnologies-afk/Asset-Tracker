@@ -2507,11 +2507,34 @@ def asset_maintenance_form():
     assets_df = read_data(SHEETS["assets"])
     suppliers_df = read_data(SHEETS["suppliers"])
     asset_status_col = None
+    asset_name_col = None
+    asset_option_labels = ["Select asset"]
+    asset_label_to_id: dict[str, str] = {}
+    asset_id_to_label: dict[str, str] = {}
+    asset_id_to_name: dict[str, str] = {}
+
     if not assets_df.empty:
+        assets_df = assets_df.copy()
         for col in assets_df.columns:
-            if str(col).strip().lower() == "status":
+            col_norm = str(col).strip().lower()
+            if col_norm == "status":
                 asset_status_col = col
-                break
+            if col_norm in {"asset name", "name"} and asset_name_col is None:
+                asset_name_col = col
+
+        if "Asset ID" in assets_df.columns:
+            for _, row in assets_df.iterrows():
+                asset_id_value = str(row.get("Asset ID", "")).strip()
+                if not asset_id_value:
+                    continue
+                asset_name_value = (
+                    str(row.get(asset_name_col, "")).strip() if asset_name_col else ""
+                )
+                label = asset_id_value if not asset_name_value else f"{asset_id_value} - {asset_name_value}"
+                asset_option_labels.append(label)
+                asset_label_to_id[label] = asset_id_value
+                asset_id_to_label[asset_id_value.lower()] = label
+                asset_id_to_name[asset_id_value.lower()] = asset_name_value
 
     tab1, tab2 = st.tabs(["Add Maintenance Record", "View/Edit Maintenance"])
 
@@ -2581,13 +2604,6 @@ def asset_maintenance_form():
 
         form_key = st.session_state["maintenance_form_key"]
 
-        asset_options = []
-        assets_df = assets_df.copy()
-        if not assets_df.empty and "Asset ID" in assets_df.columns:
-            asset_options = ["Select asset"] + (
-                assets_df["Asset ID"].dropna().astype(str).str.strip().tolist()
-            )
-
         supplier_options: list[str] = []
         if not suppliers_df.empty and "Supplier Name" in suppliers_df.columns:
             supplier_options = ["Select supplier"] + (
@@ -2617,13 +2633,15 @@ def asset_maintenance_form():
                 if "generated_maintenance_id" in st.session_state:
                     del st.session_state["generated_maintenance_id"]
 
-            if asset_options:
-                asset_id = st.selectbox(
-                    "Asset ID *",
-                    asset_options,
+            if len(asset_option_labels) > 1:
+                asset_label_selected = st.selectbox(
+                    "Asset *",
+                    asset_option_labels,
                     key=f"maintenance_asset_{form_key}",
                 )
+                asset_id = asset_label_to_id.get(asset_label_selected, "")
             else:
+                asset_label_selected = None
                 asset_id = st.text_input(
                     "Asset ID *",
                     key=f"maintenance_asset_text_{form_key}",
@@ -2684,7 +2702,7 @@ def asset_maintenance_form():
             if submitted:
                 if not maintenance_id:
                     st.error("Please provide a Maintenance ID")
-                elif asset_options and asset_id == "Select asset":
+                elif len(asset_option_labels) > 1 and asset_label_selected == "Select asset":
                     st.error("Please select an Asset")
                 elif not asset_id:
                     st.error("Please provide an Asset ID")
@@ -2757,6 +2775,7 @@ def asset_maintenance_form():
                 field_headers = [
                     "**Maintenance ID**",
                     "**Asset ID**",
+                    "**Asset Name**",
                     "**Type**",
                     "**Date**",
                     "**Description**",
@@ -2766,9 +2785,9 @@ def asset_maintenance_form():
                     "**Status**",
                 ]
                 if is_admin:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+                    header_cols = st.columns([2, 2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
                 else:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
                 for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
                     with col_widget:
                         st.write(header)
@@ -2779,11 +2798,7 @@ def asset_maintenance_form():
                         st.write("**Delete**")
                 st.divider()
 
-                asset_list = (
-                    assets_df["Asset ID"].dropna().astype(str).str.strip().tolist()
-                    if not assets_df.empty and "Asset ID" in assets_df.columns
-                    else []
-                )
+                asset_label_list = asset_option_labels[1:] if len(asset_option_labels) > 1 else []
 
                 for idx, row in filtered_df.iterrows():
                     if (
@@ -2802,13 +2817,16 @@ def asset_maintenance_form():
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
                     cols = (
-                        st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+                        st.columns([2, 2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
                         if is_admin
-                        else st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
+                        else st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
                     )
+                    asset_id_value = row.get("Asset ID", "")
+                    asset_name_value = asset_id_to_name.get(str(asset_id_value).strip().lower(), "")
                     display_values = [
                         row.get("Maintenance ID", "N/A"),
-                        row.get("Asset ID", "N/A"),
+                        asset_id_value or "N/A",
+                        asset_name_value,
                         row.get("Maintenance Type", ""),
                         row.get("Maintenance Date", "N/A"),
                         row.get("Description", ""),
@@ -2859,17 +2877,19 @@ def asset_maintenance_form():
                 record = edit_row.iloc[0]
                 st.subheader(f"Edit Maintenance: {edit_id}")
                 with st.form(f"edit_maintenance_form_{edit_id}"):
-                    asset_options_edit = ["Select asset"] + asset_list if asset_list else []
+                    asset_options_edit = ["Select asset"] + asset_label_list if asset_label_list else []
                     if asset_options_edit:
+                        current_label = asset_id_to_label.get(str(record.get("Asset ID", "")).strip().lower(), "Select asset")
                         try:
-                            default_asset_idx = asset_options_edit.index(record.get("Asset ID", ""))
+                            default_asset_idx = asset_options_edit.index(current_label)
                         except ValueError:
                             default_asset_idx = 0
-                        asset_id_new = st.selectbox(
-                            "Asset ID *",
+                        asset_label_new = st.selectbox(
+                            "Asset *",
                             asset_options_edit,
                             index=default_asset_idx,
                         )
+                        asset_id_new = asset_label_to_id.get(asset_label_new, "")
                     else:
                         asset_id_new = st.text_input(
                             "Asset ID *",
@@ -2940,7 +2960,7 @@ def asset_maintenance_form():
                     col_update, col_cancel = st.columns(2)
                     with col_update:
                         if st.form_submit_button("Update", use_container_width=True):
-                            if asset_options_edit and asset_id_new == "Select asset":
+                            if asset_options_edit and asset_label_new == "Select asset":
                                 st.error("Please select an Asset")
                             elif not asset_id_new:
                                 st.error("Please provide an Asset ID")
