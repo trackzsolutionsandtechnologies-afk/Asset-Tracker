@@ -2805,35 +2805,54 @@ def asset_maintenance_form():
                 else:
                     st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
             else:
-                columns_config = [2, 2, 2, 1, 1.5, 2, 0.4, 1]
-                if is_admin:
-                    columns_config.append(0.4)
-                    columns_config.append(1)
-
-                header_cols = st.columns(columns_config)
-                header_style = "color: white; font-weight: 600;"
-                header_bg_style = "background-color: #c53030; padding: 0.5rem; border-radius: 6px;"
-                header_labels = [
-                    f"<div style='{header_bg_style}'><span style='{header_style}'>Maintenance ID</span></div>",
-                    f"<div style='{header_bg_style}'><span style='{header_style}'>Asset ID</span></div>",
-                    f"<div style='{header_bg_style}'><span style='{header_style}'>Asset Name</span></div>",
-                    f"<div style='{header_bg_style}'><span style='{header_style}'>Cost</span></div>",
-                    f"<div style='{header_bg_style}'><span style='{header_style}'>Status</span></div>",
-                    f"<div style='{header_bg_style}'><span style='{header_style}'>Next Due Date</span></div>",
-                    "<div style='border-left: 1px solid #b5d3b6; height: 20px; margin: 0 auto;'></div>",
-                    "",
-                ]
-                if is_admin:
-                    header_labels.append("<div style='border-left: 1px solid #b5d3b6; height: 20px; margin: 0 auto;'></div>")
-                    header_labels.append("")
-
-                for col_widget, label in zip(header_cols, header_labels):
-                    with col_widget:
-                        st.markdown(f"<div style='text-align: left;'>{label}</div>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin: 0.5rem 0; border: 0; border-top: 1px solid #b5d3b6;' />", unsafe_allow_html=True)
-
                 asset_label_list = asset_option_labels[1:] if len(asset_option_labels) > 1 else []
-                divider_style = "border-left: 1px solid #e0e0e0; height: 100%; margin: 0 auto;"
+                display_df = filtered_df.copy()
+                display_df["Asset Name"] = display_df["Asset ID"].astype(str).str.strip().str.lower().map(asset_id_to_name).fillna("")
+                display_df["Cost"] = pd.to_numeric(
+                    display_df["Cost"].replace("", 0).astype(str).str.replace(",", ""),
+                    errors="coerce",
+                ).fillna(0.0)
+                table_df = display_df[
+                    ["Maintenance ID", "Asset ID", "Asset Name", "Cost", "Status", "Next Due Date"]
+                ]
+
+                st.markdown(
+                    """
+                    <style>
+                    [data-testid="stDataEditor"] thead th {
+                        background-color: #c53030 !important;
+                        color: #ffffff !important;
+                        font-weight: 600 !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td {
+                        border-right: 1px solid #f0f0f0 !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td:last-child {
+                        border-right: none !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                st.data_editor(
+                    table_df,
+                    hide_index=True,
+                    use_container_width=True,
+                    disabled=True,
+                    column_config={
+                        "Maintenance ID": st.column_config.TextColumn("Maintenance ID"),
+                        "Asset ID": st.column_config.TextColumn("Asset ID"),
+                        "Asset Name": st.column_config.TextColumn("Asset Name"),
+                        "Cost": st.column_config.NumberColumn("Cost", format="%.2f"),
+                        "Status": st.column_config.TextColumn("Status"),
+                        "Next Due Date": st.column_config.TextColumn("Next Due Date"),
+                    },
+                    key="maintenance_table_view",
+                )
+
+                st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #d0d0d0;' />", unsafe_allow_html=True)
+
                 for idx, row in filtered_df.iterrows():
                     if (
                         "Maintenance ID" in maintenance_df.columns
@@ -2850,35 +2869,21 @@ def asset_maintenance_form():
                     else:
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
-                    cols = st.columns(columns_config)
-                    asset_id_value = row.get("Asset ID", "")
-                    asset_name_value = asset_id_to_name.get(str(asset_id_value).strip().lower(), "")
-                    display_values = [
-                        row.get("Maintenance ID", "N/A"),
-                        asset_id_value or "N/A",
-                        asset_name_value,
-                        row.get("Cost", ""),
-                        row.get("Status", ""),
-                        row.get("Next Due Date", ""),
-                    ]
-                    for col_widget, value in zip(cols[: len(display_values)], display_values):
-                        with col_widget:
-                            st.markdown(f"<div style='padding-right: 8px;'>{value if value not in ('', None) else 'N/A'}</div>", unsafe_allow_html=True)
-
-                    with cols[len(display_values)]:
-                        st.markdown(f"<div style='{divider_style}'></div>", unsafe_allow_html=True)
-
-                    edit_placeholder = cols[len(display_values) + 1]
-                    with edit_placeholder:
+                    action_cols = st.columns([5, 1, 1]) if is_admin else st.columns([5, 1])
+                    with action_cols[0]:
+                        st.markdown(
+                            f"<span style='font-weight:500;'>Maintenance ID:</span> {row.get('Maintenance ID', 'N/A')} "
+                            f"<span style='font-weight:500;'>| Asset:</span> {row.get('Asset ID', '')} "
+                            f"<span style='font-weight:500;'>| Status:</span> {row.get('Status', '')}",
+                            unsafe_allow_html=True,
+                        )
+                    with action_cols[1]:
                         if st.button("✏️", key=f"maintenance_edit_{row.get('Maintenance ID', idx)}"):
                             st.session_state["edit_maintenance_id"] = row.get("Maintenance ID", "")
                             st.session_state["edit_maintenance_idx"] = original_idx
                             st.rerun()
-
                     if is_admin:
-                        with cols[len(display_values) + 2]:
-                            st.markdown(f"<div style='{divider_style}'></div>", unsafe_allow_html=True)
-                        with cols[len(display_values) + 3]:
+                        with action_cols[2]:
                             if st.button(
                                 "🗑️",
                                 key=f"maintenance_delete_{row.get('Maintenance ID', idx)}",
@@ -2891,7 +2896,7 @@ def asset_maintenance_form():
                                 else:
                                     st.error("Failed to delete maintenance record")
 
-                    st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #f0f0f0;' />", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin: 0.5rem 0; border: 0; border-top: 1px dotted #e0e0e0;' />", unsafe_allow_html=True)
 
         else:
             st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
