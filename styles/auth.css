@@ -4,11 +4,7 @@ body {
     color: #ffffff;
 }
 
-.auth-form-wrapper div[data-testid="stForm"] {
-    background-color: #ffffff !important;
-    border-radius: 16px;
-    padding: 20px;
-}
+
 
 
 .auth-form-wrapper {
