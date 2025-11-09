@@ -160,6 +160,9 @@ def reset_password(username: str, token: str, new_password: str) -> bool:
 
 def login_page():
     """Display login page"""
+    from app import load_auth_css  # avoid circular import at module load time
+
+    load_auth_css()
     st.title("🔐 Asset Tracker - Sign In")
 
     with st.form("login_form"):
@@ -202,6 +205,9 @@ def login_page():
 
 def forgot_password_page():
     """Display forgot password page"""
+    from app import load_auth_css
+
+    load_auth_css()
     st.title("🔑 Forgot Password")
 
     if "reset_step" not in st.session_state:

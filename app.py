@@ -37,10 +37,15 @@ def load_custom_css() -> None:
             st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
 
 
+def load_auth_css() -> None:
+    css_path = Path(__file__).parent / "styles" / "auth.css"
+    if css_path.exists():
+        with css_path.open("r", encoding="utf-8") as css_file:
+            st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
+
+
 def main():
     """Main application function"""
-    
-    load_custom_css()
     
     # Initialize configuration from secrets (after Streamlit is initialized)
     try:
@@ -62,6 +67,7 @@ def main():
     
     # Check if user is authenticated
     if not check_authentication():
+        load_auth_css()
         # Show login or forgot password page
         if st.session_state.get("show_forgot_password", False):
             forgot_password_page()
@@ -70,6 +76,7 @@ def main():
         return
     
     # User is authenticated - show main application
+    load_custom_css()
     username = st.session_state.get(SESSION_KEYS["username"], "User")
     if isinstance(username, str):
         display_name = username.strip() or "User"
