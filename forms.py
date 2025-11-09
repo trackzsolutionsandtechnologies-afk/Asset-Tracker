@@ -2855,9 +2855,10 @@ def asset_maintenance_form():
                 st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #d0d0d0;' />", unsafe_allow_html=True)
 
                 if is_admin:
-                    edited_df = editor_response["edited_rows"]
-                    deleted_rows = editor_response.get("deleted_rows", [])
-                    added_rows = editor_response.get("added_rows", [])
+                    editor_state = st.session_state.get("maintenance_table_view", {})
+                    edited_df = editor_state.get("edited_rows", {})
+                    deleted_rows = editor_state.get("deleted_rows", [])
+                    added_rows = editor_state.get("added_rows", [])
 
                     if deleted_rows:
                         for delete_idx in sorted(deleted_rows, reverse=True):
