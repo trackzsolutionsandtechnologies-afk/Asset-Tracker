@@ -1409,6 +1409,40 @@ def asset_master_form():
     if not subcategories_df.empty and subcat_cat_name_col:
         subcat_cat_name_norm_series = subcategories_df[subcat_cat_name_col].astype(str).str.strip().str.lower()
 
+    normalized_subcategories_df = pd.DataFrame(columns=["category", "subcategory"])
+    valid_category_names_lower = set()
+    if category_norm_series is not None:
+        valid_category_names_lower = set(category_norm_series.dropna().tolist())
+
+    if (
+        not subcategories_df.empty
+        and subcat_name_col
+        and subcat_cat_name_col
+    ):
+        normalized_records = []
+        for _, row in subcategories_df.iterrows():
+            raw_category = str(row.get(subcat_cat_name_col, "") or "").strip()
+            raw_subcategory = str(row.get(subcat_name_col, "") or "").strip()
+            category_candidate = raw_category
+            subcategory_candidate = raw_subcategory
+
+            cat_lower = category_candidate.lower()
+            sub_lower = subcategory_candidate.lower()
+            if valid_category_names_lower:
+                # If values appear swapped (category column doesn't match known categories but subcategory does), swap them
+                if cat_lower not in valid_category_names_lower and sub_lower in valid_category_names_lower:
+                    category_candidate, subcategory_candidate = subcategory_candidate, category_candidate
+
+            normalized_records.append(
+                {
+                    "category": category_candidate,
+                    "subcategory": subcategory_candidate,
+                }
+            )
+
+        if normalized_records:
+            normalized_subcategories_df = pd.DataFrame(normalized_records)
+
     condition_options = ASSET_CONDITION_OPTIONS
     status_options = ASSET_STATUS_OPTIONS
 
@@ -1474,8 +1508,8 @@ def asset_master_form():
                 subcategory_placeholder = "Select sub category"
 
                 category_options = []
-                if not subcategories_df.empty and subcat_cat_name_col:
-                    category_options = unique_clean(subcategories_df[subcat_cat_name_col])
+                if not normalized_subcategories_df.empty:
+                    category_options = unique_clean(normalized_subcategories_df["category"])
                 elif not categories_df.empty and category_name_col:
                     category_options = unique_clean(categories_df[category_name_col])
 
@@ -1498,25 +1532,14 @@ def asset_master_form():
                 if (
                     category
                     and category not in ("", category_placeholder)
-                    and not subcategories_df.empty
-                    and subcat_name_col
+                    and not normalized_subcategories_df.empty
                 ):
-                    filtered_subcats = subcategories_df[
-                        subcategories_df[subcat_cat_name_col].astype(str).str.strip().str.lower()
+                    filtered_subcats = normalized_subcategories_df[
+                        normalized_subcategories_df["category"].astype(str).str.strip().str.lower()
                         == str(category).strip().lower()
                     ]
-                    if filtered_subcats.empty and subcat_cat_id_col and category_id_col and category_name_col:
-                        category_ids = categories_df[
-                            categories_df[category_name_col].astype(str).str.strip().str.lower()
-                            == str(category).strip().lower()
-                        ]
-                        if not category_ids.empty:
-                            target_ids = category_ids[category_id_col].astype(str).str.strip().str.lower().tolist()
-                            filtered_subcats = subcategories_df[
-                                subcategories_df[subcat_cat_id_col].astype(str).str.strip().str.lower().isin(target_ids)
-                            ]
                     if not filtered_subcats.empty:
-                        subcategory_options = unique_clean(filtered_subcats[subcat_name_col])
+                        subcategory_options = unique_clean(filtered_subcats["subcategory"])
 
                 if subcategory_options:
                     subcategory = st.selectbox(
