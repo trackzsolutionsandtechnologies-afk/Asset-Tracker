@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
-from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers
+from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers, get_worksheet
 # Helper utilities for modal views
 
 def _open_view_modal(prefix: str, title: str, record: Dict[str, str], order: Optional[List[str]] = None) -> None:
@@ -101,8 +101,33 @@ def generate_assignment_id() -> str:
 def location_form():
     """Location"""
     st.header("📍 Location Management")
-    
+
+    expected_headers = ["Location ID", "Location Name"]
+    ensure_sheet_headers(SHEETS["locations"], expected_headers)
+
+    worksheet = get_worksheet(SHEETS["locations"])
+    if worksheet is not None:
+        try:
+            header_row = worksheet.row_values(1)
+            normalized_header = [str(h).strip().lower() for h in header_row]
+            if len(normalized_header) > len(expected_headers) or "department" in normalized_header:
+                worksheet.update("1:1", [expected_headers])
+                read_data.clear()
+        except Exception:
+            pass
+
     df = read_data(SHEETS["locations"])
+    if not df.empty:
+        column_map = {}
+        for col in df.columns:
+            normalized = str(col).strip().lower()
+            if normalized == "location id":
+                column_map[col] = "Location ID"
+            elif normalized in {"location name", "location"}:
+                column_map[col] = "Location Name"
+        if column_map:
+            df = df.rename(columns=column_map)
+        df = df.reindex(columns=expected_headers)
     
     tab1, tab2 = st.tabs(["Add New Location", "View/Edit Locations"])
     
@@ -160,18 +185,25 @@ def location_form():
                     del st.session_state["generated_location_id"]
             
             location_name = st.text_input("Location Name *", key=f"loc_name_{st.session_state['location_form_key']}")
-            department = st.text_input("Department *", key=f"dept_{st.session_state['location_form_key']}")
             
             submitted = st.form_submit_button("Add Location", use_container_width=True, type="primary")
             
             if submitted:
-                if not location_id or not location_name or not department:
+                if not location_id or not location_name:
                     st.error("Please fill in all required fields")
                 elif not df.empty and "Location ID" in df.columns and location_id in df["Location ID"].values:
                     st.error("Location ID already exists")
                 else:
                     with st.spinner("Adding location..."):
-                        if append_data(SHEETS["locations"], [location_id, location_name, department]):
+                        column_order = list(df.columns) if not df.empty else expected_headers
+                        if not column_order:
+                            column_order = expected_headers
+                        data_map = {
+                            "Location ID": location_id,
+                            "Location Name": location_name,
+                        }
+                        data_row = [data_map.get(col, "") for col in column_order]
+                        if append_data(SHEETS["locations"], data_row):
                             # Clear generated location ID and reset form
                             if "generated_location_id" in st.session_state:
                                 del st.session_state["generated_location_id"]
@@ -197,16 +229,16 @@ def location_form():
             st.subheader("All Locations")
             
             # Search bar
-            search_term = st.text_input("🔍 Search Locations", placeholder="Search by Location ID, Name, or Department...", key="location_search")
+            search_term = st.text_input("🔍 Search Locations", placeholder="Search by Location ID or Name...", key="location_search")
             
             # Filter data based on search
-            if search_term:
-                mask = (
-                    df["Location ID"].astype(str).str.contains(search_term, case=False, na=False) |
-                    df["Location Name"].astype(str).str.contains(search_term, case=False, na=False) |
-                    df["Department"].astype(str).str.contains(search_term, case=False, na=False)
-                )
-                filtered_df = df[mask]
+            if search_term and not df.empty:
+                search_mask = pd.Series([False] * len(df), index=df.index)
+                if "Location ID" in df.columns:
+                    search_mask = search_mask | df["Location ID"].astype(str).str.contains(search_term, case=False, na=False)
+                if "Location Name" in df.columns:
+                    search_mask = search_mask | df["Location Name"].astype(str).str.contains(search_term, case=False, na=False)
+                filtered_df = df[search_mask] if not df.empty else pd.DataFrame()
                 if filtered_df.empty:
                     st.info(f"No locations found matching '{search_term}'")
                     filtered_df = pd.DataFrame()
@@ -226,11 +258,11 @@ def location_form():
 
                 # Table header - adjust columns based on admin status
                 if is_admin:
-                    header_cols = st.columns([3, 4, 3, 1, 1, 1])
+                    header_cols = st.columns([4, 4, 1, 1, 1])
                 else:
-                    header_cols = st.columns([3, 4, 3, 1, 1])
+                    header_cols = st.columns([4, 4, 1, 1])
 
-                header_labels = ["**Location ID**", "**Location Name**", "**Department**", "**View**", "**Edit**"]
+                header_labels = ["**Location ID**", "**Location Name**", "**View**", "**Edit**"]
                 if is_admin:
                     header_labels.append("**Delete**")
 
@@ -252,28 +284,25 @@ def location_form():
                         original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
 
                     if is_admin:
-                        col1, col2, col3, col_view, col_edit, col_delete = st.columns([3, 4, 3, 1, 1, 1])
+                        col1, col2, col_view, col_edit, col_delete = st.columns([4, 4, 1, 1, 1])
                     else:
-                        col1, col2, col3, col_view, col_edit = st.columns([3, 4, 3, 1, 1])
+                        col1, col2, col_view, col_edit = st.columns([4, 4, 1, 1])
 
                     with col1:
                         st.write(row.get("Location ID", "N/A"))
                     with col2:
                         st.write(row.get("Location Name", "N/A"))
-                    with col3:
-                        st.write(row.get("Department", "N/A"))
                     with col_view:
                         if st.button("👁️", key=f"location_view_{unique_suffix}", use_container_width=True, help="View details"):
                             record = {
                                 "Location ID": location_id_value,
                                 "Location Name": row.get("Location Name", ""),
-                                "Department": row.get("Department", ""),
                             }
                             _open_view_modal(
                                 "location",
                                 f"Location Details: {row.get('Location Name', '')}",
                                 record,
-                                ["Location ID", "Location Name", "Department"],
+                                ["Location ID", "Location Name"],
                             )
                     with col_edit:
                         edit_key = f"location_edit_{unique_suffix}"
@@ -321,13 +350,20 @@ def location_form():
                         with st.form("edit_location_form"):
                             new_location_id = st.text_input("Location ID", value=location.get("Location ID", ""), disabled=True)
                             new_location_name = st.text_input("Location Name", value=location.get("Location Name", ""))
-                            new_department = st.text_input("Department", value=location.get("Department", ""))
                             
                             col1, col2 = st.columns(2)
                             with col1:
                                 if st.form_submit_button("Update Location", use_container_width=True):
                                     with st.spinner("Updating location..."):
-                                        if update_data(SHEETS["locations"], edit_idx, [new_location_id, new_location_name, new_department]):
+                                        column_order = list(df.columns) if not df.empty else expected_headers
+                                        if not column_order:
+                                            column_order = expected_headers
+                                        data_map = {
+                                            "Location ID": new_location_id,
+                                            "Location Name": new_location_name,
+                                        }
+                                        row_data = [data_map.get(col, "") for col in column_order]
+                                        if update_data(SHEETS["locations"], edit_idx, row_data):
                                             st.session_state["location_success_message"] = f"✅ Location '{new_location_name}' (ID: {new_location_id}) updated successfully!"
                                             st.session_state.pop("edit_location_id", None)
                                             st.session_state.pop("edit_location_idx", None)
