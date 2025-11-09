@@ -4,6 +4,7 @@ Forms module for Asset Tracker
 import base64
 from copy import deepcopy
 from io import BytesIO
+import time
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -2977,8 +2978,17 @@ def asset_maintenance_form():
                     return source_dict.get(idx_str, {})
 
                 has_changes = bool(edited_df or edited_cells or deleted_rows or added_rows)
+                cooldown_seconds = 10
+                current_ts = time.time()
+                last_save_ts = float(st.session_state.get("maintenance_last_save_ts", 0.0) or 0.0)
+                cooldown_remaining = max(0.0, cooldown_seconds - (current_ts - last_save_ts))
                 if has_changes:
                     st.info("You have unsaved maintenance changes. Click 'Save Changes' to apply them.", icon="✏️")
+                if cooldown_remaining > 0:
+                    st.warning(
+                        f"Please wait {cooldown_remaining:.0f} second(s) before saving again to avoid hitting Google Sheets limits.",
+                        icon="⏳",
+                    )
 
                 action_cols = st.columns([1, 1], gap="small")
                 with action_cols[0]:
@@ -2986,7 +2996,7 @@ def asset_maintenance_form():
                         "Save Changes",
                         type="primary",
                         use_container_width=True,
-                        disabled=not has_changes,
+                        disabled=(not has_changes) or (cooldown_remaining > 0),
                         key="maintenance_save_changes",
                     )
                 with action_cols[1]:
@@ -3126,6 +3136,7 @@ def asset_maintenance_form():
                             table_state["edited_cells"] = {}
                             table_state["deleted_rows"] = []
                             table_state["added_rows"] = []
+                        st.session_state["maintenance_last_save_ts"] = time.time()
                         st.rerun()
 
         else:
