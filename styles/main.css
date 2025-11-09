@@ -1,7 +1,7 @@
 /* Global form styling */
 div[data-testid="stTabPanel"] div[data-testid="stForm"],
 div[data-testid="stForm"] {
-    background-color: #8c55da !important;
+    background-color: #bca7da !important;
     padding: 20px !important;
     border-radius: 10px !important;
     border: 1px solid #e0e0e0 !important;
