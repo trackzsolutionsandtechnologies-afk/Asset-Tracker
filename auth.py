@@ -165,6 +165,8 @@ def login_page():
     load_auth_css()
     st.title("🔐 Asset Tracker - Sign In")
 
+    st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
+
     with st.form("login_form"):
         username = st.text_input("Username", key="login_username")
         password = st.text_input("Password", type="password", key="login_password")
@@ -202,6 +204,8 @@ def login_page():
             st.session_state["show_forgot_password"] = True
             st.rerun()
 
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 def forgot_password_page():
     """Display forgot password page"""
@@ -214,6 +218,8 @@ def forgot_password_page():
         st.session_state["reset_step"] = "request"
 
     if st.session_state["reset_step"] == "request":
+        st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
+
         with st.form("forgot_password_form"):
             username = st.text_input("Enter your username")
             submit = st.form_submit_button("Request Reset Token")
@@ -229,13 +235,17 @@ def forgot_password_page():
                     st.rerun()
                 else:
                     st.error("Could not generate reset token. Please check your username.")
-        
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
         if st.button("Back to Login"):
             st.session_state["show_forgot_password"] = False
             st.session_state["reset_step"] = "request"
             st.rerun()
 
     elif st.session_state["reset_step"] == "reset":
+        st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
+
         with st.form("reset_password_form"):
             st.text_input("Username", value=st.session_state.get("reset_username", ""), disabled=True)
             token = st.text_input("Reset Token", value=st.session_state.get("reset_token", ""))
@@ -258,6 +268,8 @@ def forgot_password_page():
                             st.rerun()
                     else:
                         st.error("Invalid token or token expired")
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
         if st.button("Back"):
             st.session_state["reset_step"] = "request"

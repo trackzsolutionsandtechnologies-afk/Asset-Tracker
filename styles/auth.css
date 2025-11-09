@@ -4,7 +4,7 @@ body {
     color: #ffffff;
 }
 
-form[data-testid="stForm"] {
+.auth-form-wrapper {
     background: rgba(223, 170, 170, 0.95) !important;
     max-width: 420px !important;
     margin: 10vh auto !important;
@@ -13,22 +13,29 @@ form[data-testid="stForm"] {
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Label styling */
-div[data-testid="stForm"] label {
-    color: #1a2240 !important;
-    font-weight: 600 !important;}
+.auth-form-wrapper form[data-testid="stForm"] {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
 
-    /* Input fields */
-div[data-baseweb="input"] > div {
+/* Label styling */
+.auth-form-wrapper label {
+    color: #1a2240 !important;
+    font-weight: 600 !important;
+}
+
+/* Input fields */
+.auth-form-wrapper div[data-baseweb="input"] > div {
     border-radius: 8px !important;
 }
 
-form[data-testid="stForm"] button[kind="primary"] {
+.auth-form-wrapper button[kind="primary"] {
     width: 100% !important;
     margin-top: 12px !important;
 }
 
-form[data-testid="stForm"] button[kind="secondary"] {
+.auth-form-wrapper button[kind="secondary"] {
     width: 100% !important;
     margin-top: 12px !important;
     background: transparent !important;
@@ -36,6 +43,6 @@ form[data-testid="stForm"] button[kind="secondary"] {
     border: 1px solid #1a2240 !important;
 }
 
-form[data-testid="stForm"] button[kind="secondary"]:hover {
+.auth-form-wrapper button[kind="secondary"]:hover {
     background: rgba(26, 34, 64, 0.08) !important;
 }
