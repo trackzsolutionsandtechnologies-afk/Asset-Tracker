@@ -5,18 +5,16 @@ body {
 }
 
 .auth-form-wrapper {
-    background: rgba(223, 170, 170, 0.95) !important;
     max-width: 420px !important;
     margin: 10vh auto !important;
-    border-radius: 18px !important;
-    padding: 36px !important;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35) !important;
 }
 
 .auth-form-wrapper form[data-testid="stForm"] {
-    background: transparent !important;
-    box-shadow: none !important;
-    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 18px !important;
+    padding: 36px !important;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35) !important;
+    border: none !important;
 }
 
 /* Label styling */
