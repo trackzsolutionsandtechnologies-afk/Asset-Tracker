@@ -875,6 +875,9 @@ def category_form():
     """Asset Category and Sub Category"""
     st.header("📂 Category Management")
     
+    ensure_sheet_headers(SHEETS["categories"], ["Category ID", "Category Name"])
+    ensure_sheet_headers(SHEETS["subcategories"], ["SubCategory ID", "Category ID", "SubCategory Name", "Category Name"])
+    
     categories_df = read_data(SHEETS["categories"])
     subcategories_df = read_data(SHEETS["subcategories"])
     
@@ -981,8 +984,8 @@ def category_form():
                         st.error("Sub Category ID already exists")
                     else:
                         with st.spinner("Adding sub category..."):
-                            # Save: SubCategory ID, Category ID, Category Name, SubCategory Name
-                            if append_data(SHEETS["subcategories"], [subcategory_id, category_id, category_name, subcategory_name]):
+                            # Save: SubCategory ID, Category ID, SubCategory Name, Category Name
+                            if append_data(SHEETS["subcategories"], [subcategory_id, category_id, subcategory_name, category_name]):
                                 # Clear generated subcategory ID and reset form
                                 if "generated_subcategory_id" in st.session_state:
                                     del st.session_state["generated_subcategory_id"]
@@ -1313,8 +1316,8 @@ def category_form():
                                     st.error("Please select a category")
                                 else:
                                     with st.spinner("Updating subcategory..."):
-                                        # Update: SubCategory ID, Category ID, Category Name, SubCategory Name
-                                        if update_data(SHEETS["subcategories"], edit_idx, [new_subcategory_id, new_category_id, new_category_name, new_subcategory_name]):
+                                        # Update: SubCategory ID, Category ID, SubCategory Name, Category Name
+                                        if update_data(SHEETS["subcategories"], edit_idx, [new_subcategory_id, new_category_id, new_subcategory_name, new_category_name]):
                                             # Set success message
                                             st.session_state["subcategory_success_message"] = f"✅ Sub Category '{new_subcategory_name}' (ID: {new_subcategory_id}) updated successfully!"
                                             if "edit_subcategory_id" in st.session_state:
