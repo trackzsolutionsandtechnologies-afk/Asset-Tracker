@@ -1527,10 +1527,6 @@ def asset_master_form():
         if asset_form_keys["purchase_cost"] not in st.session_state:
             st.session_state[asset_form_keys["purchase_cost"]] = 0.0
 
-        def _on_asset_category_change():
-            # Reset subcategory selection whenever category changes
-            st.session_state[asset_form_keys["subcategory_select"]] = "Select sub category"
-
         with st.form("asset_form"):
             col1, col2 = st.columns(2)
             
@@ -1573,7 +1569,6 @@ def asset_master_form():
                         "Category *",
                         [category_placeholder] + category_options,
                         key=asset_form_keys["category_select"],
-                        on_change=_on_asset_category_change,
                     )
                 else:
                     category = st.selectbox(
@@ -1584,19 +1579,15 @@ def asset_master_form():
                     )
                     category = ""
 
-                selected_category = st.session_state.get(
-                    asset_form_keys["category_select"], category_placeholder
-                )
-
                 subcategory_options = []
                 if (
-                    selected_category
-                    and selected_category not in ("", category_placeholder)
+                    category
+                    and category not in ("", category_placeholder)
                     and not normalized_subcategories_df.empty
                 ):
                     filtered_subcats = normalized_subcategories_df[
                         normalized_subcategories_df["category"].astype(str).str.strip().str.lower()
-                        == str(selected_category).strip().lower()
+                        == str(category).strip().lower()
                     ]
                     if not filtered_subcats.empty:
                         subcategory_options = unique_clean(filtered_subcats["subcategory"])
