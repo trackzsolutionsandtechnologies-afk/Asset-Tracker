@@ -1414,24 +1414,70 @@ def asset_master_form():
     if category_norm_series is not None:
         valid_category_names_lower = set(category_norm_series.dropna().tolist())
 
+    category_lookup_by_id = {}
+    if (
+        not categories_df.empty
+        and category_id_col
+        and category_name_col
+        and category_id_col in categories_df.columns
+        and category_name_col in categories_df.columns
+    ):
+        category_lookup_by_id = {
+            str(row[category_id_col]).strip().lower(): str(row[category_name_col]).strip()
+            for _, row in categories_df.dropna(subset=[category_id_col]).iterrows()
+            if str(row.get(category_name_col, "")).strip() != ""
+        }
+
     if (
         not subcategories_df.empty
         and subcat_name_col
-        and subcat_cat_name_col
+        and (subcat_cat_name_col or subcat_cat_id_col)
     ):
         normalized_records = []
         for _, row in subcategories_df.iterrows():
-            raw_category = str(row.get(subcat_cat_name_col, "") or "").strip()
             raw_subcategory = str(row.get(subcat_name_col, "") or "").strip()
+            raw_category = (
+                str(row.get(subcat_cat_name_col, "") or "").strip()
+                if subcat_cat_name_col
+                else ""
+            )
+            raw_category_id = (
+                str(row.get(subcat_cat_id_col, "") or "").strip()
+                if subcat_cat_id_col
+                else ""
+            )
+
+            if raw_subcategory == "" and raw_category == "":
+                continue
+
             category_candidate = raw_category
             subcategory_candidate = raw_subcategory
 
             cat_lower = category_candidate.lower()
             sub_lower = subcategory_candidate.lower()
+
             if valid_category_names_lower:
-                # If values appear swapped (category column doesn't match known categories but subcategory does), swap them
+                # If the stored category name doesn't look valid but the subcategory does, swap them.
                 if cat_lower not in valid_category_names_lower and sub_lower in valid_category_names_lower:
                     category_candidate, subcategory_candidate = subcategory_candidate, category_candidate
+                    cat_lower = category_candidate.lower()
+                    sub_lower = subcategory_candidate.lower()
+
+            # If category name still missing or invalid, try resolving via category ID
+            if (
+                (category_candidate == "" or (valid_category_names_lower and cat_lower not in valid_category_names_lower))
+                and raw_category_id != ""
+            ):
+                lookup_key = raw_category_id.lower()
+                if lookup_key in category_lookup_by_id:
+                    category_candidate = category_lookup_by_id[lookup_key]
+                    cat_lower = category_candidate.lower()
+
+            # Skip entries that still don't have a subcategory or category
+            if subcategory_candidate == "":
+                continue
+            if category_candidate == "":
+                continue
 
             normalized_records.append(
                 {
@@ -1441,7 +1487,12 @@ def asset_master_form():
             )
 
         if normalized_records:
-            normalized_subcategories_df = pd.DataFrame(normalized_records)
+            normalized_subcategories_df = (
+                pd.DataFrame(normalized_records)
+                .replace("", pd.NA)
+                .dropna(subset=["category", "subcategory"])
+                .drop_duplicates()
+            )
 
     condition_options = ASSET_CONDITION_OPTIONS
     status_options = ASSET_STATUS_OPTIONS
