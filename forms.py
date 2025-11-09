@@ -2775,14 +2775,15 @@ def asset_maintenance_form():
                     columns_config.append(1)
 
                 header_cols = st.columns(columns_config)
-                header_style = "color: #1f7830; font-weight: 600;"
+                header_style = "color: white; font-weight: 600;"
+                header_bg_style = "background-color: #c53030; padding: 0.5rem; border-radius: 6px;"
                 header_labels = [
-                    f"<span style='{header_style}'>Maintenance ID</span>",
-                    f"<span style='{header_style}'>Asset ID</span>",
-                    f"<span style='{header_style}'>Asset Name</span>",
-                    f"<span style='{header_style}'>Cost</span>",
-                    f"<span style='{header_style}'>Status</span>",
-                    f"<span style='{header_style}'>Next Due Date</span>",
+                    f"<div style='{header_bg_style}'><span style='{header_style}'>Maintenance ID</span></div>",
+                    f"<div style='{header_bg_style}'><span style='{header_style}'>Asset ID</span></div>",
+                    f"<div style='{header_bg_style}'><span style='{header_style}'>Asset Name</span></div>",
+                    f"<div style='{header_bg_style}'><span style='{header_style}'>Cost</span></div>",
+                    f"<div style='{header_bg_style}'><span style='{header_style}'>Status</span></div>",
+                    f"<div style='{header_bg_style}'><span style='{header_style}'>Next Due Date</span></div>",
                     "<div style='border-left: 1px solid #b5d3b6; height: 20px; margin: 0 auto;'></div>",
                     "",
                 ]
