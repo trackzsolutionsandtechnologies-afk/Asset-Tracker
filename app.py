@@ -44,6 +44,21 @@ def load_auth_css() -> None:
             st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
 
 
+def apply_wide_layout() -> None:
+    st.markdown(
+        """
+        <style>
+        div[data-testid="block-container"] {
+            max-width: 95% !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def main():
     """Main application function"""
     
@@ -77,6 +92,7 @@ def main():
     
     # User is authenticated - show main application
     load_custom_css()
+    apply_wide_layout()
     username = st.session_state.get(SESSION_KEYS["username"], "User")
     if isinstance(username, str):
         display_name = username.strip() or "User"

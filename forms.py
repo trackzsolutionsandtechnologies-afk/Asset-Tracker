@@ -2489,18 +2489,6 @@ def asset_transfer_form():
 def asset_maintenance_form():
     """Maintenance Form"""
     st.header("🛠️ Maintenance")
-    st.markdown(
-        """
-        <style>
-        div[data-testid="block-container"] {
-            max-width: 95% !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
     maintenance_headers = [
         "Maintenance ID",
