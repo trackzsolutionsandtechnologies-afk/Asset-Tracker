@@ -2816,7 +2816,18 @@ def asset_maintenance_form():
                     display_df["Next Due Date"], errors="coerce"
                 ).dt.date
                 table_df = display_df[
-                    ["Maintenance ID", "Asset ID", "Asset Name", "Cost", "Status", "Next Due Date"]
+                    [
+                        "Maintenance ID",
+                        "Asset ID",
+                        "Asset Name",
+                        "Maintenance Type",
+                        "Maintenance Date",
+                        "Description",
+                        "Cost",
+                        "Supplier",
+                        "Status",
+                        "Next Due Date",
+                    ]
                 ]
 
                 st.markdown(
@@ -2847,7 +2858,11 @@ def asset_maintenance_form():
                         "Maintenance ID": st.column_config.TextColumn("Maintenance ID", disabled=True),
                         "Asset ID": st.column_config.TextColumn("Asset ID", disabled=True),
                         "Asset Name": st.column_config.TextColumn("Asset Name", disabled=True),
+                        "Maintenance Type": st.column_config.TextColumn("Type", disabled=True),
+                        "Maintenance Date": st.column_config.TextColumn("Maintenance Date", disabled=True),
+                        "Description": st.column_config.TextColumn("Description", disabled=True),
                         "Cost": st.column_config.NumberColumn("Cost", format="%.2f", step=0.01, disabled=True),
+                        "Supplier": st.column_config.TextColumn("Supplier", disabled=True),
                         "Status": st.column_config.SelectboxColumn(
                             "Status",
                             options=["Pending", "In Progress", "Completed"],
