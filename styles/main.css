@@ -5,6 +5,12 @@ div[data-testid="stForm"] {
     padding: 20px !important;
     border-radius: 10px !important;
     border: 1px solid #e0e0e0 !important;
+    width: 80% !important;          /* or any px, %, vw value */
+    max-width: 800px !important;    /* optional */
+    height: auto !important;        /* or fixed like 500px */
+    min-height: 300px !important;   /* ensures consistent panel size */
+    margin: 0 auto !important;      /* centers the form horizontally */
+
 }
 
 /* Primary buttons (global) */
