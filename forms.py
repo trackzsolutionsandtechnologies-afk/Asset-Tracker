@@ -9,6 +9,20 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
 from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers, get_worksheet
+def _ensure_headers_once(sheet_key: str, headers: list[str]) -> None:
+    """
+    Ensure Google Sheet headers only once per session to reduce API calls.
+
+    Args:
+        sheet_key: Key used in SHEETS mapping.
+        headers: Expected header list.
+    """
+    state_key = f"headers_ensured_{sheet_key}"
+    if st.session_state.get(state_key):
+        return
+    ensure_sheet_headers(SHEETS[sheet_key], headers)
+    st.session_state[state_key] = True
+
 # Helper utilities for modal views
 
 def _open_view_modal(prefix: str, title: str, record: Dict[str, str], order: Optional[List[str]] = None) -> None:
@@ -2502,7 +2516,7 @@ def asset_maintenance_form():
         "Next Due Date",
         "Status",
     ]
-    ensure_sheet_headers(SHEETS["maintenance"], maintenance_headers)
+    _ensure_headers_once("maintenance", maintenance_headers)
 
     maintenance_df = read_data(SHEETS["maintenance"])
     assets_df = read_data(SHEETS["assets"])
