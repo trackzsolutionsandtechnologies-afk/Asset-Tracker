@@ -2746,6 +2746,7 @@ def asset_maintenance_form():
                             st.error("Failed to save maintenance record")
 
     with tab2:
+    with tab2:
         user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
         is_admin = str(user_role).lower() == "admin"
 
@@ -2754,6 +2755,13 @@ def asset_maintenance_form():
                 "🔍 Search Maintenance Records",
                 placeholder="Search by maintenance ID, asset, vendor, or issue...",
                 key="maintenance_search",
+            )
+
+            status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed"]
+            selected_status_filter = st.selectbox(
+                "Filter by Status",
+                status_filter_options,
+                key="maintenance_status_filter",
             )
 
             filtered_df = maintenance_df.copy()
@@ -2765,41 +2773,26 @@ def asset_maintenance_form():
                         axis=1,
                     )
                 ]
+            if selected_status_filter != "All Status":
+                filtered_df = filtered_df[
+                    filtered_df["Status"].astype(str).str.strip().str.lower()
+                    == selected_status_filter.strip().lower()
+                ]
 
             if filtered_df.empty:
-                if search_term:
-                    st.warning("No maintenance records match your search.")
+                if search_term or selected_status_filter != "All Status":
+                    st.warning("No maintenance records match your filters.")
                 else:
                     st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
             else:
-                field_headers = [
-                    "**Maintenance ID**",
-                    "**Asset ID**",
-                    "**Asset Name**",
-                    "**Type**",
-                    "**Date**",
-                    "**Description**",
-                    "**Cost**",
-                    "**Supplier**",
-                    "**Next Due Date**",
-                    "**Status**",
-                ]
-                if is_admin:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
-                else:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
-                for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
-                    with col_widget:
-                        st.write(header)
-                with header_cols[len(field_headers)]:
-                    st.write("**Edit**")
-                if is_admin:
-                    with header_cols[-1]:
-                        st.write("**Delete**")
+                display_columns = ["Asset ID", "Asset Name", "Status", "Next Due Date"]
+                display_df = filtered_df.copy()
+                display_df["Asset Name"] = display_df["Asset ID"].astype(str).str.strip().str.lower().map(asset_id_to_name).fillna("")
+                st.dataframe(display_df[display_columns], use_container_width=True)
+
                 st.divider()
 
                 asset_label_list = asset_option_labels[1:] if len(asset_option_labels) > 1 else []
-
                 for idx, row in filtered_df.iterrows():
                     if (
                         "Maintenance ID" in maintenance_df.columns
