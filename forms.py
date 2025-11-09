@@ -1855,9 +1855,9 @@ def asset_master_form():
                 edit_placeholder = st.empty()
 
                 header_weights = [3, 4, 3, 2, 1, 1] + ([1] if is_admin else [])
-                header_labels = ["**Asset ID**", "**Asset Name**", "**Category**", "**Status**", "**View**", "**Edit**"]
+                header_labels = ["**Asset ID**", "**Asset Name**", "**Category**", "**Status**", "", ""]
                 if is_admin:
-                    header_labels.append("**Delete**")
+                    header_labels.append("")
 
                 header_cols = st.columns(header_weights)
                 for col_widget, label in zip(header_cols, header_labels):
