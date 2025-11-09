@@ -2,6 +2,7 @@
 Forms module for Asset Tracker
 """
 import base64
+from copy import deepcopy
 from io import BytesIO
 import streamlit as st
 import pandas as pd
@@ -2945,112 +2946,174 @@ def asset_maintenance_form():
 
                 if is_admin:
                     editor_state = st.session_state.get("maintenance_table_view", {})
-                    edited_df = editor_state.get("edited_rows", {})
-                    deleted_rows = editor_state.get("deleted_rows", [])
-                    added_rows = editor_state.get("added_rows", [])
-                    edited_cells = editor_state.get("edited_cells", {})
+                    edited_df = deepcopy(editor_state.get("edited_rows", {}))
+                    edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+                    deleted_rows = list(editor_state.get("deleted_rows", []))
+                    added_rows = list(editor_state.get("added_rows", []))
 
-                    if deleted_rows:
-                        for delete_idx in sorted(deleted_rows, reverse=True):
-                            if delete_idx < len(filtered_df):
-                                target_row = filtered_df.iloc[delete_idx]
+                    def _normalize_idx(idx_value):
+                        try:
+                            return int(idx_value)
+                        except (TypeError, ValueError):
+                            return idx_value
+
+                    def _get_edits(source_dict, idx_value):
+                        if idx_value in source_dict:
+                            return source_dict[idx_value]
+                        idx_str = str(idx_value)
+                        return source_dict.get(idx_str, {})
+
+                    has_changes = bool(edited_df or edited_cells or deleted_rows or added_rows)
+                    if has_changes:
+                        st.info("You have unsaved maintenance changes. Click 'Save Changes' to apply them.", icon="✏️")
+
+                    action_cols = st.columns([1, 1], gap="small")
+                    with action_cols[0]:
+                        save_clicked = st.button(
+                            "Save Changes",
+                            type="primary",
+                            use_container_width=True,
+                            disabled=not has_changes,
+                            key="maintenance_save_changes",
+                        )
+                    with action_cols[1]:
+                        discard_clicked = st.button(
+                            "Discard Changes",
+                            use_container_width=True,
+                            disabled=not has_changes,
+                            key="maintenance_discard_changes",
+                        )
+
+                    if discard_clicked and has_changes:
+                        table_state = st.session_state.get("maintenance_table_view", {})
+                        table_state["edited_rows"] = {}
+                        table_state["edited_cells"] = {}
+                        table_state["deleted_rows"] = []
+                        table_state["added_rows"] = []
+                        st.session_state["maintenance_table_view"] = table_state
+                        st.rerun()
+
+                    if save_clicked and has_changes:
+                        success = True
+
+                        if deleted_rows:
+                            for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
+                                if isinstance(delete_idx, int) and delete_idx < len(filtered_df):
+                                    target_row = filtered_df.iloc[delete_idx]
+                                    match_df = maintenance_df[
+                                        maintenance_df["Maintenance ID"].astype(str).str.strip()
+                                        == str(target_row.get("Maintenance ID", "")).strip()
+                                    ]
+                                    if not match_df.empty:
+                                        original_idx = int(match_df.index[0])
+                                        if delete_data(SHEETS["maintenance"], original_idx):
+                                            st.session_state["maintenance_success_message"] = (
+                                                f"🗑️ Maintenance record '{target_row.get('Maintenance ID', '')}' deleted."
+                                            )
+                                            maintenance_df = maintenance_df.drop(index=original_idx)
+                                        else:
+                                            st.error("Failed to delete maintenance record.")
+                                            success = False
+                                else:
+                                    st.error("Unable to resolve maintenance row for deletion.")
+                                    success = False
+
+                        rows_to_update: set[int] = set()
+                        for idx_key in list(edited_df.keys()) + list(edited_cells.keys()):
+                            norm_idx = _normalize_idx(idx_key)
+                            if isinstance(norm_idx, int):
+                                rows_to_update.add(norm_idx)
+
+                        if rows_to_update:
+                            for idx in rows_to_update:
+                                if idx >= len(filtered_df):
+                                    continue
+                                current_row = filtered_df.iloc[idx].copy()
+                                edits = dict(_get_edits(edited_df, idx))
+                                cell_changes = _get_edits(edited_cells, idx)
+                                if cell_changes:
+                                    edits.update(cell_changes)
+                                if not edits:
+                                    continue
+                                for column, new_value in edits.items():
+                                    current_row[column] = new_value
+
+                                maintenance_date_value = current_row.get("Maintenance Date", "")
+                                if isinstance(maintenance_date_value, datetime):
+                                    maintenance_date_str = maintenance_date_value.strftime("%Y-%m-%d")
+                                elif hasattr(maintenance_date_value, "isoformat"):
+                                    try:
+                                        maintenance_date_str = maintenance_date_value.isoformat()
+                                    except Exception:
+                                        maintenance_date_str = str(maintenance_date_value)
+                                else:
+                                    maintenance_date_str = str(maintenance_date_value)
+                                    if maintenance_date_str.lower() in ("nat", "nan", "none"):
+                                        maintenance_date_str = ""
+
+                                next_due_value = current_row.get("Next Due Date", "")
+                                if isinstance(next_due_value, datetime):
+                                    next_due_str = next_due_value.strftime("%Y-%m-%d")
+                                elif hasattr(next_due_value, "isoformat"):
+                                    try:
+                                        next_due_str = next_due_value.isoformat()
+                                    except Exception:
+                                        next_due_str = str(next_due_value)
+                                else:
+                                    next_due_str = str(next_due_value)
+                                    if next_due_str.lower() in ("nat", "nan", "none"):
+                                        next_due_str = ""
+
+                                update_map = {
+                                    "Maintenance ID": current_row.get("Maintenance ID", ""),
+                                    "Asset ID": current_row.get("Asset ID", ""),
+                                    "Maintenance Type": current_row.get("Maintenance Type", ""),
+                                    "Maintenance Date": maintenance_date_str,
+                                    "Description": current_row.get("Description", ""),
+                                    "Cost": f"{pd.to_numeric(str(current_row.get('Cost', 0)).replace(',', ''), errors='coerce') or 0:.2f}",
+                                    "Supplier": current_row.get("Supplier", ""),
+                                    "Next Due Date": next_due_str,
+                                    "Status": current_row.get("Status", ""),
+                                }
                                 match_df = maintenance_df[
                                     maintenance_df["Maintenance ID"].astype(str).str.strip()
-                                    == str(target_row.get("Maintenance ID", "")).strip()
+                                    == str(current_row.get("Maintenance ID", "")).strip()
                                 ]
                                 if not match_df.empty:
                                     original_idx = int(match_df.index[0])
-                                    if delete_data(SHEETS["maintenance"], original_idx):
+                                    column_order = list(maintenance_df.columns)
+                                    updated_row = [update_map.get(col, match_df.iloc[0].get(col, "")) for col in column_order]
+                                    if update_data(SHEETS["maintenance"], original_idx, updated_row):
                                         st.session_state["maintenance_success_message"] = (
-                                            f"🗑️ Maintenance record '{target_row.get('Maintenance ID', '')}' deleted."
+                                            f"✅ Maintenance record '{current_row.get('Maintenance ID', '')}' updated successfully!"
                                         )
+                                        maintenance_df.loc[original_idx, column_order] = updated_row
+                                        for col_name, val in zip(column_order, updated_row):
+                                            if col_name in filtered_df.columns and idx < len(filtered_df):
+                                                filtered_df.at[filtered_df.index[idx], col_name] = val
+                                        if update_map["Status"] == "In Progress" and asset_status_col:
+                                            _update_asset_status_for_maintenance(
+                                                assets_df, asset_status_col, update_map["Asset ID"], "Maintenance"
+                                            )
+                                        elif update_map["Status"] == "Completed" and asset_status_col:
+                                            _update_asset_status_for_maintenance(
+                                                assets_df, asset_status_col, update_map["Asset ID"], "Active"
+                                            )
                                     else:
-                                        st.error("Failed to delete maintenance record.")
-                        st.rerun()
+                                        st.error("Failed to update maintenance record")
+                                        success = False
 
-                    if edited_df or edited_cells:
-                        rows_to_update = set(edited_df.keys())
-                        rows_to_update.update(edited_cells.keys())
-                        for idx in rows_to_update:
-                            if idx >= len(filtered_df):
-                                continue
-                            current_row = filtered_df.iloc[idx].copy()
-                            edits = edited_df.get(idx, {})
-                            current_cells = edited_cells.get(idx, {})
-                            if current_cells:
-                                for column, value in current_cells.items():
-                                    edits[column] = value
-                            for column, new_value in edits.items():
-                                current_row[column] = new_value
-                            maintenance_date_value = current_row.get("Maintenance Date", "")
-                            if isinstance(maintenance_date_value, datetime):
-                                maintenance_date_str = maintenance_date_value.strftime("%Y-%m-%d")
-                            elif hasattr(maintenance_date_value, "isoformat"):
-                                try:
-                                    maintenance_date_str = maintenance_date_value.isoformat()
-                                except Exception:
-                                    maintenance_date_str = str(maintenance_date_value)
-                            else:
-                                maintenance_date_str = str(maintenance_date_value)
-                                if maintenance_date_str.lower() in ("nat", "nan", "none"):
-                                    maintenance_date_str = ""
+                        if added_rows:
+                            st.warning("New rows must be added from the 'Add Maintenance Record' tab.")
 
-                            next_due_value = current_row.get("Next Due Date", "")
-                            if isinstance(next_due_value, datetime):
-                                next_due_str = next_due_value.strftime("%Y-%m-%d")
-                            elif hasattr(next_due_value, "isoformat"):
-                                try:
-                                    next_due_str = next_due_value.isoformat()
-                                except Exception:
-                                    next_due_str = str(next_due_value)
-                            else:
-                                next_due_str = str(next_due_value)
-                                if next_due_str.lower() in ("nat", "nan", "none"):
-                                    next_due_str = ""
-
-                            update_map = {
-                                "Maintenance ID": current_row.get("Maintenance ID", ""),
-                                "Asset ID": current_row.get("Asset ID", ""),
-                                "Maintenance Type": current_row.get("Maintenance Type", ""),
-                                "Maintenance Date": maintenance_date_str,
-                                "Description": current_row.get("Description", ""),
-                                "Cost": f"{pd.to_numeric(str(current_row.get('Cost', 0)).replace(',', ''), errors='coerce') or 0:.2f}",
-                                "Supplier": current_row.get("Supplier", ""),
-                                "Next Due Date": next_due_str,
-                                "Status": current_row.get("Status", ""),
-                            }
-                            match_df = maintenance_df[
-                                maintenance_df["Maintenance ID"].astype(str).str.strip()
-                                == str(current_row.get("Maintenance ID", "")).strip()
-                            ]
-                            if not match_df.empty:
-                                original_idx = int(match_df.index[0])
-                                column_order = list(maintenance_df.columns)
-                                updated_row = [update_map.get(col, match_df.iloc[0].get(col, "")) for col in column_order]
-                                if update_data(SHEETS["maintenance"], original_idx, updated_row):
-                                    st.session_state["maintenance_success_message"] = (
-                                        f"✅ Maintenance record '{current_row.get('Maintenance ID', '')}' updated successfully!"
-                                    )
-                                    maintenance_df.loc[original_idx, column_order] = updated_row
-                                    for col_name, val in zip(column_order, updated_row):
-                                        if col_name in filtered_df.columns and idx < len(filtered_df):
-                                            filtered_df.at[filtered_df.index[idx], col_name] = val
-                                    if update_map["Status"] == "In Progress" and asset_status_col:
-                                        _update_asset_status_for_maintenance(
-                                            assets_df, asset_status_col, update_map["Asset ID"], "Maintenance"
-                                        )
-                                    elif update_map["Status"] == "Completed" and asset_status_col:
-                                        _update_asset_status_for_maintenance(
-                                            assets_df, asset_status_col, update_map["Asset ID"], "Active"
-                                        )
-                                else:
-                                    st.error("Failed to update maintenance record")
-                        if "maintenance_table_view" in st.session_state:
-                            st.session_state["maintenance_table_view"]["edited_rows"] = {}
-                            st.session_state["maintenance_table_view"]["edited_cells"] = {}
-
-                    if added_rows:
-                        st.warning("New rows must be added from the 'Add Maintenance Record' tab.")
+                        if success:
+                            table_state = st.session_state.get("maintenance_table_view", {})
+                            table_state["edited_rows"] = {}
+                            table_state["edited_cells"] = {}
+                            table_state["deleted_rows"] = []
+                            table_state["added_rows"] = []
+                            st.session_state["maintenance_table_view"] = table_state
+                            st.rerun()
 
         else:
             st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
