@@ -2838,7 +2838,7 @@ def asset_maintenance_form():
                     <style>
                     [data-testid="stDataEditor"] thead th,
                     [data-testid="stDataEditor"] div[role="columnheader"] {
-                        background-color: red !important;
+                        background-color: #BF092F !important;
                         color: #1A202C !important;
                         font-weight: 600 !important;
                     }
