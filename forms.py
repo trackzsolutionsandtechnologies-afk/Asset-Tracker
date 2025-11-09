@@ -3024,8 +3024,17 @@ def asset_maintenance_form():
                 lambda row: asset_id_to_label.get(str(row["Asset ID"]).strip().lower(), str(row["Asset ID"])),
                 axis=1
             )
-            summary_df["Total Cost"] = summary_df["Total Cost"].map(lambda v: f"{v:.2f}")
-            st.dataframe(summary_df[["Maintenance ID", "Asset", "Total Cost", "Next Due Date"]], use_container_width=True)
+            aggregated = (
+                summary_df.groupby("Asset", dropna=False)["Total Cost"]
+                .sum()
+                .reset_index()
+            )
+            aggregated["Total Cost"] = aggregated["Total Cost"].map(lambda v: f"{v:.2f}")
+            aggregated["Asset Cost"] = aggregated["Asset"].astype(str) + " cost " + aggregated["Total Cost"]
+            st.dataframe(
+                aggregated[["Asset Cost"]],
+                use_container_width=True,
+            )
 
 
 def employee_assignment_form():
