@@ -1527,60 +1527,9 @@ def asset_master_form():
         if asset_form_keys["purchase_cost"] not in st.session_state:
             st.session_state[asset_form_keys["purchase_cost"]] = 0.0
 
-        category_placeholder = "Select category"
-        subcategory_placeholder = "Select sub category"
-
-        category_options = []
-        if not normalized_subcategories_df.empty:
-            category_options = unique_clean(normalized_subcategories_df["category"])
-        elif not categories_df.empty and category_name_col:
-            category_options = unique_clean(categories_df[category_name_col])
-
         def _on_asset_category_change():
-            st.session_state[asset_form_keys["subcategory_select"]] = subcategory_placeholder
-
-        cat_col, subcat_col = st.columns(2)
-        with cat_col:
-            st.selectbox(
-                "Category *",
-                [category_placeholder] + category_options if category_options else ["No categories available"],
-                key=asset_form_keys["category_select"],
-                on_change=_on_asset_category_change if category_options else None,
-                disabled=not category_options,
-            )
-
-        selected_category = st.session_state.get(
-            asset_form_keys["category_select"], category_placeholder
-        )
-
-        subcategory_options = []
-        if (
-            selected_category
-            and selected_category not in ("", category_placeholder)
-            and not normalized_subcategories_df.empty
-        ):
-            filtered_subcats = normalized_subcategories_df[
-                normalized_subcategories_df["category"].astype(str).str.strip().str.lower()
-                == str(selected_category).strip().lower()
-            ]
-            if not filtered_subcats.empty:
-                subcategory_options = unique_clean(filtered_subcats["subcategory"])
-
-        with subcat_col:
-            if subcategory_options:
-                st.selectbox(
-                    "Sub Category *",
-                    [subcategory_placeholder] + subcategory_options,
-                    key=asset_form_keys["subcategory_select"],
-                )
-            else:
-                st.selectbox(
-                    "Sub Category *",
-                    ["No sub categories available"],
-                    key=asset_form_keys["subcategory_select"],
-                    disabled=True,
-                )
-                st.session_state[asset_form_keys["subcategory_select"]] = subcategory_placeholder
+            # Reset subcategory selection whenever category changes
+            st.session_state[asset_form_keys["subcategory_select"]] = "Select sub category"
 
         with st.form("asset_form"):
             col1, col2 = st.columns(2)
@@ -1607,7 +1556,66 @@ def asset_master_form():
                     key=asset_id_key,
                     disabled=auto_generate,
                 )
+                
                 asset_name = st.text_input("Asset Name *", key=asset_form_keys["asset_name"])
+                
+                category_placeholder = "Select category"
+                subcategory_placeholder = "Select sub category"
+
+                category_options = []
+                if not normalized_subcategories_df.empty:
+                    category_options = unique_clean(normalized_subcategories_df["category"])
+                elif not categories_df.empty and category_name_col:
+                    category_options = unique_clean(categories_df[category_name_col])
+
+                if category_options:
+                    category = st.selectbox(
+                        "Category *",
+                        [category_placeholder] + category_options,
+                        key=asset_form_keys["category_select"],
+                        on_change=_on_asset_category_change,
+                    )
+                else:
+                    category = st.selectbox(
+                        "Category *",
+                        ["No categories available"],
+                        disabled=True,
+                        key=asset_form_keys["category_select"],
+                    )
+                    category = ""
+
+                selected_category = st.session_state.get(
+                    asset_form_keys["category_select"], category_placeholder
+                )
+
+                subcategory_options = []
+                if (
+                    selected_category
+                    and selected_category not in ("", category_placeholder)
+                    and not normalized_subcategories_df.empty
+                ):
+                    filtered_subcats = normalized_subcategories_df[
+                        normalized_subcategories_df["category"].astype(str).str.strip().str.lower()
+                        == str(selected_category).strip().lower()
+                    ]
+                    if not filtered_subcats.empty:
+                        subcategory_options = unique_clean(filtered_subcats["subcategory"])
+
+                if subcategory_options:
+                    subcategory = st.selectbox(
+                        "Sub Category *",
+                        [subcategory_placeholder] + subcategory_options,
+                        key=asset_form_keys["subcategory_select"],
+                    )
+                else:
+                    subcategory = st.selectbox(
+                        "Sub Category *",
+                        ["No sub categories available"],
+                        disabled=True,
+                        key=asset_form_keys["subcategory_select"],
+                    )
+                    subcategory = ""
+                
                 model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
                 purchase_date = st.date_input(
                     "Purchase Date",
@@ -1681,12 +1689,6 @@ def asset_master_form():
             submitted = st.form_submit_button("Add Asset", use_container_width=True)
 
             if submitted:
-                category = st.session_state.get(
-                    asset_form_keys["category_select"], category_placeholder
-                )
-                subcategory = st.session_state.get(
-                    asset_form_keys["subcategory_select"], subcategory_placeholder
-                )
                 if attachment_file is not None and attachment == "" and attachment_too_large:
                     st.error("Attachment was not uploaded because it exceeds the allowed size. Please upload a smaller file.")
                 elif not asset_id or not asset_name:
