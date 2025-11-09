@@ -2762,22 +2762,25 @@ def asset_maintenance_form():
                 .tolist()
             )
             status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed"]
-            selected_status_filter = st.selectbox(
-                "Filter by Status",
-                status_filter_options,
-                key="maintenance_status_filter",
-            )
-
-            selected_asset_id_filter = st.selectbox(
-                "Filter by Asset ID",
-                asset_id_filter_options,
-                key="maintenance_asset_id_filter",
-            )
-            selected_asset_name_filter = st.selectbox(
-                "Filter by Asset Name",
-                asset_name_filter_options,
-                key="maintenance_asset_name_filter",
-            )
+            filter_cols = st.columns(3, gap="medium")
+            with filter_cols[0]:
+                selected_status_filter = st.selectbox(
+                    "Filter by Status",
+                    status_filter_options,
+                    key="maintenance_status_filter",
+                )
+            with filter_cols[1]:
+                selected_asset_id_filter = st.selectbox(
+                    "Filter by Asset ID",
+                    asset_id_filter_options,
+                    key="maintenance_asset_id_filter",
+                )
+            with filter_cols[2]:
+                selected_asset_name_filter = st.selectbox(
+                    "Filter by Asset Name",
+                    asset_name_filter_options,
+                    key="maintenance_asset_name_filter",
+                )
 
             filtered_df = maintenance_df.copy()
             if selected_status_filter != "All Status":
