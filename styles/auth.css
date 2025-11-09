@@ -5,7 +5,7 @@ body {
 }
 
 div[data-testid="stForm"] {
-    background-color: #ffffff !important;
+    background-color: #cc4848 !important;
     border-radius: 16px;
     padding: 20px;}
 
