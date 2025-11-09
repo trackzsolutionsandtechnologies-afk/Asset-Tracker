@@ -10,7 +10,7 @@ body {
 }
 
 .auth-form-wrapper form[data-testid="stForm"] {
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: rgba(43, 10, 226, 0.95) !important;
     border-radius: 18px !important;
     padding: 36px !important;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35) !important;
