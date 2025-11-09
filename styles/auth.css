@@ -10,7 +10,7 @@
 }
 
 .auth-form-wrapper form[data-testid="stForm"] {
-    background-color: #ffffff !important;
+    background-color: #fc0000 !important;
     border-radius: 16px !important;
     padding: 20px !important;
 }
