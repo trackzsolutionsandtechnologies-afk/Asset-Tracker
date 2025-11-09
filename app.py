@@ -26,7 +26,7 @@ from barcode_utils import barcode_scanner_page, barcode_print_page
 st.set_page_config(
     page_title="Asset Tracker",
     page_icon="📦",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="expanded"
 )
 
