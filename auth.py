@@ -168,7 +168,7 @@ def login_page():
     <style>
     .auth-form-wrapper form[data-testid="stForm"] input {
         background-color: #ff8000 !important;
-        color: #ffffff !important;
+        color: rgba(255,255,255,0.7)  !important;
     }
     </style>
     """,
