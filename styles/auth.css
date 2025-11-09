@@ -1,8 +1,4 @@
 /* Sign-in / Forgot Password specific styling */
-body {
-    background: linear-gradient(135deg, #1a2240, #3c4f91);
-    color: #ffffff;
-}
 
 .auth-form-wrapper {
     --primaryColor: #28a745;
