@@ -59,6 +59,17 @@ def _render_view_modal(prefix: str, placeholder: Optional["st.delta_generator.De
 from config import SHEETS, SESSION_KEYS
 from auth import hash_password
 
+ASSET_CONDITION_OPTIONS = ["Excellent", "Good", "Fair", "Poor", "Damaged"]
+ASSET_STATUS_OPTIONS = [
+    "Active",
+    "Inactive",
+    "Maintenance",
+    "Retired",
+    "Assigned",
+    "Returned",
+    "Under Repair",
+]
+
 def generate_location_id() -> str:
     """Generate a unique Location ID"""
     import uuid
@@ -1517,6 +1528,9 @@ def asset_master_form():
     if not subcategories_df.empty and subcat_cat_name_col:
         subcat_cat_name_norm_series = subcategories_df[subcat_cat_name_col].astype(str).str.strip().str.lower()
 
+    condition_options = ASSET_CONDITION_OPTIONS
+    status_options = ASSET_STATUS_OPTIONS
+
     tab1, tab2, tab3 = st.tabs(["Add New Asset", "View/Edit Assets", "Reports"])
     
     with tab1:
@@ -1812,119 +1826,6 @@ def asset_master_form():
         if not assets_df.empty:
             st.subheader("All Assets")
 
-            st.markdown(
-                """
-                <style>
-                .asset-table-wrapper {
-                    border: 1px solid #b7d4eb;
-                    border-radius: 10px;
-                    overflow: hidden;
-                    margin-top: 0.75rem;
-                    background: #ffffff;
-                }
-                .asset-table-wrapper > div[data-testid="stHorizontalBlock"] {
-                    margin-bottom: 0 !important;
-                }
-                .asset-table-header div[data-testid="column"] {
-                    background: #cfe7f6 !important;
-                    border-right: 1px solid #b0cee3;
-                    padding: 0 !important;
-                }
-                .asset-table-header div[data-testid="column"]:last-child {
-                    border-right: none;
-                }
-                .asset-table-header div[data-testid="stMarkdown"] p {
-                    margin: 0 !important;
-                    padding: 0.65rem 0.75rem;
-                    font-weight: 600;
-                    color: #244c74;
-                }
-                .asset-card {
-                    border-top: 1px solid #d4e4f2;
-                    background: #fdfdfd;
-                    padding: 0 !important;
-                }
-                .asset-card:first-of-type {
-                    border-top: 1px solid #b7d4eb;
-                }
-                .asset-card div[data-testid="column"] {
-                    padding: 0 !important;
-                }
-                .asset-card .asset-cell {
-                    padding: 0.5rem 0.75rem;
-                    border-right: 1px solid #e2edf6;
-                    color: #2b3e50;
-                    font-weight: 500;
-                    min-height: 44px;
-                    display: flex;
-                    align-items: center;
-                }
-                .asset-card .asset-cell:last-child {
-                    border-right: none;
-                    justify-content: flex-end;
-                }
-                .asset-card div[data-testid="stCheckbox"] {
-                    padding: 0.5rem 0.75rem;
-                }
-                .asset-card div[data-testid="stCheckbox"] label {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 0;
-                }
-                .asset-actions div[data-testid="column"] {
-                    padding: 0 !important;
-                    margin: 0 !important;
-                }
-                .asset-actions button {
-                    background: #ffffff !important;
-                    border: 1px solid #b7d4eb !important;
-                    border-radius: 6px !important;
-                    width: 38px;
-                    height: 38px;
-                    color: #244c74 !important;
-                    box-shadow: none !important;
-                }
-                .asset-actions button:hover {
-                    background: #cfe7f6 !important;
-                }
-                .asset-detail {
-                    border-top: 1px solid #d4e4f2;
-                    background: #f4faff;
-                }
-                .asset-detail-row {
-                    display: grid;
-                    grid-template-columns: 3fr 1.2fr 1.2fr 1.2fr 1fr 1.2fr 1.2fr;
-                }
-                .asset-detail-head > div {
-                    background: #d7edfb;
-                    font-weight: 600;
-                    color: #244c74;
-                }
-                .asset-detail-row > div {
-                    padding: 0.6rem 0.75rem;
-                    border-right: 1px solid #d4e4f2;
-                    border-bottom: 1px solid #d4e4f2;
-                    min-height: 48px;
-                }
-                .asset-detail-row > div:last-child {
-                    border-right: none;
-                }
-                .asset-detail-body > div {
-                    background: #ffffff;
-                    color: #2b3e50;
-                }
-                .asset-desc-note {
-                    display: block;
-                    font-size: 0.85rem;
-                    color: #63718a;
-                    margin-top: 0.3rem;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-
             search_term = st.text_input(
                 "🔍 Search Assets",
                 placeholder="Search by Asset ID, Name, or Location...",
@@ -1940,82 +1841,53 @@ def asset_master_form():
                 filtered_df = assets_df[mask]
                 if filtered_df.empty:
                     st.info(f"No assets found matching '{search_term}'")
-                    return
+                    filtered_df = pd.DataFrame()
             else:
                 filtered_df = assets_df
 
-            st.caption(f"Showing {len(filtered_df)} of {len(assets_df)} asset(s)")
+            if not filtered_df.empty:
+                st.caption(f"Showing {len(filtered_df)} of {len(assets_df)} asset(s)")
 
-            user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-            is_admin = str(user_role).lower() == "admin"
+                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+                is_admin = str(user_role).lower() == "admin"
 
-            condition_options = ["Excellent", "Good", "Fair", "Poor", "Damaged"]
-            status_options = [
-                "Active",
-                "Inactive",
-                "Maintenance",
-                "Retired",
-                "Assigned",
-                "Returned",
-                "Under Repair",
-            ]
+                view_placeholder = st.empty()
+                edit_placeholder = st.empty()
 
-            view_placeholder = st.empty()
-            edit_placeholder = st.empty()
+                header_weights = [3, 4, 3, 2, 1, 1] + ([1] if is_admin else [])
+                header_labels = ["**Asset ID**", "**Asset Name**", "**Category**", "**Status**", "**View**", "**Edit**"]
+                if is_admin:
+                    header_labels.append("**Delete**")
 
-            table_container = st.container()
-            table_container.markdown("<div class='asset-table-wrapper'>", unsafe_allow_html=True)
+                header_cols = st.columns(header_weights)
+                for col_widget, label in zip(header_cols, header_labels):
+                    with col_widget:
+                        st.write(label)
+                st.divider()
 
-            header_weights = [1, 3, 3, 3, 3, 2, 2]
-            header_labels = ["", "**Asset Code**", "**Asset Category**", "**Asset Subcategory**", "**Brand**", "**Status**", "**Options**"]
+                button_counter = 0
+                for idx, row in filtered_df.iterrows():
+                    asset_id_value = row.get("Asset ID", "")
+                    unique_suffix = f"{asset_id_value}_{button_counter}"
+                    button_counter += 1
 
-            header_container = table_container.container()
-            header_container.markdown("<div class='asset-table-header'>", unsafe_allow_html=True)
-            header_cols = header_container.columns(header_weights, gap="small")
-            for col, label in zip(header_cols, header_labels):
-                with col:
-                    col.markdown(f"<div class='asset-cell'>{label}</div>", unsafe_allow_html=True)
-            header_container.markdown("</div>", unsafe_allow_html=True)
+                    matching_rows = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id_value)]
+                    original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
 
-            body_container = table_container.container()
+                    if is_admin:
+                        col_id, col_name, col_category, col_status, col_view, col_edit, col_delete = st.columns(header_weights)
+                    else:
+                        col_id, col_name, col_category, col_status, col_view, col_edit = st.columns(header_weights)
 
-            button_counter = 0
-            for idx, row in filtered_df.iterrows():
-                asset_id_value = row.get("Asset ID", "")
-                unique_suffix = f"{asset_id_value}_{button_counter}"
-                button_counter += 1
+                    with col_id:
+                        st.write(asset_id_value or "N/A")
+                    with col_name:
+                        st.write(row.get("Asset Name", "N/A"))
+                    with col_category:
+                        st.write(row.get("Category", row.get("Category Name", "N/A")))
 
-                matching_rows = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id_value)]
-                original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
-
-                row_container = body_container.container()
-                row_container.markdown("<div class='asset-card'>", unsafe_allow_html=True)
-
-                cols = row_container.columns(header_weights, gap="small")
-                col_select, col_asset, col_category, col_subcategory, col_brand, col_status, col_actions = cols
-
-                is_editing = (
-                    st.session_state.get("edit_asset_id") == asset_id_value
-                    and st.session_state.get("edit_asset_idx") == original_idx
-                )
-
-                with col_select:
-                    st.checkbox("", key=f"asset_select_{unique_suffix}", value=False)
-
-                asset_code_display = asset_id_value or "N/A"
-                category_display = "-" if is_editing else row.get("Category", row.get("Category Name", "N/A"))
-                subcategory_display = "-" if is_editing else row.get("Sub Category", row.get("SubCategory Name", "N/A"))
-                brand_display = "-" if is_editing else row.get("Supplier", row.get("Brand", "N/A"))
-                status_value = row.get("Status", "N/A")
-                status_display = "-" if is_editing else status_value
-
-                col_asset.markdown(f"<div class='asset-cell'>{asset_code_display}</div>", unsafe_allow_html=True)
-                col_category.markdown(f"<div class='asset-cell'>{category_display or '-'}</div>", unsafe_allow_html=True)
-                col_subcategory.markdown(f"<div class='asset-cell'>{subcategory_display or '-'}</div>", unsafe_allow_html=True)
-                col_brand.markdown(f"<div class='asset-cell'>{brand_display or '-'}</div>", unsafe_allow_html=True)
-
-                if not is_editing:
-                    status_lower = str(status_display).strip().lower()
+                    status_value = row.get("Status", "N/A")
+                    status_lower = str(status_value).strip().lower()
                     color_map = {
                         "active": "#2d9c4b",
                         "maintenance": "#c1121f",
@@ -2023,32 +1895,17 @@ def asset_master_form():
                         "inactive": "#c1121f",
                     }
                     status_color = color_map.get(status_lower)
-                    if status_color:
-                        col_status.markdown(
-                            f"<div class='asset-cell'><span style='color: {status_color}; font-weight: 600;'>{status_display}</span></div>",
-                            unsafe_allow_html=True,
-                        )
-                        status_display = None
+                    with col_status:
+                        if status_color:
+                            st.markdown(
+                                f"<span style='color: {status_color}; font-weight: 600;'>{status_value}</span>",
+                                unsafe_allow_html=True,
+                            )
+                        else:
+                            st.write(status_value if status_value not in ("", None) else "N/A")
 
-                if status_display is not None:
-                    col_status.markdown(f"<div class='asset-cell'>{status_display}</div>", unsafe_allow_html=True)
-
-                action_container = col_actions.container()
-                action_container.markdown("<div class='asset-cell asset-actions'>", unsafe_allow_html=True)
-                action_cols = action_container.columns(3 if is_admin else 2, gap="small")
-
-                if is_editing:
-                    for action_col in action_cols:
-                        with action_col:
-                            st.write("-")
-                else:
-                    with action_cols[0]:
-                        if st.button(
-                            "👁️",
-                            key=f"asset_view_{unique_suffix}",
-                            use_container_width=True,
-                            help="View details",
-                        ):
+                    with col_view:
+                        if st.button("👁️", key=f"asset_view_{unique_suffix}", use_container_width=True, help="View details"):
                             record = {
                                 "Asset ID": asset_id_value,
                                 "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
@@ -2087,14 +1944,14 @@ def asset_master_form():
                                 ],
                             )
 
-                    with action_cols[1]:
+                    with col_edit:
                         if st.button("✏️", key=f"asset_edit_{unique_suffix}", use_container_width=True, help="Edit this asset"):
                             st.session_state["edit_asset_id"] = asset_id_value
                             st.session_state["edit_asset_idx"] = original_idx
                             st.rerun()
 
-                    if is_admin and len(action_cols) == 3:
-                        with action_cols[2]:
+                    if is_admin:
+                        with col_delete:
                             if st.button("🗑️", key=f"asset_delete_{unique_suffix}", use_container_width=True, help="Delete this asset"):
                                 if delete_data(SHEETS["assets"], original_idx):
                                     st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
@@ -2102,75 +1959,18 @@ def asset_master_form():
                                 else:
                                     st.error("Failed to delete asset")
 
-                action_container.markdown("</div>", unsafe_allow_html=True)
-                row_container.markdown("</div>", unsafe_allow_html=True)
+                    st.divider()
 
-                def formatted_value(value, default="-"):
-                    if value is None:
-                        return default
-                    if isinstance(value, str):
-                        value = value.strip()
-                        if value == "":
-                            return default
-                        return value
-                    try:
-                        if pd.isna(value):
-                            return default
-                    except TypeError:
-                        pass
-                    return str(value)
-
-                description_value = formatted_value(row.get("Asset Name", row.get("Description", "")))
-                remarks_value = formatted_value(row.get("Remarks", ""))
-                if remarks_value != "-" and remarks_value.lower() != description_value.lower():
-                    description_html = f"{description_value}<span class='asset-desc-note'>{remarks_value}</span>"
-                else:
-                    description_html = description_value
-
-                purchase_cost_value = row.get("Purchase Cost", "")
-                try:
-                    purchase_cost_display = f"{float(str(purchase_cost_value).replace(',', '')):,.3f}"
-                except (ValueError, TypeError):
-                    purchase_cost_display = formatted_value(purchase_cost_value)
-
-                location_display = formatted_value(row.get("Location", ""))
-                purchase_date_display = formatted_value(row.get("Purchase Date", ""))
-                po_display = formatted_value(
-                    row.get(
-                        "PO#",
-                        row.get("PO Number", row.get("Purchase Order", row.get("PO No", ""))),
-                    )
-                )
-                supplier_display = formatted_value(row.get("Supplier", ""))
-                ownership_display = formatted_value(row.get("Assigned To", row.get("Ownership", "")))
-
-                detail_html = f"""
-                <div class="asset-detail">
-                    <div class="asset-detail-row asset-detail-head">
-                        <div>Description</div>
-                        <div>Asset Post</div>
-                        <div>Location</div>
-                        <div>Date Of Purchase</div>
-                        <div>PO#</div>
-                        <div>Supplier Name</div>
-                        <div>Ownership</div>
-                    </div>
-                    <div class="asset-detail-row asset-detail-body">
-                        <div>{description_html}</div>
-                        <div>{purchase_cost_display}</div>
-                        <div>{location_display}</div>
-                        <div>{purchase_date_display}</div>
-                        <div>{po_display}</div>
-                        <div>{supplier_display}</div>
-                        <div>{ownership_display}</div>
-                    </div>
-                </div>
-                """
-                row_container.markdown(detail_html, unsafe_allow_html=True)
-
-            table_container.markdown("</div>", unsafe_allow_html=True)
-
-            _render_view_modal("asset", view_placeholder)
+                _render_view_modal("asset", view_placeholder)
+            elif search_term:
+                # Search returned no results, but search was performed
+                view_placeholder = st.empty()
+                edit_placeholder = st.empty()
+                _render_view_modal("asset", view_placeholder)
+            else:
+                view_placeholder = st.empty()
+                edit_placeholder = st.empty()
+                st.info("No assets found. Add a new asset using the 'Add New Asset' tab.")
 
             if "edit_asset_id" in st.session_state and st.session_state["edit_asset_id"]:
                 with edit_placeholder.container():
