@@ -2844,6 +2844,27 @@ def asset_maintenance_form():
                     [data-testid="stDataEditor"] tbody td:last-child {
                         border-right: none !important;
                     }
+                    [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="Completed"] {
+                        background-color: #22863a !important;
+                        color: #ffffff !important;
+                        border-radius: 20px;
+                        padding: 0.1rem 0.65rem;
+                        text-align: center;
+                    }
+                    [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="In Progress"] {
+                        background-color: #d69e2e !important;
+                        color: #1a202c !important;
+                        border-radius: 20px;
+                        padding: 0.1rem 0.65rem;
+                        text-align: center;
+                    }
+                    [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="Pending"] {
+                        background-color: #c53030 !important;
+                        color: #ffffff !important;
+                        border-radius: 20px;
+                        padding: 0.1rem 0.65rem;
+                        text-align: center;
+                    }
                     </style>
                     """,
                     unsafe_allow_html=True,
