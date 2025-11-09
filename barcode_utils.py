@@ -804,12 +804,15 @@ def barcode_print_page():
 
     asset_id_col = None
     asset_name_col = None
+    asset_location_col = None
     for col in assets_df.columns:
         col_norm = str(col).strip().lower()
         if col_norm in {"asset id", "asset id / barcode", "asset id/barcode", "asset id barcode", "assetid", "barcode"}:
             asset_id_col = col
         elif col_norm in {"asset name", "name"}:
             asset_name_col = col
+        elif col_norm in {"location", "location name", "current location", "asset location"} and asset_location_col is None:
+            asset_location_col = col
     if asset_id_col is None:
         st.error("Unable to identify the Asset ID column in the Assets sheet.")
         return
@@ -822,19 +825,62 @@ def barcode_print_page():
         assets_df["__asset_name_placeholder__"] = ""
         asset_name_col = "__asset_name_placeholder__"
 
-    asset_option_map = {}
-    asset_options = []
-    for _, row in assets_df.iterrows():
+    if asset_location_col:
+        assets_df[asset_location_col] = assets_df[asset_location_col].fillna("").astype(str).str.strip()
+        location_values = sorted(
+            {loc for loc in assets_df[asset_location_col].tolist() if loc}
+        )
+    else:
+        location_values = []
+
+    location_choices = ["All Locations"] + location_values
+    if "barcode_location_filter_prev" not in st.session_state:
+        st.session_state["barcode_location_filter_prev"] = "All Locations"
+    if "barcode_asset_selector" not in st.session_state:
+        st.session_state["barcode_asset_selector"] = []
+
+    previous_filter = st.session_state.get("barcode_location_filter_prev", "All Locations")
+    try:
+        default_index = location_choices.index(previous_filter)
+    except ValueError:
+        default_index = 0
+
+    location_filter = st.selectbox(
+        "Filter by Location",
+        location_choices,
+        index=default_index,
+        help="Choose a location to narrow down the assets for barcode printing",
+        key="barcode_location_filter",
+    )
+
+    filtered_assets_df = assets_df
+    if asset_location_col and location_filter != "All Locations":
+        filtered_assets_df = assets_df[
+            assets_df[asset_location_col].str.lower() == location_filter.lower()
+        ]
+
+    asset_option_map: dict[str, tuple[str, str]] = {}
+    asset_options: list[str] = []
+    for _, row in filtered_assets_df.iterrows():
         asset_id_value = row[asset_id_col]
         asset_name_value = row[asset_name_col]
         label = asset_id_value if not asset_name_value else f"{asset_id_value} - {asset_name_value}"
         asset_options.append(label)
         asset_option_map[label] = (asset_id_value, asset_name_value)
 
+    if location_filter != previous_filter:
+        st.session_state["barcode_location_filter_prev"] = location_filter
+        if location_filter == "All Locations":
+            st.session_state["barcode_asset_selector"] = []
+        else:
+            st.session_state["barcode_asset_selector"] = asset_options.copy()
+
     selected_assets = st.multiselect(
         "Select Assets",
         asset_options,
+        default=st.session_state.get("barcode_asset_selector", []),
         help="Select multiple assets to generate barcodes for printing",
+        key="barcode_asset_selector",
     )
 
     previous_selection = st.session_state.get("barcode_layout_selection")
