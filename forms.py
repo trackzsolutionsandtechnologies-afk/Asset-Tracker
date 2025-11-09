@@ -2838,6 +2838,9 @@ def asset_maintenance_form():
                     display_df["Cost"].replace("", 0).astype(str).str.replace(",", ""),
                     errors="coerce",
                 ).fillna(0.0)
+                display_df["Maintenance Date"] = pd.to_datetime(
+                    display_df["Maintenance Date"], errors="coerce"
+                ).dt.date
                 display_df["Next Due Date"] = pd.to_datetime(
                     display_df["Next Due Date"], errors="coerce"
                 ).dt.date
@@ -2917,9 +2920,13 @@ def asset_maintenance_form():
                         "Asset ID": st.column_config.TextColumn("Asset ID", disabled=True),
                         "Asset Name": st.column_config.TextColumn("Asset Name", disabled=True),
                         "Maintenance Type": st.column_config.TextColumn("Type", disabled=True),
-                        "Maintenance Date": st.column_config.TextColumn("Maintenance Date", disabled=True),
-                        "Description": st.column_config.TextColumn("Description", disabled=True),
-                        "Cost": st.column_config.NumberColumn("Cost", format="%.2f", step=0.01, disabled=True),
+                        "Maintenance Date": st.column_config.DateColumn(
+                            "Maintenance Date", format="YYYY-MM-DD", disabled=False
+                        ),
+                        "Description": st.column_config.TextColumn("Description", disabled=False),
+                        "Cost": st.column_config.NumberColumn(
+                            "Cost", format="%.2f", step=0.01, disabled=False
+                        ),
                         "Supplier": st.column_config.TextColumn("Supplier", disabled=True),
                         "Status": st.column_config.SelectboxColumn(
                             "Status",
@@ -2975,6 +2982,19 @@ def asset_maintenance_form():
                                     edits[column] = value
                             for column, new_value in edits.items():
                                 current_row[column] = new_value
+                            maintenance_date_value = current_row.get("Maintenance Date", "")
+                            if isinstance(maintenance_date_value, datetime):
+                                maintenance_date_str = maintenance_date_value.strftime("%Y-%m-%d")
+                            elif hasattr(maintenance_date_value, "isoformat"):
+                                try:
+                                    maintenance_date_str = maintenance_date_value.isoformat()
+                                except Exception:
+                                    maintenance_date_str = str(maintenance_date_value)
+                            else:
+                                maintenance_date_str = str(maintenance_date_value)
+                                if maintenance_date_str.lower() in ("nat", "nan", "none"):
+                                    maintenance_date_str = ""
+
                             next_due_value = current_row.get("Next Due Date", "")
                             if isinstance(next_due_value, datetime):
                                 next_due_str = next_due_value.strftime("%Y-%m-%d")
@@ -2992,7 +3012,7 @@ def asset_maintenance_form():
                                 "Maintenance ID": current_row.get("Maintenance ID", ""),
                                 "Asset ID": current_row.get("Asset ID", ""),
                                 "Maintenance Type": current_row.get("Maintenance Type", ""),
-                                "Maintenance Date": current_row.get("Maintenance Date", ""),
+                                "Maintenance Date": maintenance_date_str,
                                 "Description": current_row.get("Description", ""),
                                 "Cost": f"{pd.to_numeric(str(current_row.get('Cost', 0)).replace(',', ''), errors='coerce') or 0:.2f}",
                                 "Supplier": current_row.get("Supplier", ""),
