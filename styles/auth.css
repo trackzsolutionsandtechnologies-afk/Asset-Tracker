@@ -26,13 +26,9 @@ div[data-testid="stForm"] {
 }
 
 /* Input fields */
-.auth-form-wrapper div[data-baseweb="input"] > div {
-    border-radius: 8px !important;
-    background-color: rgba(43, 10, 226, 0.95) !important;
-}
-
-.auth-form-wrapper div[data-baseweb="input"] input {
-    background-color: transparent !important;  
+.auth-form-wrapper div[data-baseweb="input"] > div > input {
+    background-color: #1f51ff !important;  /* or whatever color you need */
+    color: #ffffff !important;             /* adjust text colour */
 }
 
 .auth-form-wrapper button[kind="primary"] {
