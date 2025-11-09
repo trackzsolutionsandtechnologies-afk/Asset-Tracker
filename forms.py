@@ -2721,31 +2721,29 @@ def asset_maintenance_form():
                             "Next Due Date": next_due_date.strftime("%Y-%m-%d") if next_due_date else "",
                             "Status": maintenance_status,
                         }
-                    column_order = (
-                        list(maintenance_df.columns)
-                        if not maintenance_df.empty
-                        else maintenance_headers
-                    )
-                    data = [data_map.get(col, "") for col in column_order]
-                    with st.spinner("Saving maintenance record..."):
-                        if append_data(SHEETS["maintenance"], data):
-                            if "generated_maintenance_id" in st.session_state:
-                                del st.session_state["generated_maintenance_id"]
-                                if maintenance_status == "In Progress" and asset_status_col:
-                                    _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Maintenance")
-                                elif maintenance_status == "Completed" and asset_status_col:
-                                    _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Active")
-                            st.session_state["maintenance_success_message"] = (
-                                f"✅ Maintenance record '{maintenance_id}' added successfully!"
-                            )
-                            st.session_state["maintenance_form_key"] += 1
-                            if "maintenance_search" in st.session_state:
-                                del st.session_state["maintenance_search"]
-                            st.rerun()
-                        else:
-                            st.error("Failed to save maintenance record")
-
-    with tab2:
+                        column_order = (
+                            list(maintenance_df.columns)
+                            if not maintenance_df.empty
+                            else maintenance_headers
+                        )
+                        data = [data_map.get(col, "") for col in column_order]
+                        with st.spinner("Saving maintenance record..."):
+                            if append_data(SHEETS["maintenance"], data):
+                                if "generated_maintenance_id" in st.session_state:
+                                    del st.session_state["generated_maintenance_id"]
+                                    if maintenance_status == "In Progress" and asset_status_col:
+                                        _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Maintenance")
+                                    elif maintenance_status == "Completed" and asset_status_col:
+                                        _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Active")
+                                st.session_state["maintenance_success_message"] = (
+                                    f"✅ Maintenance record '{maintenance_id}' added successfully!"
+                                )
+                                st.session_state["maintenance_form_key"] += 1
+                                if "maintenance_search" in st.session_state:
+                                    del st.session_state["maintenance_search"]
+                                st.rerun()
+                            else:
+                                st.error("Failed to save maintenance record")
     with tab2:
         user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
         is_admin = str(user_role).lower() == "admin"
