@@ -37,8 +37,8 @@ body {
     color: #ffffff !important;
 }
 
-.auth-form-wrapper button[kind="primary"],
-.auth-form-wrapper button[kind="secondary"] {
+div[data-testid="stForm"] button[kind="primary"],
+div[data-testid="stForm"] button[kind="secondary"] {
     width: 100% !important;
     margin-top: 12px !important;
     background-color: #28a745 !important;
@@ -46,8 +46,8 @@ body {
     color: #ffffff !important;
 }
 
-.auth-form-wrapper button[kind="primary"]:hover,
-.auth-form-wrapper button[kind="secondary"]:hover {
+div[data-testid="stForm"] button[kind="primary"]:hover,
+div[data-testid="stForm"] button[kind="secondary"]:hover {
     background-color: #218838 !important;
     border-color: #19692c !important;
 }
