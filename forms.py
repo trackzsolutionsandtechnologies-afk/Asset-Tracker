@@ -279,7 +279,7 @@ def location_form():
 
                 for col_widget, label in zip(header_cols, header_labels):
                     with col_widget:
-                        st.write(label)
+                        st.markdown(f"<div style='text-align: left;'>{label}</div>", unsafe_allow_html=True)
                 st.divider()
 
                 # Display table with edit/delete buttons
@@ -1880,11 +1880,12 @@ def asset_master_form():
                         col_id, col_name, col_category, col_status, col_view, col_edit = st.columns(header_weights)
 
                     with col_id:
-                        st.write(asset_id_value or "N/A")
+                        st.markdown(f"<div style='text-align: left;'>{asset_id_value or 'N/A'}</div>", unsafe_allow_html=True)
                     with col_name:
-                        st.write(row.get("Asset Name", "N/A"))
+                        st.markdown(f"<div style='text-align: left;'>{row.get('Asset Name', 'N/A')}</div>", unsafe_allow_html=True)
                     with col_category:
-                        st.write(row.get("Category", row.get("Category Name", "N/A")))
+                        category_value = row.get("Category", row.get("Category Name", "N/A"))
+                        st.markdown(f"<div style='text-align: left;'>{category_value}</div>", unsafe_allow_html=True)
 
                     status_value = row.get("Status", "N/A")
                     status_lower = str(status_value).strip().lower()
