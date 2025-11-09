@@ -2872,7 +2872,7 @@ def asset_maintenance_form():
                             "Next Due Date", format="YYYY-MM-DD", disabled=False
                         ),
                     },
-                    num_rows="dynamic" if is_admin else "fixed",
+                    num_rows="fixed",
                     key="maintenance_table_view",
                 )
 
