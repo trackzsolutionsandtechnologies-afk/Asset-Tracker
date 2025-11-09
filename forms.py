@@ -2859,6 +2859,7 @@ def asset_maintenance_form():
                     edited_df = editor_state.get("edited_rows", {})
                     deleted_rows = editor_state.get("deleted_rows", [])
                     added_rows = editor_state.get("added_rows", [])
+                    edited_cells = editor_state.get("edited_cells", {})
 
                     if deleted_rows:
                         for delete_idx in sorted(deleted_rows, reverse=True):
@@ -2878,11 +2879,18 @@ def asset_maintenance_form():
                                         st.error("Failed to delete maintenance record.")
                         st.rerun()
 
-                    if edited_df:
-                        for idx, edits in edited_df.items():
+                    if edited_df or edited_cells:
+                        rows_to_update = set(edited_df.keys())
+                        rows_to_update.update(edited_cells.keys())
+                        for idx in rows_to_update:
                             if idx >= len(filtered_df):
                                 continue
                             current_row = filtered_df.iloc[idx].copy()
+                            edits = edited_df.get(idx, {})
+                            current_cells = edited_cells.get(idx, {})
+                            if current_cells:
+                                for column, value in current_cells.items():
+                                    edits[column] = value
                             for column, new_value in edits.items():
                                 current_row[column] = new_value
                             update_map = {
