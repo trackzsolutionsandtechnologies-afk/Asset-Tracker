@@ -2493,17 +2493,25 @@ def asset_maintenance_form():
     maintenance_headers = [
         "Maintenance ID",
         "Asset ID",
-        "Service Date",
-        "Vendor",
-        "Issue",
+        "Maintenance Type",
+        "Maintenance Date",
+        "Description",
         "Cost",
-        "Warranty Used",
-        "Next Service Date",
+        "Supplier",
+        "Next Due Date",
+        "Status",
     ]
     ensure_sheet_headers(SHEETS["maintenance"], maintenance_headers)
 
     maintenance_df = read_data(SHEETS["maintenance"])
     assets_df = read_data(SHEETS["assets"])
+    suppliers_df = read_data(SHEETS["suppliers"])
+    asset_status_col = None
+    if not assets_df.empty:
+        for col in assets_df.columns:
+            if str(col).strip().lower() == "status":
+                asset_status_col = col
+                break
 
     tab1, tab2 = st.tabs(["Add Maintenance Record", "View/Edit Maintenance"])
 
@@ -2522,6 +2530,46 @@ def asset_maintenance_form():
             except Exception:
                 return fallback
 
+    def _update_asset_status_for_maintenance(
+        assets_df_ref: pd.DataFrame,
+        status_column: str | None,
+        asset_id_value: str,
+        new_status_value: str,
+    ) -> None:
+        if (
+            status_column is None
+            or assets_df_ref.empty
+            or "Asset ID" not in assets_df_ref.columns
+        ):
+            return
+        try:
+            match_rows = assets_df_ref[
+                assets_df_ref["Asset ID"].astype(str).str.strip().str.lower()
+                == str(asset_id_value).strip().lower()
+            ]
+            if match_rows.empty:
+                return
+            row_index = int(match_rows.index[0])
+            updated_row = match_rows.iloc[0].copy()
+            updated_row.loc[status_column] = new_status_value
+            column_order = list(assets_df_ref.columns)
+            row_data = []
+            for col in column_order:
+                val = updated_row.get(col, "")
+                if pd.isna(val):
+                    row_data.append("")
+                else:
+                    if hasattr(val, "item"):
+                        try:
+                            val = val.item()
+                        except Exception:
+                            val = str(val)
+                    row_data.append(val)
+            if update_data(SHEETS["assets"], row_index, row_data):
+                assets_df_ref.at[row_index, status_column] = new_status_value
+        except Exception as err:
+            st.warning(f"Unable to update asset status: {err}")
+
     with tab1:
 
         if "maintenance_success_message" in st.session_state:
@@ -2534,9 +2582,16 @@ def asset_maintenance_form():
         form_key = st.session_state["maintenance_form_key"]
 
         asset_options = []
+        assets_df = assets_df.copy()
         if not assets_df.empty and "Asset ID" in assets_df.columns:
             asset_options = ["Select asset"] + (
                 assets_df["Asset ID"].dropna().astype(str).str.strip().tolist()
+            )
+
+        supplier_options: list[str] = []
+        if not suppliers_df.empty and "Supplier Name" in suppliers_df.columns:
+            supplier_options = ["Select supplier"] + (
+                suppliers_df["Supplier Name"].dropna().astype(str).str.strip().tolist()
             )
 
         with st.form(f"maintenance_form_{form_key}"):
@@ -2575,13 +2630,17 @@ def asset_maintenance_form():
                 )
                 st.warning("No assets found. Please add assets first.")
 
+            maintenance_type = st.selectbox(
+                "Maintenance Type *",
+                ["Preventive", "Breakdown", "Calibration"],
+                key=f"maintenance_type_{form_key}",
+            )
             service_date = st.date_input(
-                "Service Date *",
+                "Maintenance Date *",
                 value=datetime.now().date(),
                 key=f"maintenance_service_{form_key}",
             )
-            vendor = st.text_input("Vendor", key=f"maintenance_vendor_{form_key}")
-            issue = st.text_area("Issue", key=f"maintenance_issue_{form_key}")
+            description = st.text_area("Description", key=f"maintenance_description_{form_key}")
             cost = st.number_input(
                 "Cost",
                 min_value=0.0,
@@ -2589,23 +2648,32 @@ def asset_maintenance_form():
                 step=0.01,
                 key=f"maintenance_cost_{form_key}",
             )
-            warranty = st.selectbox(
-                "Warranty Used",
-                ["No", "Yes"],
-                key=f"maintenance_warranty_{form_key}",
-            )
-            schedule_next = st.checkbox(
-                "Schedule next service date",
-                value=False,
-                key=f"maintenance_schedule_next_{form_key}",
-            )
-            next_service_date = None
-            if schedule_next:
-                next_service_date = st.date_input(
-                    "Next Service Date",
-                    value=service_date,
-                    key=f"maintenance_next_service_{form_key}",
+            supplier_name = None
+            if supplier_options:
+                supplier_name = st.selectbox(
+                    "Supplier",
+                    supplier_options,
+                    key=f"maintenance_supplier_{form_key}",
                 )
+                if supplier_name == "Select supplier":
+                    supplier_name = ""
+            else:
+                supplier_name = st.text_input(
+                    "Supplier",
+                    key=f"maintenance_supplier_text_{form_key}",
+                )
+
+            next_due_date = st.date_input(
+                "Next Due Date",
+                value=service_date,
+                key=f"maintenance_next_due_{form_key}",
+            )
+
+            maintenance_status = st.selectbox(
+                "Status *",
+                ["Pending", "In Progress", "Completed"],
+                key=f"maintenance_status_{form_key}",
+            )
 
             submitted = st.form_submit_button(
                 "Add Maintenance Record",
@@ -2621,16 +2689,20 @@ def asset_maintenance_form():
                 elif not asset_id:
                     st.error("Please provide an Asset ID")
                 else:
-                    data_map = {
-                        "Maintenance ID": maintenance_id,
-                        "Asset ID": asset_id,
-                        "Service Date": service_date.strftime("%Y-%m-%d"),
-                        "Vendor": vendor,
-                        "Issue": issue,
-                        "Cost": f"{cost:.2f}",
-                        "Warranty Used": warranty,
-                        "Next Service Date": next_service_date.strftime("%Y-%m-%d") if next_service_date else "",
-                    }
+                    if supplier_options and supplier_name == "":
+                        st.error("Please select a Supplier")
+                    else:
+                        data_map = {
+                            "Maintenance ID": maintenance_id,
+                            "Asset ID": asset_id,
+                            "Maintenance Type": maintenance_type,
+                            "Maintenance Date": service_date.strftime("%Y-%m-%d"),
+                            "Description": description,
+                            "Cost": f"{cost:.2f}",
+                            "Supplier": supplier_name,
+                            "Next Due Date": next_due_date.strftime("%Y-%m-%d") if next_due_date else "",
+                            "Status": maintenance_status,
+                        }
                     column_order = (
                         list(maintenance_df.columns)
                         if not maintenance_df.empty
@@ -2641,6 +2713,10 @@ def asset_maintenance_form():
                         if append_data(SHEETS["maintenance"], data):
                             if "generated_maintenance_id" in st.session_state:
                                 del st.session_state["generated_maintenance_id"]
+                                if maintenance_status == "In Progress" and asset_status_col:
+                                    _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Maintenance")
+                                elif maintenance_status == "Completed" and asset_status_col:
+                                    _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Active")
                             st.session_state["maintenance_success_message"] = (
                                 f"✅ Maintenance record '{maintenance_id}' added successfully!"
                             )
@@ -2681,17 +2757,18 @@ def asset_maintenance_form():
                 field_headers = [
                     "**Maintenance ID**",
                     "**Asset ID**",
-                    "**Service Date**",
-                    "**Vendor**",
-                    "**Issue**",
+                    "**Type**",
+                    "**Date**",
+                    "**Description**",
                     "**Cost**",
-                    "**Warranty Used**",
-                    "**Next Service**",
+                    "**Supplier**",
+                    "**Next Due Date**",
+                    "**Status**",
                 ]
                 if is_admin:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
                 else:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1])
+                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
                 for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
                     with col_widget:
                         st.write(header)
@@ -2725,19 +2802,20 @@ def asset_maintenance_form():
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
                     cols = (
-                        st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
+                        st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
                         if is_admin
-                        else st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1])
+                        else st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1])
                     )
                     display_values = [
                         row.get("Maintenance ID", "N/A"),
                         row.get("Asset ID", "N/A"),
-                        row.get("Service Date", "N/A"),
-                        row.get("Vendor", ""),
-                        row.get("Issue", ""),
+                        row.get("Maintenance Type", ""),
+                        row.get("Maintenance Date", "N/A"),
+                        row.get("Description", ""),
                         row.get("Cost", ""),
-                        row.get("Warranty Used", ""),
-                        row.get("Next Service Date", ""),
+                        row.get("Supplier", ""),
+                        row.get("Next Due Date", ""),
+                        row.get("Status", ""),
                     ]
                     for col_widget, value in zip(cols[: len(display_values)], display_values):
                         with col_widget:
@@ -2798,17 +2876,22 @@ def asset_maintenance_form():
                             value=record.get("Asset ID", ""),
                         )
 
+                    maintenance_type_new = st.selectbox(
+                        "Maintenance Type *",
+                        ["Preventive", "Breakdown", "Calibration"],
+                        index={
+                            "preventive": 0,
+                            "breakdown": 1,
+                            "calibration": 2,
+                        }.get(str(record.get("Maintenance Type", "Preventive")).strip().lower(), 0),
+                    )
                     service_date_new = st.date_input(
-                        "Service Date *",
-                        value=parse_date_value(record.get("Service Date")),
+                        "Maintenance Date *",
+                        value=parse_date_value(record.get("Maintenance Date")),
                     )
-                    vendor_new = st.text_input(
-                        "Vendor",
-                        value=record.get("Vendor", ""),
-                    )
-                    issue_new = st.text_area(
-                        "Issue",
-                        value=record.get("Issue", ""),
+                    description_new = st.text_area(
+                        "Description",
+                        value=record.get("Description", ""),
                     )
                     try:
                         default_cost = float(str(record.get("Cost", 0)).replace(",", ""))
@@ -2820,21 +2903,39 @@ def asset_maintenance_form():
                         value=default_cost,
                         step=0.01,
                     )
-                    warranty_new = st.selectbox(
-                        "Warranty Used",
-                        ["No", "Yes"],
-                        index=1 if str(record.get("Warranty Used", "")).lower() == "yes" else 0,
-                    )
-                    include_next = st.checkbox(
-                        "Schedule next service date",
-                        value=bool(record.get("Next Service Date")),
-                    )
-                    next_service_new = None
-                    if include_next:
-                        next_service_new = st.date_input(
-                            "Next Service Date",
-                            value=parse_date_value(record.get("Next Service Date")),
+                    if not suppliers_df.empty and "Supplier Name" in suppliers_df.columns:
+                        supplier_options_edit = ["Select supplier"] + suppliers_df["Supplier Name"].dropna().astype(str).str.strip().tolist()
+                        try:
+                            default_supplier_idx = supplier_options_edit.index(record.get("Supplier", ""))
+                        except ValueError:
+                            default_supplier_idx = 0
+                        supplier_new = st.selectbox(
+                            "Supplier",
+                            supplier_options_edit,
+                            index=default_supplier_idx,
                         )
+                        if supplier_new == "Select supplier":
+                            supplier_new = ""
+                    else:
+                        supplier_new = st.text_input(
+                            "Supplier",
+                            value=record.get("Supplier", ""),
+                        )
+
+                    next_due_new = st.date_input(
+                        "Next Due Date",
+                        value=parse_date_value(record.get("Next Due Date")),
+                    )
+
+                    status_new = st.selectbox(
+                        "Status *",
+                        ["Pending", "In Progress", "Completed"],
+                        index={
+                            "pending": 0,
+                            "in progress": 1,
+                            "completed": 2,
+                        }.get(str(record.get("Status", "Pending")).strip().lower(), 0),
+                    )
 
                     col_update, col_cancel = st.columns(2)
                     with col_update:
@@ -2847,12 +2948,13 @@ def asset_maintenance_form():
                                 update_map = {
                                     "Maintenance ID": edit_id,
                                     "Asset ID": asset_id_new,
-                                    "Service Date": service_date_new.strftime("%Y-%m-%d"),
-                                    "Vendor": vendor_new,
-                                    "Issue": issue_new,
+                                    "Maintenance Type": maintenance_type_new,
+                                    "Maintenance Date": service_date_new.strftime("%Y-%m-%d"),
+                                    "Description": description_new,
                                     "Cost": f"{cost_new:.2f}",
-                                    "Warranty Used": warranty_new,
-                                    "Next Service Date": next_service_new.strftime("%Y-%m-%d") if next_service_new else "",
+                                    "Supplier": supplier_new,
+                                    "Next Due Date": next_due_new.strftime("%Y-%m-%d") if next_due_new else "",
+                                    "Status": status_new,
                                 }
                                 column_order = list(maintenance_df.columns)
                                 updated_row = [update_map.get(col, record.get(col, "")) for col in column_order]
@@ -2860,6 +2962,10 @@ def asset_maintenance_form():
                                     st.session_state["maintenance_success_message"] = (
                                         f"✅ Maintenance record '{edit_id}' updated successfully!"
                                     )
+                                    if status_new == "In Progress" and asset_status_col:
+                                        _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id_new, "Maintenance")
+                                    elif status_new == "Completed" and asset_status_col:
+                                        _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id_new, "Active")
                                     st.session_state.pop("edit_maintenance_id", None)
                                     st.session_state.pop("edit_maintenance_idx", None)
                                     st.rerun()
