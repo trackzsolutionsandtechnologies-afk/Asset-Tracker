@@ -10,6 +10,6 @@ gatherUsageStats = false
 base = "light"
 primaryColor = "#5C3E94"        # accent color (optional)
 backgroundColor = "#FFFFFF"     # main background (optional)
-secondaryBackgroundColor = "#F0F2F6"  # main background for input box 
+secondaryBackgroundColor = "#5C3E94"  # main background for input box 
 textColor = "#262730"
 font = "DIN"
