@@ -5,6 +5,10 @@ body {
 }
 
 .auth-form-wrapper {
+    --primaryColor: #28a745;
+    --secondaryBackgroundColor: #28a745;
+    --buttonPrimaryBackgroundColor: #28a745;
+    --buttonSecondaryBackgroundColor: #28a745;
     max-width: 420px !important;
     margin: 10vh auto !important;
 }
