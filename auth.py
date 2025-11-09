@@ -17,7 +17,7 @@ st.markdown(
     """
     <style>
     .auth-form-wrapper form[data-testid="stForm"] input {
-        background-color: #3C4F91 !important;
+        background-color: #0000ff !important;
         color: #ffffff !important;
     }
     </style>
