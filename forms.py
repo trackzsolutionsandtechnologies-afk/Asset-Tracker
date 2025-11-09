@@ -1437,10 +1437,11 @@ def asset_master_form():
 
         if asset_form_keys["auto_generate"] not in st.session_state:
             st.session_state[asset_form_keys["auto_generate"]] = True
-        if asset_form_keys["purchase_date"] not in st.session_state:
-            st.session_state[asset_form_keys["purchase_date"]] = datetime.now().date()
-        if asset_form_keys["purchase_cost"] not in st.session_state:
-            st.session_state[asset_form_keys["purchase_cost"]] = 0.0
+        else:
+            st.session_state[asset_form_keys["auto_generate"]] = True
+
+        st.session_state.setdefault(asset_form_keys["purchase_date"], datetime.now().date())
+        st.session_state.setdefault(asset_form_keys["purchase_cost"], 0.0)
 
         with st.form("asset_form"):
             col1, col2 = st.columns(2)
