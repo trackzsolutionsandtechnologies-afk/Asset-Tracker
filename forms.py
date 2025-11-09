@@ -2746,31 +2746,6 @@ def asset_maintenance_form():
                             st.error("Failed to save maintenance record")
 
     with tab2:
-    with tab3:
-        st.subheader("Cumulative Maintenance Cost")
-        if maintenance_df.empty:
-            st.info("No maintenance records available.")
-        else:
-            cost_series = (
-                maintenance_df["Cost"].replace("", 0).astype(str).str.replace(",", "").astype(float)
-                if "Cost" in maintenance_df.columns
-                else pd.Series(dtype=float)
-            )
-            maintenance_df_with_cost = maintenance_df.copy()
-            maintenance_df_with_cost["Cost_numeric"] = cost_series if not cost_series.empty else 0.0
-            summary_df = (
-                maintenance_df_with_cost.groupby(["Maintenance ID", "Asset ID"], dropna=False)[["Cost_numeric"]]
-                .sum()
-                .reset_index()
-            )
-            summary_df = summary_df.rename(columns={"Cost_numeric": "Total Cost"})
-            if "Next Due Date" in maintenance_df.columns:
-                next_due_map = maintenance_df.set_index("Maintenance ID")["Next Due Date"].to_dict()
-                summary_df["Next Due Date"] = summary_df["Maintenance ID"].map(next_due_map).fillna("")
-            else:
-                summary_df["Next Due Date"] = ""
-            summary_df["Total Cost"] = summary_df["Total Cost"].map(lambda v: f"{v:.2f}")
-            st.dataframe(summary_df[["Maintenance ID", "Asset ID", "Total Cost", "Next Due Date"]], use_container_width=True)
         user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
         is_admin = str(user_role).lower() == "admin"
 
@@ -3021,6 +2996,32 @@ def asset_maintenance_form():
                             st.session_state.pop("edit_maintenance_id", None)
                             st.session_state.pop("edit_maintenance_idx", None)
                             st.rerun()
+
+    with tab3:
+        st.subheader("Cumulative Maintenance Cost")
+        if maintenance_df.empty:
+            st.info("No maintenance records available.")
+        else:
+            cost_series = (
+                maintenance_df["Cost"].replace("", 0).astype(str).str.replace(",", "").astype(float)
+                if "Cost" in maintenance_df.columns
+                else pd.Series(dtype=float)
+            )
+            maintenance_df_with_cost = maintenance_df.copy()
+            maintenance_df_with_cost["Cost_numeric"] = cost_series if not cost_series.empty else 0.0
+            summary_df = (
+                maintenance_df_with_cost.groupby(["Maintenance ID", "Asset ID"], dropna=False)[["Cost_numeric"]]
+                .sum()
+                .reset_index()
+            )
+            summary_df = summary_df.rename(columns={"Cost_numeric": "Total Cost"})
+            if "Next Due Date" in maintenance_df.columns:
+                next_due_map = maintenance_df.set_index("Maintenance ID")["Next Due Date"].to_dict()
+                summary_df["Next Due Date"] = summary_df["Maintenance ID"].map(next_due_map).fillna("")
+            else:
+                summary_df["Next Due Date"] = ""
+            summary_df["Total Cost"] = summary_df["Total Cost"].map(lambda v: f"{v:.2f}")
+            st.dataframe(summary_df[["Maintenance ID", "Asset ID", "Total Cost", "Next Due Date"]], use_container_width=True)
 
 
 def employee_assignment_form():
