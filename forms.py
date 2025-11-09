@@ -2749,6 +2749,18 @@ def asset_maintenance_form():
         is_admin = str(user_role).lower() == "admin"
 
         if not maintenance_df.empty:
+            asset_id_filter_options = ["All Asset IDs"] + sorted(
+                maintenance_df["Asset ID"].dropna().astype(str).str.strip().unique().tolist()
+            )
+            asset_name_filter_options = ["All Asset Names"] + sorted(
+                maintenance_df["Asset ID"]
+                .dropna()
+                .astype(str)
+                .str.strip()
+                .map(lambda aid: asset_id_to_name.get(aid.lower(), ""))
+                .unique()
+                .tolist()
+            )
             status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed"]
             selected_status_filter = st.selectbox(
                 "Filter by Status",
@@ -2756,11 +2768,35 @@ def asset_maintenance_form():
                 key="maintenance_status_filter",
             )
 
+            selected_asset_id_filter = st.selectbox(
+                "Filter by Asset ID",
+                asset_id_filter_options,
+                key="maintenance_asset_id_filter",
+            )
+            selected_asset_name_filter = st.selectbox(
+                "Filter by Asset Name",
+                asset_name_filter_options,
+                key="maintenance_asset_name_filter",
+            )
+
             filtered_df = maintenance_df.copy()
             if selected_status_filter != "All Status":
                 filtered_df = filtered_df[
                     filtered_df["Status"].astype(str).str.strip().str.lower()
                     == selected_status_filter.strip().lower()
+                ]
+            if selected_asset_id_filter != "All Asset IDs":
+                filtered_df = filtered_df[
+                    filtered_df["Asset ID"].astype(str).str.strip() == selected_asset_id_filter
+                ]
+            if selected_asset_name_filter != "All Asset Names":
+                filtered_df = filtered_df[
+                    filtered_df["Asset ID"]
+                    .astype(str)
+                    .str.strip()
+                    .str.lower()
+                    .map(lambda aid: asset_id_to_name.get(aid, ""))
+                    == selected_asset_name_filter
                 ]
 
             if filtered_df.empty:
