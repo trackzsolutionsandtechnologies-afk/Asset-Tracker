@@ -2633,59 +2633,70 @@ def asset_maintenance_form():
                 if "generated_maintenance_id" in st.session_state:
                     del st.session_state["generated_maintenance_id"]
 
+            asset_col, type_col, date_col = st.columns(3, gap="medium")
             if len(asset_option_labels) > 1:
-                asset_label_selected = st.selectbox(
-                    "Asset *",
-                    asset_option_labels,
-                    key=f"maintenance_asset_{form_key}",
-                )
-                asset_id = asset_label_to_id.get(asset_label_selected, "")
+                with asset_col:
+                    asset_label_selected = st.selectbox(
+                        "Asset *",
+                        asset_option_labels,
+                        key=f"maintenance_asset_{form_key}",
+                    )
+                    asset_id = asset_label_to_id.get(asset_label_selected, "")
             else:
                 asset_label_selected = None
-                asset_id = st.text_input(
-                    "Asset ID *",
-                    key=f"maintenance_asset_text_{form_key}",
-                )
-                st.warning("No assets found. Please add assets first.")
+                with asset_col:
+                    asset_id = st.text_input(
+                        "Asset ID *",
+                        key=f"maintenance_asset_text_{form_key}",
+                    )
+                    st.warning("No assets found. Please add assets first.")
 
-            maintenance_type = st.selectbox(
-                "Maintenance Type *",
-                ["Preventive", "Breakdown", "Calibration"],
-                key=f"maintenance_type_{form_key}",
-            )
-            service_date = st.date_input(
-                "Maintenance Date *",
-                value=datetime.now().date(),
-                key=f"maintenance_service_{form_key}",
-            )
+            with type_col:
+                maintenance_type = st.selectbox(
+                    "Maintenance Type *",
+                    ["Preventive", "Breakdown", "Calibration"],
+                    key=f"maintenance_type_{form_key}",
+                )
+
+            with date_col:
+                service_date = st.date_input(
+                    "Maintenance Date *",
+                    value=datetime.now().date(),
+                    key=f"maintenance_service_{form_key}",
+                )
+
             description = st.text_area("Description", key=f"maintenance_description_{form_key}")
-            cost = st.number_input(
-                "Cost",
-                min_value=0.0,
-                value=0.0,
-                step=0.01,
-                key=f"maintenance_cost_{form_key}",
-            )
-            supplier_name = None
-            if supplier_options:
-                supplier_name = st.selectbox(
-                    "Supplier",
-                    supplier_options,
-                    key=f"maintenance_supplier_{form_key}",
-                )
-                if supplier_name == "Select supplier":
-                    supplier_name = ""
-            else:
-                supplier_name = st.text_input(
-                    "Supplier",
-                    key=f"maintenance_supplier_text_{form_key}",
-                )
 
-            next_due_date = st.date_input(
-                "Next Due Date",
-                value=service_date,
-                key=f"maintenance_next_due_{form_key}",
-            )
+            cost_col, supplier_col, next_due_col = st.columns(3, gap="medium")
+            with cost_col:
+                cost = st.number_input(
+                    "Cost",
+                    min_value=0.0,
+                    value=0.0,
+                    step=0.01,
+                    key=f"maintenance_cost_{form_key}",
+                )
+            with supplier_col:
+                supplier_name = None
+                if supplier_options:
+                    supplier_name = st.selectbox(
+                        "Supplier",
+                        supplier_options,
+                        key=f"maintenance_supplier_{form_key}",
+                    )
+                    if supplier_name == "Select supplier":
+                        supplier_name = ""
+                else:
+                    supplier_name = st.text_input(
+                        "Supplier",
+                        key=f"maintenance_supplier_text_{form_key}",
+                    )
+            with next_due_col:
+                next_due_date = st.date_input(
+                    "Next Due Date",
+                    value=service_date,
+                    key=f"maintenance_next_due_{form_key}",
+                )
 
             maintenance_status = st.selectbox(
                 "Status *",
