@@ -2770,9 +2770,9 @@ def asset_maintenance_form():
                     st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
             else:
                 if is_admin:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+                    header_cols = st.columns([2, 2, 2, 1, 1.5, 2, 1, 1])
                 else:
-                    header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
+                    header_cols = st.columns([2, 2, 2, 1, 1.5, 2, 1])
 
                 header_style = "color: #1f7830; font-weight: 600;"
                 header_labels = [
@@ -2782,10 +2782,10 @@ def asset_maintenance_form():
                     f"<span style='{header_style}'>Cost</span>",
                     f"<span style='{header_style}'>Status</span>",
                     f"<span style='{header_style}'>Next Due Date</span>",
-                    f"<span style='{header_style}'>Edit</span>",
+                    "",
                 ]
                 if is_admin:
-                    header_labels.append(f"<span style='{header_style}'>Delete</span>")
+                    header_labels.append("")
 
                 for col_widget, label in zip(header_cols, header_labels):
                     with col_widget:
@@ -2810,9 +2810,9 @@ def asset_maintenance_form():
                         original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
 
                     cols = (
-                        st.columns([2, 2, 2, 1, 2, 2, 1, 1])
+                        st.columns([2, 2, 2, 1, 1.5, 2, 1, 1])
                         if is_admin
-                        else st.columns([2, 2, 2, 1, 2, 2, 1])
+                        else st.columns([2, 2, 2, 1, 1.5, 2, 1])
                     )
                     asset_id_value = row.get("Asset ID", "")
                     asset_name_value = asset_id_to_name.get(str(asset_id_value).strip().lower(), "")
