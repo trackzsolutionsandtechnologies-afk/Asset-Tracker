@@ -1620,6 +1620,7 @@ def asset_master_form():
 
                         st.session_state["asset_success_message"] = "Asset added successfully!"
                         reset_keys = [
+                            asset_form_keys["auto_generate"],
                             asset_form_keys["asset_id"],
                             asset_form_keys["asset_name"],
                             asset_form_keys["category_select"],
@@ -1638,9 +1639,6 @@ def asset_master_form():
                         ]
                         for state_key in reset_keys:
                             st.session_state.pop(state_key, None)
-                        st.session_state[asset_form_keys["auto_generate"]] = True
-                        st.session_state[asset_form_keys["purchase_cost"]] = 0.0
-                        st.session_state[asset_form_keys["purchase_date"]] = datetime.now().date()
                         st.rerun()
                     else:
                         st.error("Failed to add asset")
