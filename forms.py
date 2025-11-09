@@ -2774,17 +2774,18 @@ def asset_maintenance_form():
                 else:
                     header_cols = st.columns([2, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1])
 
+                header_style = "color: #1f7830; font-weight: 600;"
                 header_labels = [
-                    "**Maintenance ID**",
-                    "**Asset ID**",
-                    "**Asset Name**",
-                    "**Cost**",
-                    "**Status**",
-                    "**Next Due Date**",
-                    "**Edit**",
+                    f"<span style='{header_style}'>Maintenance ID</span>",
+                    f"<span style='{header_style}'>Asset ID</span>",
+                    f"<span style='{header_style}'>Asset Name</span>",
+                    f"<span style='{header_style}'>Cost</span>",
+                    f"<span style='{header_style}'>Status</span>",
+                    f"<span style='{header_style}'>Next Due Date</span>",
+                    f"<span style='{header_style}'>Edit</span>",
                 ]
                 if is_admin:
-                    header_labels.append("**Delete**")
+                    header_labels.append(f"<span style='{header_style}'>Delete</span>")
 
                 for col_widget, label in zip(header_cols, header_labels):
                     with col_widget:
