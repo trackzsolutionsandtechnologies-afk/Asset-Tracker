@@ -2749,7 +2749,13 @@ def asset_maintenance_form():
         is_admin = str(user_role).lower() == "admin"
 
         if not maintenance_df.empty:
-            status_filter_options = ["All Status", "Pending", "In Progress", "Completed"]
+            search_term = st.text_input(
+                "🔍 Search Maintenance Records",
+                placeholder="Search by maintenance ID, asset, vendor, or issue...",
+                key="maintenance_search",
+            )
+
+            status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed"]
             selected_status_filter = st.selectbox(
                 "Filter by Status",
                 status_filter_options,
@@ -2757,6 +2763,14 @@ def asset_maintenance_form():
             )
 
             filtered_df = maintenance_df.copy()
+            if search_term:
+                term = search_term.strip().lower()
+                filtered_df = filtered_df[
+                    filtered_df.apply(
+                        lambda row: term in " ".join(row.astype(str).str.lower()),
+                        axis=1,
+                    )
+                ]
             if selected_status_filter != "All Status":
                 filtered_df = filtered_df[
                     filtered_df["Status"].astype(str).str.strip().str.lower()
@@ -2764,11 +2778,16 @@ def asset_maintenance_form():
                 ]
 
             if filtered_df.empty:
-                if selected_status_filter != "All Status":
+                if search_term or selected_status_filter != "All Status":
                     st.warning("No maintenance records match your filters.")
                 else:
                     st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
             else:
+                display_columns = ["Asset ID", "Asset Name", "Status", "Next Due Date"]
+                display_df = filtered_df.copy()
+                display_df["Asset Name"] = display_df["Asset ID"].astype(str).str.strip().str.lower().map(asset_id_to_name).fillna("")
+                st.dataframe(display_df[display_columns], use_container_width=True)
+
                 st.divider()
 
                 asset_label_list = asset_option_labels[1:] if len(asset_option_labels) > 1 else []
