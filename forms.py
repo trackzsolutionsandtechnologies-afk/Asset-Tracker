@@ -2875,15 +2875,16 @@ def asset_maintenance_form():
                         border-right: none !important;
                     }
                     [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="Completed"] {
-                        background-color: #BF092F !important;
-                        color: #ffffff !important;
+                        background-color: transparent !important;
+                        color: #2f855a !important;
+                        font-weight: 600 !important;
                         border-radius: 20px;
                         padding: 0.1rem 0.65rem;
                         text-align: center;
                     }
                     [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="In Progress"] {
                         background-color: #BF092F !important;
-                        color: #1a202c !important;
+                        color: #ffffff !important;
                         border-radius: 20px;
                         padding: 0.1rem 0.65rem;
                         text-align: center;
