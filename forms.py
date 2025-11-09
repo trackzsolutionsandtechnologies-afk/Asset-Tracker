@@ -1358,7 +1358,6 @@ def asset_master_form():
         "Asset ID",
         "Asset Name",
         "Category",
-        "Sub Category",
         "Model/Serial No",
         "Purchase Date",
         "Purchase Cost",
@@ -1409,91 +1408,6 @@ def asset_master_form():
     if not subcategories_df.empty and subcat_cat_name_col:
         subcat_cat_name_norm_series = subcategories_df[subcat_cat_name_col].astype(str).str.strip().str.lower()
 
-    normalized_subcategories_df = pd.DataFrame(columns=["category", "subcategory"])
-    valid_category_names_lower = set()
-    if category_norm_series is not None:
-        valid_category_names_lower = set(category_norm_series.dropna().tolist())
-
-    category_lookup_by_id = {}
-    if (
-        not categories_df.empty
-        and category_id_col
-        and category_name_col
-        and category_id_col in categories_df.columns
-        and category_name_col in categories_df.columns
-    ):
-        category_lookup_by_id = {
-            str(row[category_id_col]).strip().lower(): str(row[category_name_col]).strip()
-            for _, row in categories_df.dropna(subset=[category_id_col]).iterrows()
-            if str(row.get(category_name_col, "")).strip() != ""
-        }
-
-    if (
-        not subcategories_df.empty
-        and subcat_name_col
-        and (subcat_cat_name_col or subcat_cat_id_col)
-    ):
-        normalized_records = []
-        for _, row in subcategories_df.iterrows():
-            raw_subcategory = str(row.get(subcat_name_col, "") or "").strip()
-            raw_category = (
-                str(row.get(subcat_cat_name_col, "") or "").strip()
-                if subcat_cat_name_col
-                else ""
-            )
-            raw_category_id = (
-                str(row.get(subcat_cat_id_col, "") or "").strip()
-                if subcat_cat_id_col
-                else ""
-            )
-
-            if raw_subcategory == "" and raw_category == "":
-                continue
-
-            category_candidate = raw_category
-            subcategory_candidate = raw_subcategory
-
-            cat_lower = category_candidate.lower()
-            sub_lower = subcategory_candidate.lower()
-
-            if valid_category_names_lower:
-                # If the stored category name doesn't look valid but the subcategory does, swap them.
-                if cat_lower not in valid_category_names_lower and sub_lower in valid_category_names_lower:
-                    category_candidate, subcategory_candidate = subcategory_candidate, category_candidate
-                    cat_lower = category_candidate.lower()
-                    sub_lower = subcategory_candidate.lower()
-
-            # If category name still missing or invalid, try resolving via category ID
-            if (
-                (category_candidate == "" or (valid_category_names_lower and cat_lower not in valid_category_names_lower))
-                and raw_category_id != ""
-            ):
-                lookup_key = raw_category_id.lower()
-                if lookup_key in category_lookup_by_id:
-                    category_candidate = category_lookup_by_id[lookup_key]
-                    cat_lower = category_candidate.lower()
-
-            # Skip entries that still don't have a subcategory or category
-            if subcategory_candidate == "":
-                continue
-            if category_candidate == "":
-                continue
-
-            normalized_records.append(
-                {
-                    "category": category_candidate,
-                    "subcategory": subcategory_candidate,
-                }
-            )
-
-        if normalized_records:
-            normalized_subcategories_df = (
-                pd.DataFrame(normalized_records)
-                .replace("", pd.NA)
-                .dropna(subset=["category", "subcategory"])
-                .drop_duplicates()
-            )
-
     condition_options = ASSET_CONDITION_OPTIONS
     status_options = ASSET_STATUS_OPTIONS
 
@@ -1506,7 +1420,6 @@ def asset_master_form():
             "asset_id": "asset_id_input",
             "asset_name": "asset_name_input",
             "category_select": "asset_category_select",
-            "subcategory_select": "asset_subcategory_select",
             "model_serial": "asset_model_serial",
             "purchase_date": "asset_purchase_date",
             "purchase_cost": "asset_purchase_cost",
@@ -1556,13 +1469,10 @@ def asset_master_form():
                 asset_name = st.text_input("Asset Name *", key=asset_form_keys["asset_name"])
                 
                 category_placeholder = "Select category"
-                subcategory_placeholder = "Select sub category"
-
-                category_options = []
-                if not normalized_subcategories_df.empty:
-                    category_options = unique_clean(normalized_subcategories_df["category"])
-                elif not categories_df.empty and category_name_col:
+                if not categories_df.empty and category_name_col:
                     category_options = unique_clean(categories_df[category_name_col])
+                else:
+                    category_options = []
 
                 if category_options:
                     category = st.selectbox(
@@ -1578,34 +1488,6 @@ def asset_master_form():
                         key=asset_form_keys["category_select"],
                     )
                     category = ""
-
-                subcategory_options = []
-                if (
-                    category
-                    and category not in ("", category_placeholder)
-                    and not normalized_subcategories_df.empty
-                ):
-                    filtered_subcats = normalized_subcategories_df[
-                        normalized_subcategories_df["category"].astype(str).str.strip().str.lower()
-                        == str(category).strip().lower()
-                    ]
-                    if not filtered_subcats.empty:
-                        subcategory_options = unique_clean(filtered_subcats["subcategory"])
-
-                if subcategory_options:
-                    subcategory = st.selectbox(
-                        "Sub Category *",
-                        [subcategory_placeholder] + subcategory_options,
-                        key=asset_form_keys["subcategory_select"],
-                    )
-                else:
-                    subcategory = st.selectbox(
-                        "Sub Category *",
-                        ["No sub categories available"],
-                        disabled=True,
-                        key=asset_form_keys["subcategory_select"],
-                    )
-                    subcategory = ""
                 
                 model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
                 purchase_date = st.date_input(
@@ -1688,16 +1570,11 @@ def asset_master_form():
                     st.error("Asset ID already exists")
                 elif category in ("", category_placeholder):
                     st.error("Please select a category")
-                elif subcategory in ("", subcategory_placeholder):
-                    st.error("Please select a sub category")
                 else:
                     data = [
                         asset_id,
                         asset_name,
                         category if category not in ("", category_placeholder) else "",
-                        subcategory
-                        if subcategory not in ("", subcategory_placeholder)
-                        else "",
                         model_serial,
                         purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
                         purchase_cost,
@@ -1721,7 +1598,6 @@ def asset_master_form():
                             asset_form_keys["asset_id"],
                             asset_form_keys["asset_name"],
                             asset_form_keys["category_select"],
-                            asset_form_keys["subcategory_select"],
                             asset_form_keys["model_serial"],
                             asset_form_keys["purchase_cost"],
                             asset_form_keys["warranty"],
@@ -1836,7 +1712,6 @@ def asset_master_form():
                                 "Asset ID": asset_id_value,
                                 "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
                                 "Category": row.get("Category", row.get("Category Name", "")),
-                                "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
                                 "Location": row.get("Location", ""),
                                 "Assigned To": row.get("Assigned To", ""),
                                 "Status": row.get("Status", ""),
@@ -1856,7 +1731,6 @@ def asset_master_form():
                                     "Asset ID",
                                     "Asset Name",
                                     "Category",
-                                    "Sub Category",
                                     "Location",
                                     "Assigned To",
                                     "Status",
@@ -1915,95 +1789,41 @@ def asset_master_form():
                                 st.text_input("Asset ID", value=edit_id, disabled=True)
                                 new_name = st.text_input("Asset Name *", value=row.get("Asset Name", row.get("Asset Name *", "")))
 
-                                edit_subcategory_name_options = []
-                                if not subcategories_df.empty and subcat_name_col:
-                                    edit_subcategory_name_options.extend(
-                                        subcategories_df[subcat_name_col].dropna().astype(str).str.strip().tolist()
-                                    )
-                                current_category_value = row.get("Category", row.get("Category Name", ""))
-                                if current_category_value and current_category_value not in edit_subcategory_name_options:
-                                    edit_subcategory_name_options.append(current_category_value)
-                                edit_subcategory_name_options = sorted(dict.fromkeys(edit_subcategory_name_options))
+                                category_placeholder = "Select category"
+                                if not categories_df.empty and category_name_col:
+                                    edit_category_options = unique_clean(categories_df[category_name_col])
+                                else:
+                                    edit_category_options = []
 
-                                if edit_subcategory_name_options:
-                                    cat_list = ["Select sub category"] + edit_subcategory_name_options
+                                current_category_value = row.get("Category", row.get("Category Name", ""))
+                                if current_category_value and current_category_value not in edit_category_options:
+                                    edit_category_options.append(current_category_value)
+                                edit_category_options = sorted(dict.fromkeys(edit_category_options))
+
+                                if edit_category_options:
+                                    category_choices = [category_placeholder] + edit_category_options
                                     try:
-                                        default_cat_index = cat_list.index(current_category_value) if current_category_value in cat_list else 0
+                                        default_cat_index = (
+                                            category_choices.index(current_category_value)
+                                            if current_category_value in category_choices
+                                            else 0
+                                        )
                                     except ValueError:
                                         default_cat_index = 0
-                                    selected_category = st.selectbox("Category (Sub Category Name)", cat_list, index=default_cat_index)
+                                    selected_category = st.selectbox(
+                                        "Category *",
+                                        category_choices,
+                                        index=default_cat_index,
+                                        key=f"asset_edit_category_{edit_id}",
+                                    )
                                 else:
                                     selected_category = st.selectbox(
-                                        "Category (Sub Category Name)",
-                                        ["No subcategories available"],
+                                        "Category *",
+                                        ["No categories available"],
                                         disabled=True,
+                                        key=f"asset_edit_category_{edit_id}",
                                     )
                                     selected_category = ""
-
-                                category_names_for_selected_edit = []
-                                selected_category_norm = str(selected_category).strip().lower()
-                                if (
-                                    selected_category
-                                    and selected_category not in ("Select sub category", "")
-                                    and subcat_name_norm_series is not None
-                                ):
-                                    matching_rows_edit = subcategories_df[subcat_name_norm_series == selected_category_norm]
-                                    if not matching_rows_edit.empty:
-                                        if subcat_cat_name_col:
-                                            category_names_for_selected_edit = unique_clean(matching_rows_edit[subcat_cat_name_col])
-                                        elif (
-                                            subcat_cat_id_col
-                                            and category_id_col
-                                            and category_name_col
-                                            and category_norm_series is not None
-                                        ):
-                                            ids_edit = matching_rows_edit[subcat_cat_id_col].dropna().astype(str)
-                                            cat_matches_edit = categories_df[
-                                                categories_df[category_id_col]
-                                                .astype(str)
-                                                .str.strip()
-                                                .str.lower()
-                                                .isin(ids_edit.str.strip().str.lower())
-                                            ]
-                                            if not cat_matches_edit.empty:
-                                                category_names_for_selected_edit = unique_clean(cat_matches_edit[category_name_col])
-
-                                current_subcat_value = row.get(
-                                    "Sub Category",
-                                    row.get("SubCategory Name", row.get("Sub Category Name", "")),
-                                )
-                                if current_subcat_value and current_subcat_value not in category_names_for_selected_edit:
-                                    category_names_for_selected_edit.append(current_subcat_value)
-                                category_names_for_selected_edit = sorted(dict.fromkeys(category_names_for_selected_edit))
-
-                                edit_subcategory_options = (
-                                    ["Select category name"] + category_names_for_selected_edit
-                                    if category_names_for_selected_edit
-                                    else ["None"]
-                                )
-                                try:
-                                    default_subcat_index = (
-                                        edit_subcategory_options.index(current_subcat_value)
-                                        if current_subcat_value in edit_subcategory_options
-                                        else 0
-                                    )
-                                except ValueError:
-                                    default_subcat_index = 0
-
-                                subcategory_help_edit_final = None
-                                if not category_names_for_selected_edit:
-                                    if selected_category in ("Select sub category", ""):
-                                        subcategory_help_edit_final = "Please select a sub category first."
-                                    else:
-                                        subcategory_help_edit_final = "No category mapping found for the selected sub category."
-
-                                selected_subcategory = st.selectbox(
-                                    "Sub Category (Category Name)",
-                                    edit_subcategory_options,
-                                    index=default_subcat_index,
-                                    key=f"asset_edit_subcategory_final_{edit_id}",
-                                    help=subcategory_help_edit_final,
-                                )
 
                                 model_serial = st.text_input(
                                     "Model / Serial No",
@@ -2105,10 +1925,7 @@ def asset_master_form():
                                     updated_data = [
                                         edit_id,
                                         new_name,
-                                        selected_category if selected_category not in ("", "Select sub category") else row.get("Category", ""),
-                                        selected_subcategory
-                                        if selected_subcategory not in ("", "None", "Select category", "Select category name")
-                                        else row.get("Sub Category", row.get("SubCategory Name", "")),
+                                        selected_category if selected_category not in ("", category_placeholder) else row.get("Category", ""),
                                         model_serial,
                                         new_purchase_date.strftime("%Y-%m-%d"),
                                         purchase_cost,
