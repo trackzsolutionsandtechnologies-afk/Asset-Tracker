@@ -3025,14 +3025,27 @@ def asset_maintenance_form():
                 axis=1
             )
             aggregated = (
-                summary_df.groupby("Asset", dropna=False)["Total Cost"]
+                summary_df.groupby("Asset ID", dropna=False)["Total Cost"]
                 .sum()
                 .reset_index()
             )
+            aggregated["Asset ID"] = aggregated["Asset ID"].astype(str).str.strip()
+            aggregated["Asset Name"] = aggregated["Asset ID"].str.lower().map(asset_id_to_name).fillna("")
             aggregated["Total Cost"] = aggregated["Total Cost"].map(lambda v: f"{v:.2f}")
-            aggregated["Asset Cost"] = aggregated["Asset"].astype(str) + " cost " + aggregated["Total Cost"]
+
+            asset_filter_options = ["All Assets"] + sorted(aggregated["Asset ID"].unique().tolist())
+            selected_filter = st.selectbox(
+                "Filter by Asset",
+                asset_filter_options,
+                key="maintenance_cost_asset_filter",
+            )
+            filtered_aggregated = aggregated
+            if selected_filter != "All Assets":
+                filtered_aggregated = aggregated[aggregated["Asset ID"] == selected_filter]
+
+            display_df = filtered_aggregated[["Asset ID", "Asset Name", "Total Cost"]]
             st.dataframe(
-                aggregated[["Asset Cost"]],
+                display_df,
                 use_container_width=True,
             )
 
