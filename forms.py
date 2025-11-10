@@ -2988,7 +2988,7 @@ def asset_maintenance_form():
                 current_ts = time.time()
                 last_save_ts = float(st.session_state.get("maintenance_last_save_ts", 0.0) or 0.0)
                 cooldown_remaining = max(0.0, cooldown_seconds - (current_ts - last_save_ts))
-                if has_changes:
+                if has_changes and not success:
                     st.info("You have unsaved maintenance changes. Click 'Save Changes' to apply them.", icon="✏️")
                 if cooldown_remaining > 0:
                     st.warning(
