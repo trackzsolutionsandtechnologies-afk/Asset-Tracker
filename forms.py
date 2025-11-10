@@ -3042,7 +3042,7 @@ def asset_maintenance_form():
                         table_state["edited_cells"] = {}
                         table_state["deleted_rows"] = []
                         table_state["added_rows"] = []
-                    st.session_state["maintenance_table_view"] = {}
+                    st.session_state.pop("maintenance_table_view", None)
                     st.session_state["maintenance_pending_changes"] = False
 
                 if save_clicked and has_changes:
@@ -3175,7 +3175,7 @@ def asset_maintenance_form():
                         table_state["edited_cells"] = {}
                         table_state["deleted_rows"] = []
                         table_state["added_rows"] = []
-                    st.session_state["maintenance_table_view"] = {}
+                    st.session_state.pop("maintenance_table_view", None)
                     st.session_state["maintenance_last_save_ts"] = time.time()
 
                 if (
