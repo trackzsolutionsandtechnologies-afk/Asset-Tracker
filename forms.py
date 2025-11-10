@@ -2604,10 +2604,15 @@ def asset_maintenance_form():
     ]
     _ensure_headers_once("maintenance", maintenance_headers)
 
-    def _get_sheet_cached(sheet_key: str) -> pd.DataFrame:
+    def _get_sheet_cached(sheet_key: str, ttl_seconds: float = 20.0) -> pd.DataFrame:
         cache_key = f"cached_sheet_{sheet_key}"
-        if cache_key not in st.session_state:
+        ts_key = f"{cache_key}_ts"
+        current_ts = time.time()
+        cached_df = st.session_state.get(cache_key)
+        cached_ts = float(st.session_state.get(ts_key, 0.0) or 0.0)
+        if cached_df is None or (current_ts - cached_ts) > ttl_seconds:
             st.session_state[cache_key] = read_data(SHEETS[sheet_key])
+            st.session_state[ts_key] = current_ts
         return st.session_state[cache_key]
 
     maintenance_df = _get_sheet_cached("maintenance")
@@ -2869,7 +2874,9 @@ def asset_maintenance_form():
                                     f"✅ Maintenance record '{maintenance_id}' added successfully!"
                                 )
                                 st.session_state.pop("cached_sheet_maintenance", None)
+                                st.session_state.pop("cached_sheet_maintenance_ts", None)
                                 st.session_state.pop("cached_sheet_assets", None)
+                                st.session_state.pop("cached_sheet_assets_ts", None)
                                 st.session_state["maintenance_form_key"] += 1
                                 if "maintenance_search" in st.session_state:
                                     del st.session_state["maintenance_search"]
