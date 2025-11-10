@@ -2984,6 +2984,7 @@ def asset_maintenance_form():
                     return source_dict.get(idx_str, {})
 
                 has_changes = bool(edited_df or edited_cells or deleted_rows or added_rows)
+                success = False
                 cooldown_seconds = 10
                 current_ts = time.time()
                 last_save_ts = float(st.session_state.get("maintenance_last_save_ts", 0.0) or 0.0)
