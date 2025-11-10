@@ -3,6 +3,7 @@ Google Sheets integration module for database operations
 """
 import os
 import time
+import logging
 import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
@@ -19,6 +20,8 @@ SCOPE = [
 # Rate limiting - track last request time
 _last_request_time = 0
 _min_request_interval = 1.0  # Minimum 1 second between requests
+
+logger = logging.getLogger(__name__)
 
 @st.cache_resource
 def get_google_client():
@@ -249,8 +252,7 @@ def get_worksheet(sheet_name: str):
     except gspread.exceptions.APIError as e:
         error_msg = str(e)
         if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg or 'RATE_LIMIT_EXCEEDED' in error_msg:
-            st.warning("⚠️ Rate limit exceeded. Please wait a moment and refresh the page.")
-            st.info("The application is making too many requests. Please wait 60 seconds before trying again.")
+            logger.warning("Rate limit exceeded when accessing worksheet %s", sheet_name)
             return None
         else:
             st.error(f"Error accessing worksheet {sheet_name}: {str(e)}")
@@ -276,12 +278,12 @@ def read_data(sheet_name: str) -> pd.DataFrame:
     except gspread.exceptions.APIError as e:
         error_msg = str(e)
         if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg or 'RATE_LIMIT_EXCEEDED' in error_msg:
-            st.warning("⚠️ Rate limit exceeded. Using cached data if available.")
+            logger.warning("Rate limit exceeded when reading %s; attempting to use cached data", sheet_name)
             # Try to return cached data from session state
             cache_key = f"cached_{sheet_name}"
             if cache_key in st.session_state:
                 return st.session_state[cache_key]
-            st.error("No cached data available. Please wait 60 seconds and refresh the page.")
+            logger.error("No cached data available for %s after rate limit hit", sheet_name)
             return pd.DataFrame()
         else:
             st.error(f"Error reading data from {sheet_name}: {str(e)}")
@@ -338,7 +340,7 @@ def append_data(sheet_name: str, data: List) -> bool:
     except gspread.exceptions.APIError as e:
         error_msg = str(e)
         if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg or 'RATE_LIMIT_EXCEEDED' in error_msg:
-            st.warning("⚠️ Rate limit exceeded. Please wait a moment and try again.")
+            logger.warning("Rate limit exceeded while appending to %s", sheet_name)
             return False
         else:
             st.error(f"Error appending data to {sheet_name}: {str(e)}")
@@ -383,7 +385,7 @@ def update_data(sheet_name: str, row_index: int, data: List) -> bool:
     except gspread.exceptions.APIError as e:
         error_msg = str(e)
         if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg or 'RATE_LIMIT_EXCEEDED' in error_msg:
-            st.warning("⚠️ Rate limit exceeded. Please wait a moment and try again.")
+            logger.warning("Rate limit exceeded while updating %s row %s", sheet_name, row_index)
             return False
         else:
             st.error(f"Error updating data in {sheet_name}: {str(e)}")
@@ -409,7 +411,7 @@ def delete_data(sheet_name: str, row_index: int) -> bool:
     except gspread.exceptions.APIError as e:
         error_msg = str(e)
         if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg or 'RATE_LIMIT_EXCEEDED' in error_msg:
-            st.warning("⚠️ Rate limit exceeded. Please wait a moment and try again.")
+            logger.warning("Rate limit exceeded while deleting row %s from %s", row_index, sheet_name)
             return False
         else:
             st.error(f"Error deleting data from {sheet_name}: {str(e)}")
