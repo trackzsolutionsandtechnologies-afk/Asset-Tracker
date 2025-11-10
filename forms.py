@@ -1755,24 +1755,39 @@ def asset_master_form():
             else:
                 st.caption(f"Showing {len(filtered_df)} of {len(assets_df)} asset(s)")
 
-                asset_display_df = filtered_df[
-                    [
-                        "Asset ID",
-                        "Asset Name",
-                        "Category",
-                        "Sub Category",
-                        "Location",
-                        "Assigned To",
-                        "Status",
-                        "Condition",
-                        "Supplier",
-                        "Model / Serial No",
-                        "Purchase Date",
-                        "Purchase Cost",
-                        "Warranty",
-                        "Remarks",
-                    ]
-                ].copy()
+                desired_columns = [
+                    "Asset ID",
+                    "Asset Name",
+                    "Category",
+                    "Sub Category",
+                    "Location",
+                    "Assigned To",
+                    "Status",
+                    "Condition",
+                    "Supplier",
+                    "Model / Serial No",
+                    "Model/Serial No",
+                    "Purchase Date",
+                    "Purchase Cost",
+                    "Warranty",
+                    "Remarks",
+                ]
+                available_columns = [col for col in desired_columns if col in filtered_df.columns]
+
+                if not available_columns:
+                    st.warning("No displayable columns found for the current asset data.")
+                    return
+
+                asset_display_df = filtered_df[available_columns].copy()
+
+                # ensure we only keep one of model serial columns if both exist
+                if "Model / Serial No" in asset_display_df.columns and "Model/Serial No" in asset_display_df.columns:
+                    asset_display_df["Model / Serial No"] = asset_display_df["Model / Serial No"].where(
+                        asset_display_df["Model / Serial No"].astype(str).str.strip() != "",
+                        asset_display_df["Model/Serial No"],
+                    )
+                    asset_display_df = asset_display_df.drop(columns=["Model/Serial No"])
+                    available_columns = [col for col in available_columns if col != "Model/Serial No"]
 
                 st.markdown(
                     """
@@ -1812,27 +1827,42 @@ def asset_master_form():
                 with st.container():
                     st.markdown('<div class="asset-editor-container">', unsafe_allow_html=True)
 
+                    column_config_map: dict[str, st.column_config.BaseColumn] = {}
+                    if "Asset ID" in available_columns:
+                        column_config_map["Asset ID"] = st.column_config.TextColumn("Asset ID", disabled=True)
+                    if "Asset Name" in available_columns:
+                        column_config_map["Asset Name"] = st.column_config.TextColumn("Asset Name")
+                    if "Category" in available_columns:
+                        column_config_map["Category"] = st.column_config.TextColumn("Category")
+                    if "Sub Category" in available_columns:
+                        column_config_map["Sub Category"] = st.column_config.TextColumn("Sub Category")
+                    if "Location" in available_columns:
+                        column_config_map["Location"] = st.column_config.TextColumn("Location")
+                    if "Assigned To" in available_columns:
+                        column_config_map["Assigned To"] = st.column_config.TextColumn("Assigned To")
+                    if "Status" in available_columns:
+                        column_config_map["Status"] = st.column_config.TextColumn("Status")
+                    if "Condition" in available_columns:
+                        column_config_map["Condition"] = st.column_config.TextColumn("Condition")
+                    if "Supplier" in available_columns:
+                        column_config_map["Supplier"] = st.column_config.TextColumn("Supplier")
+                    if "Model / Serial No" in available_columns:
+                        column_config_map["Model / Serial No"] = st.column_config.TextColumn("Model / Serial No")
+                    if "Purchase Date" in available_columns:
+                        column_config_map["Purchase Date"] = st.column_config.TextColumn("Purchase Date")
+                    if "Purchase Cost" in available_columns:
+                        column_config_map["Purchase Cost"] = st.column_config.TextColumn("Purchase Cost")
+                    if "Warranty" in available_columns:
+                        column_config_map["Warranty"] = st.column_config.TextColumn("Warranty")
+                    if "Remarks" in available_columns:
+                        column_config_map["Remarks"] = st.column_config.TextColumn("Remarks")
+
                     editor_response = st.data_editor(
                         asset_display_df,
                         hide_index=True,
                         use_container_width=True,
                         disabled=False,
-                        column_config={
-                            "Asset ID": st.column_config.TextColumn("Asset ID", disabled=True),
-                            "Asset Name": st.column_config.TextColumn("Asset Name"),
-                            "Category": st.column_config.TextColumn("Category"),
-                            "Sub Category": st.column_config.TextColumn("Sub Category"),
-                            "Location": st.column_config.TextColumn("Location"),
-                            "Assigned To": st.column_config.TextColumn("Assigned To"),
-                            "Status": st.column_config.TextColumn("Status"),
-                            "Condition": st.column_config.TextColumn("Condition"),
-                            "Supplier": st.column_config.TextColumn("Supplier"),
-                            "Model / Serial No": st.column_config.TextColumn("Model / Serial No"),
-                            "Purchase Date": st.column_config.TextColumn("Purchase Date"),
-                            "Purchase Cost": st.column_config.TextColumn("Purchase Cost"),
-                            "Warranty": st.column_config.TextColumn("Warranty"),
-                            "Remarks": st.column_config.TextColumn("Remarks"),
-                        },
+                        column_config=column_config_map,
                         num_rows="dynamic",
                         key="assets_table_view",
                     )
