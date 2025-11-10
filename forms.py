@@ -2984,6 +2984,9 @@ def asset_maintenance_form():
                     return source_dict.get(idx_str, {})
 
                 has_changes = bool(edited_df or edited_cells or deleted_rows or added_rows)
+                st.session_state.setdefault("maintenance_save_success", False)
+                if has_changes:
+                    st.session_state["maintenance_save_success"] = False
                 success = False
                 cooldown_seconds = 10
                 current_ts = time.time()
@@ -3003,7 +3006,9 @@ def asset_maintenance_form():
                         "Save Changes",
                         type="primary",
                         use_container_width=True,
-                        disabled=(not has_changes) or (cooldown_remaining > 0),
+                        disabled=(not has_changes)
+                        or (cooldown_remaining > 0)
+                        or st.session_state.get("maintenance_save_success", False),
                         key="maintenance_save_changes",
                     )
                 with action_cols[1]:
