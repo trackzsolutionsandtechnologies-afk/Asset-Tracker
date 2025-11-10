@@ -196,7 +196,7 @@ def login_page():
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            submit_button = st.form_submit_button("Sign In", use_container_width=True)
+            submit_button = st.form_submit_button("Sign In", use_container_width=True, type="primary")
         with col2:
             forgot_password = st.form_submit_button(
                 "Forgot Password", use_container_width=True, type="secondary"
