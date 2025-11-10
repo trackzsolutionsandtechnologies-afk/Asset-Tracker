@@ -154,6 +154,7 @@ def load_custom_css() -> None:
        padding: 0.65rem 1rem !important;
        border-radius: 14px !important;
        font-weight: 600 !important;
+       font-family: "DIN", sans-serif !important;
        color: #1f2937 !important;
        background: rgba(255, 255, 255, 0.75) !important;
        border: 1px solid rgba(146, 163, 255, 0.35) !important;
@@ -172,6 +173,7 @@ def load_custom_css() -> None:
        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%) !important;
        color: #ffffff !important;
        border: 1px solid rgba(99, 102, 241, 0.75) !important;
+       font-family: "DIN", sans-serif !important;
    }
 
    [data-testid="stSidebar"] .nav-pills .nav-link svg {
