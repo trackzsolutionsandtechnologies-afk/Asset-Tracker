@@ -48,13 +48,23 @@ def load_custom_css() -> None:
         div[data-testid="stStatusWidget"],
         button[data-testid="stActionButton"],
         button[data-testid="stFeedbackButton"],
-        button[title="Hide sidebar"],
-        button[title="Show sidebar"],
         div[class*="viewerBadge"],
         a[class*="viewerBadge"],
         div[class*="stStatusWidget"],
         div[data-testid="stDeployStatus"] {
             display: none !important;
+        }
+        button[title="Show sidebar"],
+        button[title="Hide sidebar"] {
+            background-color: #38a169 !important;
+            color: #ffffff !important;
+            border-radius: 999px !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.35) !important;
+        }
+        button[title="Show sidebar"] svg,
+        button[title="Hide sidebar"] svg {
+            color: #ffffff !important;
         }
         </style>
         """,
