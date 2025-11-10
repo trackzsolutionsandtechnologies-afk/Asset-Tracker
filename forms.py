@@ -1686,9 +1686,9 @@ def asset_master_form():
                     key="asset_search",
                 )
             with filter_cols[1]:
-            status_filter_options = ["All Status"] + sorted(
-                {str(val).strip() for val in assets_df.get("Status", pd.Series()).dropna()}
-            )
+                status_filter_options = ["All Status"] + sorted(
+                    {str(val).strip() for val in assets_df.get("Status", pd.Series()).dropna()}
+                )
                 selected_status = st.selectbox("Status Filter", status_filter_options, key="asset_status_filter")
             with filter_cols[2]:
                 location_filter_options = ["All Locations"] + sorted(
