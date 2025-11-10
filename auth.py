@@ -164,144 +164,42 @@ def login_page():
     load_auth_css()
 
     st.markdown(
-        """
-        <style>
-        .auth-page-background {
-            min-height: 100vh;
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(59, 130, 246, 0.08));
-            padding: 3rem 1rem;
-        }
-        .auth-card-container {
-            max-width: 440px;
-            margin: 0 auto;
-        }
-        .auth-card {
-            padding: 2.75rem 2.5rem;
-            background: rgba(255, 255, 255, 0.96);
-            border-radius: 20px;
-            border: 1px solid rgba(203, 213, 225, 0.7);
-            box-shadow: 0 22px 45px rgba(15, 23, 42, 0.16);
-            backdrop-filter: blur(6px);
-        }
-        .auth-card-header {
-            text-align: center;
-            margin-bottom: 1.8rem;
-        }
-        .auth-card-icon {
-            font-size: 2.4rem;
-            margin-bottom: 0.5rem;
-        }
-        .auth-card-header h2 {
-            margin: 0;
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: #111827;
-        }
-        .auth-card-header p {
-            margin: 0.35rem 0 1rem;
-            color: #475569;
-            font-size: 0.92rem;
-        }
-        .auth-card [data-testid="stForm"] {
-            background: transparent !important;
-            padding: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .auth-card [data-testid="stForm"] > div:first-child {
-            padding: 0 !important;
-        }
-        .auth-form-wrapper {
-            max-width: 420px;
-            margin: 2.5rem auto;
-            padding: 2.4rem 2.25rem 2.6rem;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 18px;
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
-            backdrop-filter: blur(6px);
-        }
-        .auth-form-wrapper h1,
-        .auth-form-wrapper h2,
-        .auth-form-wrapper h3 {
-            text-align: center;
-        }
-        .auth-form-wrapper form[data-testid="stForm"] label {
-            font-weight: 600 !important;
-            color: #1f2937 !important;
-        }
-        .auth-form-wrapper form[data-testid="stForm"] input {
-            background-color: #f8fafc !important;
-            color: #0f172a !important;
-            border-radius: 12px !important;
-            border: 1px solid #cbd5f5 !important;
-            padding: 0.6rem 0.8rem !important;
-        }
-        .auth-form-wrapper form[data-testid="stForm"] input:focus {
-            border-color: #6366f1 !important;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
-        }
-        .auth-form-wrapper form button {
-            border-radius: 12px !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.01em;
-            transition: all 0.2s ease-in-out;
-        }
-        .auth-form-wrapper form button[kind="primary"] {
-            background: linear-gradient(90deg, #4C51FF 0%, #6366f1 100%) !important;
-            border: 1px solid rgba(99, 102, 241, 0.95) !important;
-            color: #ffffff !important;
-            box-shadow: 0 10px 24px rgba(99, 102, 241, 0.25);
-        }
-        .auth-form-wrapper form button[kind="primary"]:hover {
-            background: linear-gradient(90deg, #4338ca 0%, #4c51ff 100%) !important;
-            border-color: rgba(99, 102, 241, 1) !important;
-        }
-        .auth-form-wrapper form button[kind="secondary"] {
-            border: 1px solid rgba(99, 102, 241, 0.4) !important;
-            color: #4338ca !important;
-            background: rgba(99, 102, 241, 0.12) !important;
-        }
-        .auth-form-wrapper form button[kind="secondary"]:hover {
-            background: rgba(99, 102, 241, 0.2) !important;
-            border-color: rgba(99, 102, 241, 0.5) !important;
-        }
-        .auth-card-footer {
-            margin-top: 1.25rem;
-            font-size: 0.85rem;
-            color: #64748b;
-            text-align: center;
-        }
-        header[data-testid="stHeader"], header {display: none !important;}
-        div[data-testid="stToolbar"] {display: none !important;}
-        button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
-        div[data-testid="stStatusWidget"],
-        button[data-testid="stActionButton"],
-        button[data-testid="stFeedbackButton"],
-        div[data-testid="stDeployStatus"],
-        div[class*="viewerBadge"],
-        a[class*="viewerBadge"] {
-            display: none !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    """
+    <style>
+    .auth-form-wrapper form[data-testid="stForm"] input {
+        background-color: #ff8000 !important;
+        color: rgba(255,255,255,0.7)  !important;
+    }
+    .auth-form-wrapper form button {
+        background-color: #BF092F !important;
+        border: 1px solid #BF092F !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    }
+    .auth-form-wrapper form button:hover {
+        background-color: #9c0725 !important;
+        border-color: #9c0725 !important;
+    }
+    header[data-testid="stHeader"], header {display: none !important;}
+    div[data-testid="stToolbar"] {display: none !important;}
+    button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
+    div[data-testid="stStatusWidget"],
+    button[data-testid="stActionButton"],
+    button[data-testid="stFeedbackButton"],
+    div[data-testid="stDeployStatus"],
+    div[class*="viewerBadge"],
+    a[class*="viewerBadge"] {
+        display: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-    
-    st.markdown('<div class="auth-page-background">', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="auth-card-container">
-            <div class="auth-card">
-                <div class="auth-card-header">
-                    <div class="auth-card-icon">🔐</div>
-                    <h2>Asset Tracker</h2>
-                    <p>Sign in to continue managing your assets</p>
-                </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.title("🔐 ASSET TRACKER")
+
+    st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
 
     with st.form("login_form"):
         username = st.text_input("Username", key="login_username")
@@ -340,17 +238,7 @@ def login_page():
             st.session_state["show_forgot_password"] = True
             st.rerun()
 
-    st.markdown(
-        """
-            </div>
-            <div class="auth-card-footer">
-                Need help? Contact your administrator.
-            </div>
-        </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def forgot_password_page():
