@@ -3177,6 +3177,7 @@ def asset_maintenance_form():
                         table_state["added_rows"] = []
                     st.session_state.pop("maintenance_table_view", None)
                     st.session_state["maintenance_last_save_ts"] = time.time()
+                    st.rerun()
 
                 if (
                     st.session_state.get("maintenance_pending_changes", False)
