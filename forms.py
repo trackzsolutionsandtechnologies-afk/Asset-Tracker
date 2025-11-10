@@ -3027,7 +3027,10 @@ def asset_maintenance_form():
                         st.warning("Please wait for the save cooldown before saving again.", icon="⏱️")
                         success = False
 
-                    if deleted_rows:
+                    if save_clicked and success:
+                        st.success("Changes saved successfully! Refresh if the table doesn't update automatically.", icon="✅")
+
+                    if deleted_rows and save_clicked:
                         for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
                             if isinstance(delete_idx, int) and delete_idx < len(filtered_df):
                                 target_row = filtered_df.iloc[delete_idx]
