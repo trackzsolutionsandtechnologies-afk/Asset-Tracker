@@ -315,7 +315,7 @@ def main():
                     "color": "#312e81",
                 },
                 "nav-link-selected": {
-                    "background": "#5C3E94",
+                    "background": "#F0F9FF",
                     "color": "#ffffff",
                     "box-shadow": "0 10px 22px rgba(79, 70, 229, 0.20)",
                 },
