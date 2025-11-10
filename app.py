@@ -224,7 +224,7 @@ def main():
         
         # Navigation menu
         selected = option_menu(
-            menu_title="Navigation",
+            menu_title="🧭",
             options=[
                 "Dashboard",
                 "Location",
