@@ -1832,34 +1832,13 @@ def asset_master_form():
                     st.markdown('<div class="asset-editor-container">', unsafe_allow_html=True)
 
                     column_config_map: dict[str, st.column_config.BaseColumn] = {}
-                    if "Asset ID" in available_columns:
-                        column_config_map["Asset ID"] = st.column_config.TextColumn("Asset ID", disabled=True)
-                    if "Asset Name" in available_columns:
-                        column_config_map["Asset Name"] = st.column_config.TextColumn("Asset Name")
-                    if "Category" in available_columns:
-                        column_config_map["Category"] = st.column_config.TextColumn("Category")
-                    if "Sub Category" in available_columns:
-                        column_config_map["Sub Category"] = st.column_config.TextColumn("Sub Category")
-                    if "Location" in available_columns:
-                        column_config_map["Location"] = st.column_config.TextColumn("Location")
-                    if "Assigned To" in available_columns:
-                        column_config_map["Assigned To"] = st.column_config.TextColumn("Assigned To")
-                    if "Status" in available_columns:
-                        column_config_map["Status"] = st.column_config.TextColumn("Status")
-                    if "Condition" in available_columns:
-                        column_config_map["Condition"] = st.column_config.TextColumn("Condition")
-                    if "Supplier" in available_columns:
-                        column_config_map["Supplier"] = st.column_config.TextColumn("Supplier")
-                    if "Model / Serial No" in available_columns:
-                        column_config_map["Model / Serial No"] = st.column_config.TextColumn("Model / Serial No")
-                    if "Purchase Date" in available_columns:
-                        column_config_map["Purchase Date"] = st.column_config.TextColumn("Purchase Date")
-                    if "Purchase Cost" in available_columns:
-                        column_config_map["Purchase Cost"] = st.column_config.TextColumn("Purchase Cost")
-                    if "Warranty" in available_columns:
-                        column_config_map["Warranty"] = st.column_config.TextColumn("Warranty")
-                    if "Remarks" in available_columns:
-                        column_config_map["Remarks"] = st.column_config.TextColumn("Remarks")
+                    for column_name in available_columns:
+                        if column_name == "Asset ID":
+                            column_config_map[column_name] = st.column_config.TextColumn(column_name, disabled=True)
+                        elif column_name in {"Purchase Cost"}:
+                            column_config_map[column_name] = st.column_config.NumberColumn(column_name, step=0.01, format="%.2f")
+                        else:
+                            column_config_map[column_name] = st.column_config.TextColumn(column_name)
 
                     editor_response = st.data_editor(
                         asset_display_df,
