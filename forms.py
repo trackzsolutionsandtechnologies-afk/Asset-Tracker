@@ -1783,7 +1783,12 @@ def asset_master_form():
                     st.warning("No displayable columns found for the current asset data.")
                     return
 
-                asset_display_df = filtered_df[list(resolved_column_map.values())].copy()
+                unique_sources: list[str] = []
+                for source in resolved_column_map.values():
+                    if source not in unique_sources:
+                        unique_sources.append(source)
+
+                asset_display_df = filtered_df[unique_sources].copy()
                 asset_display_df.rename(columns={source: target for target, source in resolved_column_map.items()}, inplace=True)
 
                 available_columns = list(resolved_column_map.keys())
