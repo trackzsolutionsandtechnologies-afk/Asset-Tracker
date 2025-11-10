@@ -33,24 +33,19 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-[data-testid="stSidebar"] {
+    [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #e9f7ef 0%, #fefefe 100%) !important;
         padding: 1.75rem 1.5rem 2.25rem 1.5rem !important;
         border-right: 1px solid #d4e4d7 !important;
+         min-width: 200px !important;
+         max-width: 600px !important;
         box-shadow: 12px 0 24px rgba(0, 0, 0, 0.05);
     }
-    [data-testid="stSidebar"] > div:first-child { 
-        padding-top: 1rem !important; 
-        min-width: 260px !important;
-        max-width: 260px !important;
-    }
-    section[data-testid="stSidebar"] {
-        min-width: 260px !important;
-        max-width: 260px !important;
-    }
-    section[data-testid="stSidebar"] + div {
-        display: none !important;
-    }
+    [data-testid="stSidebar"] + div {
+    pointer-events: none !important;  /* disable the drag handle */
+    width: 0 !important;
+}
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1rem !important; }
     [data-testid="stSidebar"] .nav { gap: 0.5rem !important; }
 
     [data-testid="stSidebar"] .nav-pills .nav-link {
