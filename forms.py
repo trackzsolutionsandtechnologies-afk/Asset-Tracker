@@ -8,7 +8,7 @@ import time
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers, get_worksheet
 def _ensure_headers_once(sheet_key: str, headers: list[str]) -> None:
     """
@@ -3655,15 +3655,40 @@ def employee_assignment_form():
                             st.error("Failed to save assignment")
 
     with tab2:
-        user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-        is_admin = str(user_role).lower() == "admin"
+        if "assignment_success_message" in st.session_state:
+            st.success(st.session_state["assignment_success_message"])
+            del st.session_state["assignment_success_message"]
 
-        if not assignments_df.empty:
-            search_term = st.text_input(
-                "🔍 Search Assignments",
-                placeholder="Search by assignment ID, username, or asset...",
-                key="assignment_search",
-            )
+        st.session_state.pop("edit_assignment_id", None)
+        st.session_state.pop("edit_assignment_idx", None)
+
+        if assignments_df.empty:
+            st.info("No assignments found. Add one using the 'Add Assignment' tab.")
+        else:
+            st.subheader("View / Edit Assignments")
+
+            filter_cols = st.columns([2, 1, 1, 1])
+            with filter_cols[0]:
+                search_term = st.text_input(
+                    "🔍 Search Assignments",
+                    placeholder="Search by assignment ID, username, or asset...",
+                    key="assignment_search",
+                )
+            with filter_cols[1]:
+                status_options = ["All Status"] + sorted(
+                    {str(val).strip() for val in assignments_df.get("Status", pd.Series()).dropna()}
+                )
+                selected_status = st.selectbox("Status Filter", status_options, key="assignment_status_filter")
+            with filter_cols[2]:
+                username_filter_options = ["All Users"] + sorted(
+                    {str(val).strip() for val in assignments_df.get("Username", pd.Series()).dropna()}
+                )
+                selected_username = st.selectbox("User Filter", username_filter_options, key="assignment_user_filter")
+            with filter_cols[3]:
+                asset_filter_options = ["All Assets"] + sorted(
+                    {str(val).strip() for val in assignments_df.get("Asset ID", pd.Series()).dropna()}
+                )
+                selected_asset = st.selectbox("Asset Filter", asset_filter_options, key="assignment_asset_filter")
 
             filtered_df = assignments_df.copy()
             if search_term:
@@ -3675,280 +3700,374 @@ def employee_assignment_form():
                     )
                 ]
 
-            if filtered_df.empty:
-                if search_term:
-                    st.warning("No assignments match your search.")
-                else:
-                    st.info("No assignments found. Add one using the 'Add Assignment' tab.")
-            else:
-                field_headers = [
-                    "**Asset ID**",
-                    "**Username**",
-                    "**Status**",
-                    "**Condition**",
-                    "**Assignment Date**",
-                    "**View**",
+            if selected_status != "All Status":
+                filtered_df = filtered_df[
+                    filtered_df["Status"].astype(str).str.strip().str.lower()
+                    == selected_status.strip().lower()
                 ]
-                header_cols = (
-                    st.columns([2, 2, 2, 2, 2, 1, 1, 1])
-                    if is_admin
-                    else st.columns([2, 2, 2, 2, 2, 1, 1])
-                )
-                for col_widget, header in zip(header_cols[: len(field_headers)], field_headers):
-                    with col_widget:
-                        st.write(header)
-                with header_cols[len(field_headers)]:
-                    st.write("**Edit**")
-                if is_admin:
-                    with header_cols[-1]:
-                        st.write("**Delete**")
-                st.divider()
 
-                for idx, row in filtered_df.iterrows():
-                    if (
-                        "Assignment ID" in assignments_df.columns
-                        and not assignments_df[
-                            assignments_df["Assignment ID"].astype(str) == str(row.get("Assignment ID", ""))
-                        ].empty
-                    ):
-                        original_idx = int(
-                            assignments_df[
-                                assignments_df["Assignment ID"].astype(str)
-                                == str(row.get("Assignment ID", ""))
-                            ].index[0]
-                        )
-                    else:
-                        original_idx = int(idx) if isinstance(idx, int) else int(idx) if str(idx).isdigit() else 0
+            if selected_username != "All Users":
+                filtered_df = filtered_df[
+                    filtered_df["Username"].astype(str).str.strip().str.lower()
+                    == selected_username.strip().lower()
+                ]
 
-                    cols = (
-                        st.columns([2, 2, 2, 2, 2, 1, 1, 1])
-                        if is_admin
-                        else st.columns([2, 2, 2, 2, 2, 1, 1])
-                    )
-                    display_values = [
-                        row.get("Asset ID", "N/A"),
-                        row.get("Username", "N/A"),
-                        row.get("Status", ""),
-                        row.get("Condition on Issue", ""),
-                        row.get("Assignment Date", ""),
-                    ]
-                    for col_widget, value in zip(cols[: len(display_values)], display_values):
-                        with col_widget:
-                            st.write(value if value not in ("", None) else "N/A")
+            if selected_asset != "All Assets":
+                filtered_df = filtered_df[
+                    filtered_df["Asset ID"].astype(str).str.strip().str.lower()
+                    == selected_asset.strip().lower()
+                ]
 
-                    col_view = cols[len(display_values)]
-                    edit_placeholder = cols[len(display_values) + 1]
-                    with col_view:
-                        if st.button("👁️", key=f"assignment_view_{row.get('Assignment ID', idx)}", use_container_width=True, help="View details"):
-                            record = {
-                                "Assignment ID": row.get("Assignment ID", ""),
-                                "Username": row.get("Username", ""),
-                                "Asset ID": row.get("Asset ID", ""),
-                                "Issued By": row.get("Issued By", ""),
-                                "Assignment Date": row.get("Assignment Date", ""),
-                                "Expected Return Date": row.get("Expected Return Date", ""),
-                                "Return Date": row.get("Return Date", ""),
-                                "Status": row.get("Status", ""),
-                                "Condition on Issue": row.get("Condition on Issue", ""),
-                                "Remarks": row.get("Remarks", ""),
-                            }
-                            _open_view_modal(
-                                "assignment",
-                                f"Assignment Details: {row.get('Assignment ID', '')}",
-                                record,
-                                [
-                                    "Assignment ID",
-                                    "Username",
-                                    "Asset ID",
-                                    "Issued By",
-                                    "Assignment Date",
-                                    "Expected Return Date",
-                                    "Return Date",
-                                    "Status",
-                                    "Condition on Issue",
-                                    "Remarks",
-                                ],
-                            )
-                    with edit_placeholder:
-                        if st.button("✏️", key=f"assignment_edit_{row.get('Assignment ID', idx)}"):
-                            st.session_state["edit_assignment_id"] = row.get("Assignment ID", "")
-                            st.session_state["edit_assignment_idx"] = original_idx
-                            st.rerun()
+            if filtered_df.empty:
+                st.info("No assignments match the current filters.")
+                st.session_state["assignments_pending_changes"] = False
+            else:
+                st.caption(f"Showing {len(filtered_df)} of {len(assignments_df)} assignment(s)")
 
-                    if is_admin:
-                        col_delete = cols[-1]
-                        with col_delete:
-                            if st.button(
-                                "🗑️",
-                                key=f"assignment_delete_{row.get('Assignment ID', idx)}",
-                            ):
-                                if delete_data(SHEETS["assignments"], original_idx):
-                                    st.session_state["assignment_success_message"] = (
-                                        f"🗑️ Assignment '{row.get('Assignment ID', '')}' deleted."
-                                    )
-                                    status_after_delete = row.get("Status", "")
-                                    if str(status_after_delete).strip().lower() == "assigned":
-                                        status_after_delete = ""
-                                    update_asset_assignment(row.get("Asset ID", ""), "", status_after_delete)
-                                    st.session_state["refresh_asset_users"] = True
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete assignment")
-
-                    st.divider()
-                _render_view_modal("assignment")
-
-        else:
-            st.info("No assignments found. Add one using the 'Add Assignment' tab.")
-
-        if (
-            "edit_assignment_id" in st.session_state
-            and st.session_state["edit_assignment_id"]
-        ):
-            edit_id = st.session_state["edit_assignment_id"]
-            edit_idx = st.session_state.get("edit_assignment_idx", 0)
-            edit_row = assignments_df[assignments_df.get("Assignment ID", pd.Series()).astype(str) == str(edit_id)]
-
-            if not edit_row.empty:
-                record = edit_row.iloc[0]
-                st.subheader(f"Edit Assignment: {edit_id}")
-                with st.form(f"edit_assignment_form_{edit_id}"):
-                    if user_options:
-                        try:
-                            default_user_idx = user_options.index(record.get("Username", ""))
-                        except ValueError:
-                            default_user_idx = 0
-                        username_new = st.selectbox(
-                            "Username *",
-                            user_options,
-                            index=default_user_idx,
-                        )
-                    else:
-                        username_new = st.text_input(
-                            "Username *",
-                            value=record.get("Username", ""),
-                        )
-
-                    if asset_options:
-                        try:
-                            default_asset_idx = asset_options.index(record.get("Asset ID", ""))
-                        except ValueError:
-                            default_asset_idx = 0
-                        asset_id_new = st.selectbox(
-                            "Asset ID *",
-                            asset_options,
-                            index=default_asset_idx,
-                        )
-                    else:
-                        asset_id_new = st.text_input(
-                            "Asset ID *",
-                            value=record.get("Asset ID", ""),
-                        )
-
-                    assignment_date_new = st.date_input(
-                        "Assignment Date *",
-                        value=parse_date_value(record.get("Assignment Date")),
-                    )
-                    if issued_by_options:
-                        try:
-                            default_issued_idx = issued_by_options.index(record.get("Issued By", ""))
-                        except ValueError:
-                            default_issued_idx = 0
-                        issued_by_new = st.selectbox(
-                            "Issued By *",
-                            issued_by_options,
-                            index=default_issued_idx,
-                        )
-                    else:
-                        issued_by_new = st.text_input(
-                            "Issued By *",
-                            value=record.get("Issued By", ""),
-                        )
-
-                    expected_return_new = st.date_input(
+                base_df = filtered_df.reset_index(drop=True).copy()
+                editor_df = base_df[
+                    [
+                        "Assignment ID",
+                        "Username",
+                        "Asset ID",
+                        "Issued By",
+                        "Assignment Date",
                         "Expected Return Date",
-                        value=parse_date_value(record.get("Expected Return Date")),
-                    )
-                    return_date_new = st.date_input(
                         "Return Date",
-                        value=parse_date_value(record.get("Return Date")) or parse_date_value(record.get("Assignment Date")),
-                    )
-
-                    status_new = st.selectbox(
                         "Status",
-                        ["Assigned", "Returned", "Under Repair"],
-                        index={
-                            "assigned": 0,
-                            "returned": 1,
-                            "under repair": 2,
-                        }.get(str(record.get("Status", "Assigned")).strip().lower(), 0),
-                    )
-                    condition_new = st.selectbox(
                         "Condition on Issue",
-                        ["Working", "Damaged", "Used"],
-                        index={
-                            "working": 0,
-                            "damaged": 1,
-                            "used": 2,
-                        }.get(str(record.get("Condition on Issue", "Working")).strip().lower(), 0),
-                    )
-                    remarks_new = st.text_area(
                         "Remarks",
-                        value=record.get("Remarks", ""),
+                    ]
+                ].copy()
+                date_columns = ["Assignment Date", "Expected Return Date", "Return Date"]
+                for date_col in date_columns:
+                    editor_df[date_col] = pd.to_datetime(editor_df[date_col], errors="coerce").dt.date
+
+                editor_df = editor_df.fillna("")
+
+                st.markdown(
+                    """
+                    <style>
+                    [data-testid="stDataEditor"] thead th,
+                    [data-testid="stDataEditor"] div[role="columnheader"] {
+                        background-color: #BF092F !important;
+                        color: #1A202C !important;
+                        font-weight: 600 !important;
+                    }
+                    [data-testid="stDataEditor"] div[role="columnheader"] * {
+                        color: #1A202C !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td {
+                        border-right: 1px solid #f0f0f0 !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td:last-child {
+                        border-right: none !important;
+                    }
+                    [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                        display: none !important;
+                    }
+                    div[data-testid="stButton"] button:disabled,
+                    div[data-testid="stButton"] button:disabled:hover,
+                    div[data-testid="stButton"] button:disabled:focus {
+                        background-color: #cbd5e0 !important;
+                        color: #4a5568 !important;
+                        border-color: #cbd5e0 !important;
+                        cursor: not-allowed !important;
+                        opacity: 1 !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                username_options_select = sorted(
+                    {str(val).strip() for val in users_df.get("Username", pd.Series()).dropna()}
+                    if "users_df" in locals()
+                    else {str(val).strip() for val in base_df.get("Username", pd.Series()).dropna()}
+                )
+                if not username_options_select:
+                    username_options_select = sorted(
+                        {str(val).strip() for val in base_df.get("Username", pd.Series()).dropna()}
+                    )
+                asset_options_select = sorted(
+                    {str(val).strip() for val in assets_df.get("Asset ID", pd.Series()).dropna()}
+                    if "assets_df" in locals()
+                    else {str(val).strip() for val in base_df.get("Asset ID", pd.Series()).dropna()}
+                )
+                issued_by_options_select = sorted(
+                    {str(val).strip() for val in issued_by_options}
+                    if issued_by_options
+                    else {str(val).strip() for val in base_df.get("Issued By", pd.Series()).dropna()}
+                )
+
+                status_options_select = ["Assigned", "Returned", "Under Repair"]
+                condition_options_select = ["Working", "Damaged", "Used"]
+
+                editor_response = st.data_editor(
+                    editor_df,
+                    hide_index=True,
+                    use_container_width=True,
+                    disabled=False,
+                    column_config={
+                        "Assignment ID": st.column_config.TextColumn("Assignment ID", disabled=True),
+                        "Username": st.column_config.SelectboxColumn(
+                            "Username",
+                            options=username_options_select or [""],
+                        ),
+                        "Asset ID": st.column_config.SelectboxColumn(
+                            "Asset ID",
+                            options=asset_options_select or [""],
+                        ),
+                        "Issued By": st.column_config.SelectboxColumn(
+                            "Issued By",
+                            options=issued_by_options_select or [""],
+                        ),
+                        "Assignment Date": st.column_config.DateColumn("Assignment Date", format="YYYY-MM-DD"),
+                        "Expected Return Date": st.column_config.DateColumn("Expected Return Date", format="YYYY-MM-DD"),
+                        "Return Date": st.column_config.DateColumn("Return Date", format="YYYY-MM-DD"),
+                        "Status": st.column_config.SelectboxColumn("Status", options=status_options_select),
+                        "Condition on Issue": st.column_config.SelectboxColumn(
+                            "Condition on Issue", options=condition_options_select
+                        ),
+                        "Remarks": st.column_config.TextColumn("Remarks"),
+                    },
+                    num_rows="dynamic",
+                    key="assignments_table_view",
+                )
+
+                st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #d0d0d0;' />", unsafe_allow_html=True)
+
+                editor_state = st.session_state.get("assignments_table_view", {})
+                edited_rows = deepcopy(editor_state.get("edited_rows", {}))
+                edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+                deleted_rows = list(editor_state.get("deleted_rows", []))
+                added_rows = list(editor_state.get("added_rows", []))
+
+                st.session_state.setdefault("assignments_save_success", False)
+                st.session_state.setdefault("assignments_pending_changes", False)
+                st.session_state.setdefault("assignments_last_save_ts", 0.0)
+
+                pending_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+                if pending_changes:
+                    st.session_state["assignments_pending_changes"] = True
+                    st.session_state["assignments_save_success"] = False
+                else:
+                    st.session_state["assignments_pending_changes"] = False
+
+                cooldown_seconds = 10
+                current_ts = time.time()
+                last_save_ts = float(st.session_state.get("assignments_last_save_ts", 0.0) or 0.0)
+                cooldown_remaining = max(0.0, cooldown_seconds - (current_ts - last_save_ts))
+
+                if st.session_state.get("assignments_pending_changes", False) and not st.session_state.get(
+                    "assignments_save_success", False
+                ):
+                    st.info("You have unsaved assignment changes. Click 'Save Changes' to apply them.", icon="✏️")
+                if cooldown_remaining > 0:
+                    st.warning(
+                        f"Please wait {cooldown_remaining:.0f} second(s) before saving again to avoid hitting Google Sheets limits.",
+                        icon="⏳",
                     )
 
-                    col_update, col_cancel = st.columns(2)
-                    with col_update:
-                        if st.form_submit_button("Update", use_container_width=True):
-                            if user_options and username_new == "Select user":
-                                st.error("Please select a Username")
-                            elif not username_new:
-                                st.error("Please provide a Username")
-                            elif asset_options and asset_id_new == "Select asset":
-                                st.error("Please select an Asset")
-                            elif not asset_id_new:
-                                st.error("Please provide an Asset ID")
-                            elif issued_by_options and issued_by_new == "Select user":
-                                st.error("Please select Issued By")
-                            elif not issued_by_new:
-                                st.error("Please provide Issued By")
-                            else:
-                                old_asset_id = record.get("Asset ID", "")
-                                old_status = str(record.get("Status", "")).strip()
-                                update_map = {
-                                    "Assignment ID": edit_id,
-                                    "Username": username_new,
-                                    "Asset ID": asset_id_new,
-                                    "Issued By": issued_by_new,
-                                    "Assignment Date": assignment_date_new.strftime("%Y-%m-%d"),
-                                    "Expected Return Date": expected_return_new.strftime("%Y-%m-%d") if expected_return_new else "",
-                                    "Return Date": return_date_new.strftime("%Y-%m-%d") if return_date_new else "",
-                                    "Status": status_new,
-                                    "Condition on Issue": condition_new,
-                                    "Remarks": remarks_new,
-                                }
-                                column_order = list(assignments_df.columns)
-                                updated_row = [update_map.get(col, record.get(col, "")) for col in column_order]
-                                if update_data(SHEETS["assignments"], int(edit_idx), updated_row):
-                                    st.session_state["assignment_success_message"] = (
-                                        f"✅ Assignment '{edit_id}' updated successfully!"
-                                    )
-                                    new_assignee = username_new if status_new == "Assigned" else ""
-                                    update_asset_assignment(asset_id_new, new_assignee, status_new)
-                                    if asset_id_new != old_asset_id or (old_status.lower() == "assigned" and status_new != "Assigned"):
-                                        old_status_value = "" if old_status.lower() == "assigned" else old_status
-                                        update_asset_assignment(old_asset_id, "", status_new if asset_id_new == old_asset_id else old_status_value)
-                                    st.session_state["refresh_asset_users"] = True
-                                    st.session_state.pop("edit_assignment_id", None)
-                                    st.session_state.pop("edit_assignment_idx", None)
-                                    st.rerun()
+                action_cols = st.columns([1, 1], gap="small")
+                with action_cols[0]:
+                    save_clicked = st.button(
+                        "Save Changes",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=(not st.session_state.get("assignments_pending_changes", False)) or (cooldown_remaining > 0),
+                        key="assignments_save_changes",
+                    )
+                with action_cols[1]:
+                    discard_clicked = st.button(
+                        "Discard Changes",
+                        use_container_width=True,
+                        disabled=not st.session_state.get("assignments_pending_changes", False),
+                        key="assignments_discard_changes",
+                    )
+
+                success = False
+                messages: list[str] = []
+
+                if discard_clicked and st.session_state.get("assignments_pending_changes", False):
+                    st.session_state.pop("assignments_table_view", None)
+                    st.session_state["assignments_pending_changes"] = False
+                    st.session_state["assignments_save_success"] = False
+                    st.rerun()
+
+                if save_clicked and st.session_state.get("assignments_pending_changes", False):
+                    success = True
+                    st.session_state["assignments_save_success"] = False
+                    if cooldown_remaining > 0:
+                        st.warning("Please wait for the save cooldown before saving again.", icon="⏱️")
+                        success = False
+
+                    if added_rows:
+                        st.warning("Please use the 'Add Assignment' tab to create new assignments.", icon="ℹ️")
+
+                    deleted_set = set()
+                    if deleted_rows and success:
+                        for delete_idx in sorted(deleted_rows, reverse=True):
+                            try:
+                                normalized_idx = int(delete_idx)
+                            except (TypeError, ValueError):
+                                normalized_idx = delete_idx
+                            if isinstance(normalized_idx, int) and normalized_idx < len(base_df):
+                                row = base_df.iloc[normalized_idx]
+                                assignment_id_value = str(row.get("Assignment ID", "")).strip()
+                                match_df = assignments_df[
+                                    assignments_df["Assignment ID"].astype(str).str.strip().str.lower()
+                                    == assignment_id_value.lower()
+                                ]
+                                if not match_df.empty:
+                                    original_idx = int(match_df.index[0])
+                                    if delete_data(SHEETS["assignments"], original_idx):
+                                        messages.append(f"🗑️ Assignment '{assignment_id_value}' deleted.")
+                                        status_after_delete = str(row.get("Status", "")).strip()
+                                        if status_after_delete.lower() == "assigned":
+                                            status_after_delete = ""
+                                        update_asset_assignment(row.get("Asset ID", ""), "", status_after_delete)
+                                        assignments_df = assignments_df.drop(index=original_idx)
+                                        deleted_set.add(normalized_idx)
+                                        st.session_state["refresh_asset_users"] = True
+                                    else:
+                                        st.error(f"Failed to delete assignment '{assignment_id_value}'.")
+                                        success = False
                                 else:
-                                    st.error("Failed to update assignment")
-                    with col_cancel:
-                        if st.form_submit_button("Cancel", use_container_width=True):
-                            st.session_state.pop("edit_assignment_id", None)
-                            st.session_state.pop("edit_assignment_idx", None)
-                            st.rerun()
+                                    st.error(f"Unable to locate assignment '{assignment_id_value}' for deletion.")
+                                    success = False
+                            else:
+                                st.error("Unable to resolve assignment row for deletion.")
+                                success = False
+
+                    if success:
+                        rows_to_update: set[int] = set()
+                        for idx_key in list(edited_rows.keys()) + list(edited_cells.keys()):
+                            try:
+                                norm_idx = int(idx_key)
+                            except (TypeError, ValueError):
+                                try:
+                                    norm_idx = int(str(idx_key))
+                                except ValueError:
+                                    norm_idx = idx_key
+                            if isinstance(norm_idx, int) and norm_idx not in deleted_set:
+                                rows_to_update.add(norm_idx)
+
+                        if isinstance(editor_response, pd.DataFrame):
+                            for idx in range(len(editor_response)):
+                                row = editor_response.iloc[idx]
+                                original_row = base_df.iloc[idx] if idx < len(base_df) else None
+                                if original_row is None:
+                                    continue
+                                has_diff = False
+                                for column_name in editor_df.columns:
+                                    if str(row.get(column_name, "")).strip() != str(original_row.get(column_name, "")).strip():
+                                        has_diff = True
+                                        break
+                                if has_diff and idx not in deleted_set:
+                                    rows_to_update.add(idx)
+
+                        for idx in sorted(rows_to_update):
+                            if not isinstance(idx, int) or idx >= len(editor_response):
+                                continue
+
+                            current_row = editor_response.iloc[idx]
+                            original_row = base_df.iloc[idx]
+
+                            assignment_id_value = str(current_row.get("Assignment ID", "")).strip()
+                            username_value = str(current_row.get("Username", "")).strip()
+                            asset_id_value = str(current_row.get("Asset ID", "")).strip()
+                            issued_by_value = str(current_row.get("Issued By", "")).strip()
+                            status_value = str(current_row.get("Status", "")).strip() or "Assigned"
+                            condition_value = str(current_row.get("Condition on Issue", "")).strip() or "Working"
+                            remarks_value = str(current_row.get("Remarks", "")).strip()
+
+                            if not assignment_id_value:
+                                continue
+                            if not username_value:
+                                st.error(f"Username is required for assignment '{assignment_id_value}'.")
+                                success = False
+                                continue
+                            if not asset_id_value:
+                                st.error(f"Asset ID is required for assignment '{assignment_id_value}'.")
+                                success = False
+                                continue
+                            if not issued_by_value:
+                                st.error(f"Issued By is required for assignment '{assignment_id_value}'.")
+                                success = False
+                                continue
+
+                            def _date_to_string(value: Any) -> str:
+                                if isinstance(value, datetime):
+                                    return value.strftime("%Y-%m-%d")
+                                if isinstance(value, pd.Timestamp):
+                                    return value.strftime("%Y-%m-%d")
+                                if hasattr(value, "isoformat"):
+                                    try:
+                                        return value.isoformat()
+                                    except Exception:
+                                        return str(value)
+                                value_str = str(value).strip()
+                                if value_str.lower() in ("nat", "nan", "none", ""):
+                                    return ""
+                                return value_str
+
+                            assignment_date_str = _date_to_string(current_row.get("Assignment Date", ""))
+                            expected_return_str = _date_to_string(current_row.get("Expected Return Date", ""))
+                            return_date_str = _date_to_string(current_row.get("Return Date", ""))
+
+                            match_df = assignments_df[
+                                assignments_df["Assignment ID"].astype(str).str.strip().str.lower()
+                                == assignment_id_value.lower()
+                            ]
+                            if match_df.empty:
+                                st.error(f"Unable to locate assignment '{assignment_id_value}' for update.")
+                                success = False
+                                continue
+
+                            original_idx = int(match_df.index[0])
+                            old_asset_id = str(original_row.get("Asset ID", "")).strip()
+                            old_status = str(original_row.get("Status", "")).strip()
+
+                            updated_row = [
+                                assignment_id_value,
+                                username_value,
+                                asset_id_value,
+                                issued_by_value,
+                                assignment_date_str,
+                                expected_return_str,
+                                return_date_str,
+                                status_value,
+                                condition_value,
+                                remarks_value,
+                            ]
+
+                            if update_data(SHEETS["assignments"], original_idx, updated_row):
+                                messages.append(f"✅ Assignment '{assignment_id_value}' updated successfully!")
+                                assignments_df.loc[original_idx, assignments_df.columns] = updated_row
+
+                                new_assignee = username_value if status_value == "Assigned" else ""
+                                update_asset_assignment(asset_id_value, new_assignee, status_value)
+                                if (
+                                    asset_id_value != old_asset_id
+                                    or (old_status.lower() == "assigned" and status_value != "Assigned")
+                                ):
+                                    old_status_value = "" if old_status.lower() == "assigned" else old_status
+                                    update_asset_assignment(old_asset_id, "", old_status_value)
+                                st.session_state["refresh_asset_users"] = True
+                            else:
+                                st.error(f"Failed to update assignment '{assignment_id_value}'.")
+                                success = False
+
+                if success and save_clicked and st.session_state.get("assignments_pending_changes", False):
+                    st.session_state["assignments_save_success"] = True
+                    st.session_state["assignments_pending_changes"] = False
+                    st.session_state["assignments_last_save_ts"] = time.time()
+                    st.session_state.pop("assignments_table_view", None)
+                    st.session_state["assignment_success_message"] = (
+                        " ".join(messages) if messages else "✅ Assignment changes saved successfully!"
+                    )
+                    st.rerun()
 
 
 def user_management_form():
