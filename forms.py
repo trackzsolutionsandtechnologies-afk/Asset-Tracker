@@ -2988,7 +2988,7 @@ def asset_maintenance_form():
                 current_ts = time.time()
                 last_save_ts = float(st.session_state.get("maintenance_last_save_ts", 0.0) or 0.0)
                 cooldown_remaining = max(0.0, cooldown_seconds - (current_ts - last_save_ts))
-                if has_changes and not success:
+                if has_changes and not st.session_state.get("maintenance_save_success", False):
                     st.info("You have unsaved maintenance changes. Click 'Save Changes' to apply them.", icon="✏️")
                 if cooldown_remaining > 0:
                     st.warning(
@@ -3023,12 +3023,10 @@ def asset_maintenance_form():
 
                 if save_clicked and has_changes:
                     success = True
+                    st.session_state["maintenance_save_success"] = False
                     if cooldown_remaining > 0:
                         st.warning("Please wait for the save cooldown before saving again.", icon="⏱️")
                         success = False
-
-                    if save_clicked and success:
-                        st.success("Changes saved successfully! Refresh if the table doesn't update automatically.", icon="✅")
 
                     if deleted_rows and save_clicked:
                         for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
@@ -3140,7 +3138,10 @@ def asset_maintenance_form():
                     if added_rows:
                         st.warning("New rows must be added from the 'Add Maintenance Record' tab.")
 
-                    if success:
+                if success and save_clicked and has_changes:
+                    st.success("Changes saved successfully! Refresh if the table doesn't update automatically.", icon="✅")
+                    st.session_state["maintenance_save_success"] = True
+                if success:
                         st.session_state["cached_sheet_maintenance"] = read_data(SHEETS["maintenance"])
                         st.session_state["cached_sheet_assets"] = read_data(SHEETS["assets"])
                         table_state = st.session_state.get("maintenance_table_view")
