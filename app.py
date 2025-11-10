@@ -30,7 +30,83 @@ st.set_page_config(
     
     initial_sidebar_state="expanded"
 )
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #e9f7ef 0%, #fefefe 100%) !important;
+        padding: 1.75rem 1.5rem 2.25rem 1.5rem !important;
+        border-right: 1px solid #d4e4d7 !important;
+        box-shadow: 12px 0 24px rgba(0, 0, 0, 0.05);
+    }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1rem !important; }
+    [data-testid="stSidebar"] .nav { gap: 0.5rem !important; }
 
+    [data-testid="stSidebar"] .nav-pills .nav-link {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.6rem !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        font-weight: 600 !important;
+        color: #2f3e46 !important;
+        background: rgba(255, 255, 255, 0.75) !important;
+        border: 1px solid rgba(209, 224, 214, 0.8) !important;
+        transition: all 0.2s ease-in-out !important;
+        backdrop-filter: blur(6px);
+    }
+    [data-testid="stSidebar"] .nav-pills .nav-link svg {
+        width: 1.05rem !important;
+        height: 1.05rem !important;
+        color: inherit !important;
+    }
+    [data-testid="stSidebar"] .nav-pills .nav-link:hover {
+        color: #14532d !important;
+        background: rgba(168, 236, 194, 0.35) !important;
+        border-color: rgba(34, 197, 94, 0.45) !important;
+        box-shadow: 0 12px 20px rgba(34, 197, 94, 0.18) !important;
+        transform: translateY(-1px);
+    }
+    [data-testid="stSidebar"] .nav-pills .nav-link.active {
+        background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(22, 163, 74, 0.85) !important;
+        box-shadow: 0 12px 28px rgba(34, 197, 94, 0.35) !important;
+        transform: translateY(-2px);
+    }
+    [data-testid="stSidebar"] .nav-pills .nav-link.active:hover { color: #fff !important; }
+
+    [data-testid="stSidebar"] hr {
+        border-top: 1px solid #d7e8dd !important;
+        margin: 1.5rem 0 !important;
+    }
+    [data-testid="stSidebar"] button[kind="secondary"] {
+        border-radius: 12px !important;
+        border: 1px solid rgba(34, 197, 94, 0.4) !important;
+        color: #14532d !important;
+        background: rgba(34, 197, 94, 0.12) !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stSidebar"] button[kind="secondary"]:hover {
+        border-color: rgba(34, 197, 94, 0.75) !important;
+        color: #fff !important;
+        background: #22c55e !important;
+    }
+
+    button[title="Show sidebar"],
+    button[title="Hide sidebar"] {
+        background-color: #38a169 !important;
+        color: #ffffff !important;
+        border-radius: 999px !important;
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(56, 161, 105, 0.35) !important;
+    }
+    button[title="Show sidebar"] svg,
+    button[title="Hide sidebar"] svg { color: #ffffff !important; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 def load_custom_css() -> None:
     css_path = Path(__file__).parent / "styles" / "main.css"
     if css_path.exists():
