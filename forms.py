@@ -3423,16 +3423,12 @@ def employee_assignment_form():
 
     issued_by_options = user_options.copy()
 
-    asset_options = []
-    if not assets_df.empty and "Asset ID" in assets_df.columns:
-        asset_options = [
-            "Select asset",
-            *assets_df["Asset ID"].dropna().astype(str).str.strip().tolist(),
-        ]
-
+    assignment_asset_option_labels: list[str] = ["Select asset"]
+    assignment_asset_label_to_id: dict[str, str] = {}
     asset_id_col = None
     asset_assigned_col = None
     asset_status_col = None
+    assignment_asset_name_col = None
     if not assets_df.empty:
         for col in assets_df.columns:
             col_norm = str(col).strip().lower()
@@ -3449,6 +3445,25 @@ def employee_assignment_form():
                 asset_assigned_col = col
             elif col_norm in {"status", "asset status"} and asset_status_col is None:
                 asset_status_col = col
+            elif col_norm in {"asset name", "name"} and assignment_asset_name_col is None:
+                assignment_asset_name_col = col
+
+        asset_id_source = asset_id_col or ("Asset ID" if "Asset ID" in assets_df.columns else None)
+        if asset_id_source:
+            for _, row in assets_df.iterrows():
+                asset_id_value = str(row.get(asset_id_source, "")).strip()
+                if not asset_id_value:
+                    continue
+                asset_name_value = (
+                    str(row.get(assignment_asset_name_col, "")).strip()
+                    if assignment_asset_name_col
+                    else ""
+                )
+                asset_label = asset_id_value if not asset_name_value else f"{asset_id_value} - {asset_name_value}"
+                assignment_asset_option_labels.append(asset_label)
+                assignment_asset_label_to_id[asset_label] = asset_id_value
+
+    asset_options = assignment_asset_option_labels.copy()
 
     def update_asset_assignment(asset_value: str, assignee_value: str, status_value: str | None = None) -> None:
         nonlocal assets_df
@@ -3556,13 +3571,15 @@ def employee_assignment_form():
                     )
                     st.warning("No users found. Please add users first.")
 
+            asset_label_selected: str | None = None
             with asset_col:
-                if asset_options:
-                    asset_id = st.selectbox(
-                        "Asset ID *",
+                if len(asset_options) > 1:
+                    asset_label_selected = st.selectbox(
+                        "Asset *",
                         asset_options,
                         key=f"assignment_asset_{form_key}",
                     )
+                    asset_id = assignment_asset_label_to_id.get(asset_label_selected or "", "")
                 else:
                     asset_id = st.text_input(
                         "Asset ID *",
@@ -3639,7 +3656,10 @@ def employee_assignment_form():
                     st.error("Please select a Username")
                 elif not username:
                     st.error("Please provide a Username")
-                elif asset_options and asset_id == "Select asset":
+                elif (
+                    len(asset_options) > 1
+                    and (asset_label_selected == "Select asset" or not asset_id)
+                ):
                     st.error("Please select an Asset")
                 elif not asset_id:
                     st.error("Please provide an Asset ID")
