@@ -1474,25 +1474,7 @@ def asset_master_form():
         else:
             subcategory_options = []
 
-        st.markdown(
-            """
-            <style>
-            .asset-form-card {
-                background-color: #ffffff;
-                padding: 1.5rem;
-                border-radius: 12px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                border: 1px solid rgba(0, 0, 0, 0.04);
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        with st.container():
-            st.markdown('<div class="asset-form-card">', unsafe_allow_html=True)
-
-            with st.form(f"asset_form_{form_version}"):
+        with st.form(f"asset_form_{form_version}"):
                 top_cols = st.columns(3, gap="medium")
                 with top_cols[0]:
                     auto_generate = st.checkbox(
@@ -1689,8 +1671,6 @@ def asset_master_form():
                             st.rerun()
                         else:
                             st.error("Failed to add asset")
-
-            st.markdown("</div>", unsafe_allow_html=True)
     
     with tab2:
         if "asset_success_message" in st.session_state:
