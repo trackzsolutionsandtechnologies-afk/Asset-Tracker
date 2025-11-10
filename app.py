@@ -44,7 +44,14 @@ def load_custom_css() -> None:
         }
         div[data-testid="stToolbar"],
         button[kind="header"],
-        div[data-testid="stDecoration"] {
+        div[data-testid="stDecoration"],
+        div[data-testid="stStatusWidget"],
+        button[data-testid="stActionButton"],
+        button[data-testid="stFeedbackButton"],
+        div[class*="viewerBadge"],
+        a[class*="viewerBadge"],
+        div[class*="stStatusWidget"],
+        div[data-testid="stDeployStatus"] {
             display: none !important;
         }
         </style>

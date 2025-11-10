@@ -186,7 +186,10 @@ def login_page():
     button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
     div[data-testid="stStatusWidget"],
     button[data-testid="stActionButton"],
-    button[data-testid="stFeedbackButton"] {
+    button[data-testid="stFeedbackButton"],
+    div[data-testid="stDeployStatus"],
+    div[class*="viewerBadge"],
+    a[class*="viewerBadge"] {
         display: none !important;
     }
     </style>
