@@ -36,6 +36,21 @@ def load_custom_css() -> None:
     if css_path.exists():
         with css_path.open("r", encoding="utf-8") as css_file:
             st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <style>
+        header[data-testid="stHeader"], header {
+            display: none !important;
+        }
+        div[data-testid="stToolbar"],
+        button[kind="header"],
+        div[data-testid="stDecoration"] {
+            display: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def load_auth_css() -> None:
