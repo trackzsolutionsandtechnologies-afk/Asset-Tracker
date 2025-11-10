@@ -39,18 +39,7 @@ st.markdown(
         border-right: 1px solid #d4e4d7 !important;
         box-shadow: 12px 0 24px rgba(0, 0, 0, 0.05);
     }
-    [data-testid="stSidebar"] > div:first-child { 
-        padding-top: 1rem !important;
-        min-width: 260px !important;
-        max-width: 260px !important;
-    }
-    section[data-testid="stSidebar"] {
-        min-width: 260px !important;
-        max-width: 260px !important;
-    }
-    section[data-testid="stSidebar"] + div {
-        display: none !important;
-    }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1rem !important; }
     [data-testid="stSidebar"] .nav { gap: 0.5rem !important; }
 
     [data-testid="stSidebar"] .nav-pills .nav-link {
