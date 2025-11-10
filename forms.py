@@ -1755,39 +1755,38 @@ def asset_master_form():
             else:
                 st.caption(f"Showing {len(filtered_df)} of {len(assets_df)} asset(s)")
 
-                desired_columns = [
-                    "Asset ID",
-                    "Asset Name",
-                    "Category",
-                    "Sub Category",
-                    "Location",
-                    "Assigned To",
-                    "Status",
-                    "Condition",
-                    "Supplier",
-                    "Model / Serial No",
-                    "Model/Serial No",
-                    "Purchase Date",
-                    "Purchase Cost",
-                    "Warranty",
-                    "Remarks",
-                ]
-                available_columns = [col for col in desired_columns if col in filtered_df.columns]
+                desired_columns_map = {
+                    "Asset ID": ["Asset ID"],
+                    "Asset Name": ["Asset Name"],
+                    "Category": ["Category", "Category Name"],
+                    "Sub Category": ["Sub Category", "SubCategory Name", "Sub Category Name"],
+                    "Location": ["Location"],
+                    "Assigned To": ["Assigned To"],
+                    "Status": ["Status"],
+                    "Condition": ["Condition"],
+                    "Supplier": ["Supplier"],
+                    "Model / Serial No": ["Model / Serial No", "Model/Serial No"],
+                    "Purchase Date": ["Purchase Date"],
+                    "Purchase Cost": ["Purchase Cost"],
+                    "Warranty": ["Warranty"],
+                    "Remarks": ["Remarks"],
+                }
 
-                if not available_columns:
+                resolved_column_map: dict[str, str] = {}
+                for display_name, candidates in desired_columns_map.items():
+                    for candidate in candidates:
+                        if candidate in filtered_df.columns:
+                            resolved_column_map[display_name] = candidate
+                            break
+
+                if not resolved_column_map:
                     st.warning("No displayable columns found for the current asset data.")
                     return
 
-                asset_display_df = filtered_df[available_columns].copy()
+                asset_display_df = filtered_df[list(resolved_column_map.values())].copy()
+                asset_display_df.rename(columns={source: target for target, source in resolved_column_map.items()}, inplace=True)
 
-                # ensure we only keep one of model serial columns if both exist
-                if "Model / Serial No" in asset_display_df.columns and "Model/Serial No" in asset_display_df.columns:
-                    asset_display_df["Model / Serial No"] = asset_display_df["Model / Serial No"].where(
-                        asset_display_df["Model / Serial No"].astype(str).str.strip() != "",
-                        asset_display_df["Model/Serial No"],
-                    )
-                    asset_display_df = asset_display_df.drop(columns=["Model/Serial No"])
-                    available_columns = [col for col in available_columns if col != "Model/Serial No"]
+                available_columns = list(resolved_column_map.keys())
 
                 st.markdown(
                     """
