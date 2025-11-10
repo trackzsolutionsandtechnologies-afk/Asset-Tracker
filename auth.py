@@ -170,14 +170,14 @@ def login_page():
         background-color: #ff8000 !important;
         color: rgba(255,255,255,0.7)  !important;
     }
-    .auth-form-wrapper form[data-testid="stForm"] button[data-testid="baseButton-primary"] {
+    .auth-form-wrapper form button[kind="primary"] {
         background-color: #BF092F !important;
         border: 1px solid #BF092F !important;
         color: #ffffff !important;
         font-weight: 600 !important;
         transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
     }
-    .auth-form-wrapper form[data-testid="stForm"] button[data-testid="baseButton-primary"]:hover {
+    .auth-form-wrapper form button[kind="primary"]:hover {
         background-color: #9c0725 !important;
         border-color: #9c0725 !important;
     }
