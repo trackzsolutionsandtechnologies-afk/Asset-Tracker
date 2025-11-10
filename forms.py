@@ -3766,6 +3766,28 @@ def employee_assignment_form():
                     [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
                         display: none !important;
                     }
+                    [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="Assigned"] {
+                        background-color: #BF092F !important;
+                        color: #ffffff !important;
+                        border-radius: 20px;
+                        padding: 0.1rem 0.65rem;
+                        text-align: center;
+                    }
+                    [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="Returned"] {
+                        background-color: transparent !important;
+                        color: #2f855a !important;
+                        font-weight: 600 !important;
+                        border-radius: 20px;
+                        padding: 0.1rem 0.65rem;
+                        text-align: center;
+                    }
+                    [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="Under Repair"] {
+                        background-color: #ecc94b !important;
+                        color: #1A202C !important;
+                        border-radius: 20px;
+                        padding: 0.1rem 0.65rem;
+                        text-align: center;
+                    }
                     div[data-testid="stButton"] button:disabled,
                     div[data-testid="stButton"] button:disabled:hover,
                     div[data-testid="stButton"] button:disabled:focus {
