@@ -295,7 +295,7 @@ def main():
             styles={
                 "container": {
                     "padding": "0 !important",
-                    "background-color": "transparent",
+                    "background-color": "red !important",
                 },
                 "icon": {
                     "font-size": "1.05rem",
