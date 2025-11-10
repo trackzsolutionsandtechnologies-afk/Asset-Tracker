@@ -144,6 +144,41 @@ def load_custom_css() -> None:
         button[title="Hide sidebar"] svg {
             color: #ffffff !important;
         }
+
+           [data-testid="stSidebar"] .nav { gap: 0.6rem !important; }
+
+   [data-testid="stSidebar"] .nav-pills .nav-link {
+       display: flex !important;
+       align-items: center !important;
+       gap: 0.5rem !important;
+       padding: 0.65rem 1rem !important;
+       border-radius: 14px !important;
+       font-weight: 600 !important;
+       color: #1f2937 !important;
+       background: rgba(255, 255, 255, 0.75) !important;
+       border: 1px solid rgba(146, 163, 255, 0.35) !important;
+       transition: all 0.2s ease !important;
+   }
+
+   [data-testid="stSidebar"] .nav-pills .nav-link:hover {
+       color: #1e3a8a !important;
+       background: rgba(99, 102, 241, 0.15) !important;
+       border-color: rgba(99, 102, 241, 0.5) !important;
+       box-shadow: 0 10px 18px rgba(99, 102, 241, 0.2) !important;
+       transform: translateY(-1px);
+   }
+
+   [data-testid="stSidebar"] .nav-pills .nav-link.active {
+       background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%) !important;
+       color: #ffffff !important;
+       border: 1px solid rgba(99, 102, 241, 0.75) !important;
+   }
+
+   [data-testid="stSidebar"] .nav-pills .nav-link svg {
+       width: 1.05rem !important;
+       height: 1.05rem !important;
+       color: inherit !important;
+   }
         </style>
         """,
         unsafe_allow_html=True,
