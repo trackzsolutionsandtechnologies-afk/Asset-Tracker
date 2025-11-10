@@ -2868,6 +2868,8 @@ def asset_maintenance_form():
                                 st.session_state["maintenance_success_message"] = (
                                     f"✅ Maintenance record '{maintenance_id}' added successfully!"
                                 )
+                                st.session_state.pop("cached_sheet_maintenance", None)
+                                st.session_state.pop("cached_sheet_assets", None)
                                 st.session_state["maintenance_form_key"] += 1
                                 if "maintenance_search" in st.session_state:
                                     del st.session_state["maintenance_search"]
