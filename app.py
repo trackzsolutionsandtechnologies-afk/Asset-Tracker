@@ -48,6 +48,8 @@ def load_custom_css() -> None:
         div[data-testid="stStatusWidget"],
         button[data-testid="stActionButton"],
         button[data-testid="stFeedbackButton"],
+        button[title="Hide sidebar"],
+        button[title="Show sidebar"],
         div[class*="viewerBadge"],
         a[class*="viewerBadge"],
         div[class*="stStatusWidget"],
