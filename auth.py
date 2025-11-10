@@ -166,6 +166,42 @@ def login_page():
     st.markdown(
         """
         <style>
+        .auth-page-background {
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(59, 130, 246, 0.08));
+            padding: 3rem 1rem;
+        }
+        .auth-card-container {
+            max-width: 440px;
+            margin: 0 auto;
+        }
+        .auth-card {
+            padding: 2.75rem 2.5rem;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 20px;
+            border: 1px solid rgba(203, 213, 225, 0.7);
+            box-shadow: 0 22px 45px rgba(15, 23, 42, 0.16);
+            backdrop-filter: blur(6px);
+        }
+        .auth-card-header {
+            text-align: center;
+            margin-bottom: 1.8rem;
+        }
+        .auth-card-icon {
+            font-size: 2.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .auth-card-header h2 {
+            margin: 0;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        .auth-card-header p {
+            margin: 0.35rem 0 1rem;
+            color: #475569;
+            font-size: 0.92rem;
+        }
         .auth-form-wrapper {
             max-width: 420px;
             margin: 2.5rem auto;
@@ -221,6 +257,12 @@ def login_page():
             background: rgba(99, 102, 241, 0.2) !important;
             border-color: rgba(99, 102, 241, 0.5) !important;
         }
+        .auth-card-footer {
+            margin-top: 1.25rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            text-align: center;
+        }
         header[data-testid="stHeader"], header {display: none !important;}
         div[data-testid="stToolbar"] {display: none !important;}
         button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
@@ -237,9 +279,20 @@ def login_page():
         unsafe_allow_html=True,
     )
 
-    st.title("🔐 ASSET TRACKER")
-
-    st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
+    
+    st.markdown('<div class="auth-page-background">', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="auth-card-container">
+            <div class="auth-card">
+                <div class="auth-card-header">
+                    <div class="auth-card-icon">🔐</div>
+                    <h2>Asset Tracker</h2>
+                    <p>Sign in to continue managing your assets</p>
+                </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     with st.form("login_form"):
         username = st.text_input("Username", key="login_username")
@@ -278,7 +331,17 @@ def login_page():
             st.session_state["show_forgot_password"] = True
             st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+            </div>
+            <div class="auth-card-footer">
+                Need help? Contact your administrator.
+            </div>
+        </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def forgot_password_page():
