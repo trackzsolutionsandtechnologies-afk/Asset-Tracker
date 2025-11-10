@@ -1493,201 +1493,202 @@ def asset_master_form():
             st.markdown('<div class="asset-form-card">', unsafe_allow_html=True)
 
             with st.form(f"asset_form_{form_version}"):
-            top_cols = st.columns(3, gap="medium")
-            with top_cols[0]:
-                auto_generate = st.checkbox(
-                    "Auto-generate Asset ID",
-                    key=asset_form_keys["auto_generate"],
-                )
-                asset_id_key = asset_form_keys["asset_id"]
-                if auto_generate:
-                    if "generated_asset_id" not in st.session_state:
-                        st.session_state["generated_asset_id"] = generate_asset_id()
-                    st.session_state[asset_id_key] = st.session_state["generated_asset_id"]
-                else:
-                    if st.session_state.get(asset_id_key) == st.session_state.get("generated_asset_id"):
-                        st.session_state[asset_id_key] = ""
-                    if "generated_asset_id" in st.session_state:
-                        del st.session_state["generated_asset_id"]
-                asset_id_label = "Asset ID / Barcode" if auto_generate else "Asset ID / Barcode *"
-                asset_id = st.text_input(
-                    asset_id_label,
-                    key=asset_id_key,
-                    disabled=auto_generate,
-                )
-            with top_cols[1]:
-                asset_name = st.text_input("Asset Name *", key=asset_form_keys["asset_name"])
-            with top_cols[2]:
-                if category_options:
-                    category = st.selectbox(
-                        "Category *",
-                        [category_placeholder] + category_options,
-                        key=asset_form_keys["category_select"],
+                top_cols = st.columns(3, gap="medium")
+                with top_cols[0]:
+                    auto_generate = st.checkbox(
+                        "Auto-generate Asset ID",
+                        key=asset_form_keys["auto_generate"],
                     )
-                else:
-                    category = st.selectbox(
-                        "Category *",
-                        ["No categories available"],
-                        disabled=True,
-                        key=asset_form_keys["category_select"],
-                    )
-                    category = ""
-
-            second_cols = st.columns(3, gap="medium")
-            with second_cols[0]:
-                if subcategory_options:
-                    subcategory = st.selectbox(
-                        "Sub Category *",
-                        [subcategory_placeholder] + subcategory_options,
-                        key=asset_form_keys["subcategory_select"],
-                    )
-                else:
-                    subcategory = st.selectbox(
-                        "Sub Category *",
-                        ["No sub categories available"],
-                        disabled=True,
-                        key=asset_form_keys["subcategory_select"],
-                    )
-                    subcategory = ""
-            with second_cols[1]:
-                model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
-            with second_cols[2]:
-                purchase_date = st.date_input(
-                    "Purchase Date",
-                    value=st.session_state.get(asset_form_keys["purchase_date"], datetime.now().date()),
-                    key=asset_form_keys["purchase_date"],
-                )
-
-            third_cols = st.columns(3, gap="medium")
-            with third_cols[0]:
-                purchase_cost = st.number_input(
-                    "Purchase Cost",
-                    min_value=0.0,
-                    value=st.session_state.get(asset_form_keys["purchase_cost"], 0.0),
-                    step=0.01,
-                    key=asset_form_keys["purchase_cost"],
-                )
-            with third_cols[1]:
-                warranty = st.selectbox("Warranty", ["No", "Yes"], key=asset_form_keys["warranty"])
-            with third_cols[2]:
-                if not suppliers_df.empty:
-                    supplier_options = suppliers_df["Supplier Name"].tolist()
-                    supplier = st.selectbox("Supplier", ["None"] + supplier_options, key=asset_form_keys["supplier"])
-                else:
-                    supplier = st.text_input("Supplier", key=asset_form_keys["supplier"])
-
-            refresh_key = st.session_state.pop("refresh_asset_users", False)
-            if refresh_key:
-                users_df = read_data(SHEETS["users"])
-
-            fourth_cols = st.columns(3, gap="medium")
-            with fourth_cols[0]:
-                if not locations_df.empty:
-                    location_options = locations_df["Location Name"].tolist()
-                    location = st.selectbox("Location", ["None"] + location_options, key=asset_form_keys["location"])
-                else:
-                    location = st.text_input("Location", key=asset_form_keys["location"])
-            with fourth_cols[1]:
-                if not users_df.empty and user_username_col and user_username_col in users_df.columns:
-                    user_options = ["None"] + users_df[user_username_col].dropna().astype(str).tolist()
-                    assigned_to = st.selectbox("Assigned To", user_options, key=asset_form_keys["assigned_to"])
-                else:
-                    assigned_to = st.text_input("Assigned To", key=asset_form_keys["assigned_to"])
-            with fourth_cols[2]:
-                condition = st.selectbox(
-                    "Condition",
-                    ["Excellent", "Good", "Fair", "Poor", "Damaged"],
-                    key=asset_form_keys["condition"],
-                )
-
-            fifth_cols = st.columns(3, gap="medium")
-            with fifth_cols[0]:
-                status = st.selectbox(
-                    "Status",
-                    [
-                        "Active",
-                        "Inactive",
-                        "Maintenance",
-                        "Retired",
-                        "Assigned",
-                        "Returned",
-                        "Under Repair",
-                    ],
-                    key=asset_form_keys["status"],
-                )
-            with fifth_cols[1]:
-                st.empty()
-            with fifth_cols[2]:
-                st.empty()
-
-            remarks = st.text_area("Remarks", key=asset_form_keys["remarks"])
-            attachment_file = st.file_uploader(
-                "Attachment (Image or File)",
-                type=None,
-                help="Upload related documents or images.",
-                key=asset_form_keys["attachment"],
-            )
-            attachment = ""
-            attachment_too_large = False
-            if attachment_file is not None:
-                file_content = attachment_file.getvalue()
-                encoded = base64.b64encode(file_content).decode("utf-8")
-                if len(encoded) > MAX_ATTACHMENT_CHARS:
-                    st.warning(
-                        "Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).",
-                        icon="⚠️",
-                    )
-                    attachment = ""
-                    attachment_too_large = True
-                else:
-                    attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
-
-            submitted = st.form_submit_button("Add Asset", use_container_width=True)
-
-            if submitted:
-                if attachment_file is not None and attachment == "" and attachment_too_large:
-                    st.error(
-                        "Attachment was not uploaded because it exceeds the allowed size. Please upload a smaller file."
-                    )
-                elif not asset_id or not asset_name:
-                    st.error("Please fill in Asset ID and Asset Name")
-                elif not assets_df.empty and asset_id in assets_df["Asset ID"].values:
-                    st.error("Asset ID already exists")
-                elif category in ("", category_placeholder):
-                    st.error("Please select a category")
-                elif subcategory in ("", subcategory_placeholder):
-                    st.error("Please select a sub category")
-                else:
-                    data = [
-                        asset_id,
-                        asset_name,
-                        category if category not in ("", category_placeholder) else "",
-                        subcategory if subcategory not in ("", subcategory_placeholder) else "",
-                        model_serial,
-                        purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
-                        purchase_cost,
-                        warranty,
-                        supplier if supplier != "None" else "",
-                        location if location != "None" else "",
-                        assigned_to if assigned_to != "None" else "",
-                        condition,
-                        status,
-                        remarks,
-                        attachment,
-                    ]
-                    if append_data(SHEETS["assets"], data):
-                        st.success("Asset added successfully!")
+                    asset_id_key = asset_form_keys["asset_id"]
+                    if auto_generate:
+                        if "generated_asset_id" not in st.session_state:
+                            st.session_state["generated_asset_id"] = generate_asset_id()
+                        st.session_state[asset_id_key] = st.session_state["generated_asset_id"]
+                    else:
+                        if st.session_state.get(asset_id_key) == st.session_state.get("generated_asset_id"):
+                            st.session_state[asset_id_key] = ""
                         if "generated_asset_id" in st.session_state:
                             del st.session_state["generated_asset_id"]
-
-                        st.session_state["asset_success_message"] = "Asset added successfully!"
-                        reset_keys = list(asset_form_keys.values())
-                        for state_key in reset_keys:
-                            st.session_state.pop(state_key, None)
-                        st.session_state["asset_form_version"] = form_version + 1
-                        st.rerun()
+                    asset_id_label = "Asset ID / Barcode" if auto_generate else "Asset ID / Barcode *"
+                    asset_id = st.text_input(
+                        asset_id_label,
+                        key=asset_id_key,
+                        disabled=auto_generate,
+                    )
+                with top_cols[1]:
+                    asset_name = st.text_input("Asset Name *", key=asset_form_keys["asset_name"])
+                with top_cols[2]:
+                    if category_options:
+                        category = st.selectbox(
+                            "Category *",
+                            [category_placeholder] + category_options,
+                            key=asset_form_keys["category_select"],
+                        )
                     else:
-                        st.error("Failed to add asset")
+                        category = st.selectbox(
+                            "Category *",
+                            ["No categories available"],
+                            disabled=True,
+                            key=asset_form_keys["category_select"],
+                        )
+                        category = ""
+
+                second_cols = st.columns(3, gap="medium")
+                with second_cols[0]:
+                    if subcategory_options:
+                        subcategory = st.selectbox(
+                            "Sub Category *",
+                            [subcategory_placeholder] + subcategory_options,
+                            key=asset_form_keys["subcategory_select"],
+                        )
+                    else:
+                        subcategory = st.selectbox(
+                            "Sub Category *",
+                            ["No sub categories available"],
+                            disabled=True,
+                            key=asset_form_keys["subcategory_select"],
+                        )
+                        subcategory = ""
+                with second_cols[1]:
+                    model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
+                with second_cols[2]:
+                    purchase_date = st.date_input(
+                        "Purchase Date",
+                        value=st.session_state.get(asset_form_keys["purchase_date"], datetime.now().date()),
+                        key=asset_form_keys["purchase_date"],
+                    )
+
+                third_cols = st.columns(3, gap="medium")
+                with third_cols[0]:
+                    purchase_cost = st.number_input(
+                        "Purchase Cost",
+                        min_value=0.0,
+                        value=st.session_state.get(asset_form_keys["purchase_cost"], 0.0),
+                        step=0.01,
+                        key=asset_form_keys["purchase_cost"],
+                    )
+                with third_cols[1]:
+                    warranty = st.selectbox("Warranty", ["No", "Yes"], key=asset_form_keys["warranty"])
+                with third_cols[2]:
+                    if not suppliers_df.empty:
+                        supplier_options = suppliers_df["Supplier Name"].tolist()
+                        supplier = st.selectbox("Supplier", ["None"] + supplier_options, key=asset_form_keys["supplier"])
+                    else:
+                        supplier = st.text_input("Supplier", key=asset_form_keys["supplier"])
+
+                refresh_key = st.session_state.pop("refresh_asset_users", False)
+                if refresh_key:
+                    users_df = read_data(SHEETS["users"])
+
+                fourth_cols = st.columns(3, gap="medium")
+                with fourth_cols[0]:
+                    if not locations_df.empty:
+                        location_options = locations_df["Location Name"].tolist()
+                        location = st.selectbox("Location", ["None"] + location_options, key=asset_form_keys["location"])
+                    else:
+                        location = st.text_input("Location", key=asset_form_keys["location"])
+                with fourth_cols[1]:
+                    if not users_df.empty and user_username_col and user_username_col in users_df.columns:
+                        user_options = ["None"] + users_df[user_username_col].dropna().astype(str).tolist()
+                        assigned_to = st.selectbox("Assigned To", user_options, key=asset_form_keys["assigned_to"])
+                    else:
+                        assigned_to = st.text_input("Assigned To", key=asset_form_keys["assigned_to"])
+                with fourth_cols[2]:
+                    condition = st.selectbox(
+                        "Condition",
+                        ["Excellent", "Good", "Fair", "Poor", "Damaged"],
+                        key=asset_form_keys["condition"],
+                    )
+
+                fifth_cols = st.columns(3, gap="medium")
+                with fifth_cols[0]:
+                    status = st.selectbox(
+                        "Status",
+                        [
+                            "Active",
+                            "Inactive",
+                            "Maintenance",
+                            "Retired",
+                            "Assigned",
+                            "Returned",
+                            "Under Repair",
+                        ],
+                        key=asset_form_keys["status"],
+                    )
+                with fifth_cols[1]:
+                    st.empty()
+                with fifth_cols[2]:
+                    st.empty()
+
+                remarks = st.text_area("Remarks", key=asset_form_keys["remarks"])
+                attachment_file = st.file_uploader(
+                    "Attachment (Image or File)",
+                    type=None,
+                    help="Upload related documents or images.",
+                    key=asset_form_keys["attachment"],
+                )
+
+                attachment = ""
+                attachment_too_large = False
+                if attachment_file is not None:
+                    file_content = attachment_file.getvalue()
+                    encoded = base64.b64encode(file_content).decode("utf-8")
+                    if len(encoded) > MAX_ATTACHMENT_CHARS:
+                        st.warning(
+                            "Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).",
+                            icon="⚠️",
+                        )
+                        attachment = ""
+                        attachment_too_large = True
+                    else:
+                        attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
+
+                submitted = st.form_submit_button("Add Asset", use_container_width=True)
+
+                if submitted:
+                    if attachment_file is not None and attachment == "" and attachment_too_large:
+                        st.error(
+                            "Attachment was not uploaded because it exceeds the allowed size. Please upload a smaller file."
+                        )
+                    elif not asset_id or not asset_name:
+                        st.error("Please fill in Asset ID and Asset Name")
+                    elif not assets_df.empty and asset_id in assets_df["Asset ID"].values:
+                        st.error("Asset ID already exists")
+                    elif category in ("", category_placeholder):
+                        st.error("Please select a category")
+                    elif subcategory in ("", subcategory_placeholder):
+                        st.error("Please select a sub category")
+                    else:
+                        data = [
+                            asset_id,
+                            asset_name,
+                            category if category not in ("", category_placeholder) else "",
+                            subcategory if subcategory not in ("", subcategory_placeholder) else "",
+                            model_serial,
+                            purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
+                            purchase_cost,
+                            warranty,
+                            supplier if supplier != "None" else "",
+                            location if location != "None" else "",
+                            assigned_to if assigned_to != "None" else "",
+                            condition,
+                            status,
+                            remarks,
+                            attachment,
+                        ]
+                        if append_data(SHEETS["assets"], data):
+                            st.success("Asset added successfully!")
+                            if "generated_asset_id" in st.session_state:
+                                del st.session_state["generated_asset_id"]
+
+                            st.session_state["asset_success_message"] = "Asset added successfully!"
+                            reset_keys = list(asset_form_keys.values())
+                            for state_key in reset_keys:
+                                st.session_state.pop(state_key, None)
+                            st.session_state["asset_form_version"] = form_version + 1
+                            st.rerun()
+                        else:
+                            st.error("Failed to add asset")
 
             st.markdown("</div>", unsafe_allow_html=True)
     
