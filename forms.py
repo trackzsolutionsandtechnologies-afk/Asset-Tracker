@@ -1589,11 +1589,9 @@ def asset_master_form():
                         [
                             "Active",
                             "Inactive",
-                            "Maintenance",
-                            "Retired",
                             "Assigned",
-                            "Returned",
-                            "Under Repair",
+                            "Maintenance",
+                            "Disposed",
                         ],
                         key=asset_form_keys["status"],
                     )
