@@ -38,7 +38,7 @@ st.markdown(
         padding: 1.75rem 1.5rem 2.25rem 1.5rem !important;
         border-right: 1px solid #d4e4d7 !important;
         box-shadow: 12px 0 24px rgba(0, 0, 0, 0.05);
-        max-width: 300px !important;
+       min-width: 300px !important;
         
     }
     [data-testid="stSidebar"] > div:first-child { padding-top: 1rem !important; }
