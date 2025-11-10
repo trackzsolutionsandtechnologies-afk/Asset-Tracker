@@ -202,15 +202,6 @@ def login_page():
             color: #475569;
             font-size: 0.92rem;
         }
-        .auth-card [data-testid="stForm"] {
-            background: transparent !important;
-            padding: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .auth-card [data-testid="stForm"] > div:first-child {
-            padding: 0 !important;
-        }
         .auth-form-wrapper {
             max-width: 420px;
             margin: 2.5rem auto;
