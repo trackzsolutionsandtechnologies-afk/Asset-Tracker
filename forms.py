@@ -1686,9 +1686,9 @@ def asset_master_form():
                     key="asset_search",
                 )
             with filter_cols[1]:
-                status_filter_options = ["All Status"] + sorted(
-                    {str(val).strip() for val in assets_df.get("Status", pd.Series()).dropna()}
-                )
+            status_filter_options = ["All Status"] + sorted(
+                {str(val).strip() for val in assets_df.get("Status", pd.Series()).dropna()}
+            )
                 selected_status = st.selectbox("Status Filter", status_filter_options, key="asset_status_filter")
             with filter_cols[2]:
                 location_filter_options = ["All Locations"] + sorted(
@@ -2851,7 +2851,7 @@ def asset_maintenance_form():
 
             maintenance_status = st.selectbox(
                 "Status *",
-                ["Pending", "In Progress", "Completed"],
+                ["Pending", "In Progress", "Completed", "Disposed"],
                 key=f"maintenance_status_{form_key}",
             )
 
@@ -2893,10 +2893,13 @@ def asset_maintenance_form():
                             if append_data(SHEETS["maintenance"], data):
                                 if "generated_maintenance_id" in st.session_state:
                                     del st.session_state["generated_maintenance_id"]
-                                    if maintenance_status == "In Progress" and asset_status_col:
+                                if asset_status_col:
+                                    if maintenance_status == "In Progress":
                                         _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Maintenance")
-                                    elif maintenance_status == "Completed" and asset_status_col:
+                                    elif maintenance_status == "Completed":
                                         _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Active")
+                                    elif maintenance_status == "Disposed":
+                                        _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Disposed")
                                 st.session_state["maintenance_success_message"] = (
                                     f"✅ Maintenance record '{maintenance_id}' added successfully!"
                                 )
@@ -2927,7 +2930,7 @@ def asset_maintenance_form():
                 .unique()
                 .tolist()
             )
-            status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed"]
+            status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed", "Disposed"]
             filter_cols = st.columns(3, gap="medium")
             with filter_cols[0]:
                 selected_status_filter = st.selectbox(
@@ -2975,6 +2978,7 @@ def asset_maintenance_form():
                     st.info("No maintenance records found. Add one using the 'Add Maintenance Record' tab.")
             else:
                 asset_label_list = asset_option_labels[1:] if len(asset_option_labels) > 1 else []
+                status_options_select = ["Pending", "In Progress", "Completed", "Disposed"]
                 display_df = filtered_df.copy()
                 display_df["Asset Name"] = display_df["Asset ID"].astype(str).str.strip().str.lower().map(asset_id_to_name).fillna("")
                 display_df["Cost"] = pd.to_numeric(
@@ -3073,7 +3077,7 @@ def asset_maintenance_form():
                         "Supplier": st.column_config.TextColumn("Supplier", disabled=True),
                         "Status": st.column_config.SelectboxColumn(
                             "Status",
-                            options=["Pending", "In Progress", "Completed"],
+                            options=["Pending", "In Progress", "Completed", "Disposed"],
                             disabled=False,
                         ),
                         "Next Due Date": st.column_config.DateColumn(
@@ -3268,14 +3272,19 @@ def asset_maintenance_form():
                                     for col_name, val in zip(column_order, updated_row):
                                         if col_name in filtered_df.columns and idx < len(filtered_df):
                                             filtered_df.at[filtered_df.index[idx], col_name] = val
-                                    if update_map["Status"] == "In Progress" and asset_status_col:
-                                        _update_asset_status_for_maintenance(
-                                            assets_df, asset_status_col, update_map["Asset ID"], "Maintenance"
-                                        )
-                                    elif update_map["Status"] == "Completed" and asset_status_col:
-                                        _update_asset_status_for_maintenance(
-                                            assets_df, asset_status_col, update_map["Asset ID"], "Active"
-                                        )
+                                    if asset_status_col:
+                                        if update_map["Status"] == "In Progress":
+                                            _update_asset_status_for_maintenance(
+                                                assets_df, asset_status_col, update_map["Asset ID"], "Maintenance"
+                                            )
+                                        elif update_map["Status"] == "Completed":
+                                            _update_asset_status_for_maintenance(
+                                                assets_df, asset_status_col, update_map["Asset ID"], "Active"
+                                            )
+                                        elif update_map["Status"] == "Disposed":
+                                            _update_asset_status_for_maintenance(
+                                                assets_df, asset_status_col, update_map["Asset ID"], "Disposed"
+                                            )
                                 else:
                                     st.error("Failed to update maintenance record")
                                     success = False
@@ -3391,13 +3400,15 @@ def asset_maintenance_form():
                         value=parse_date_value(record.get("Next Due Date")),
                     )
 
+                    status_choices = ["Pending", "In Progress", "Completed", "Disposed"]
                     status_new = st.selectbox(
                         "Status *",
-                        ["Pending", "In Progress", "Completed"],
+                        status_choices,
                         index={
                             "pending": 0,
                             "in progress": 1,
                             "completed": 2,
+                            "disposed": 3,
                         }.get(str(record.get("Status", "Pending")).strip().lower(), 0),
                     )
 
@@ -3426,10 +3437,13 @@ def asset_maintenance_form():
                                     st.session_state["maintenance_success_message"] = (
                                         f"✅ Maintenance record '{edit_id}' updated successfully!"
                                     )
-                                    if status_new == "In Progress" and asset_status_col:
-                                        _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id_new, "Maintenance")
-                                    elif status_new == "Completed" and asset_status_col:
-                                        _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id_new, "Active")
+                                    if asset_status_col:
+                                        if status_new == "In Progress":
+                                            _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id_new, "Maintenance")
+                                        elif status_new == "Completed":
+                                            _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id_new, "Active")
+                                        elif status_new == "Disposed":
+                                            _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id_new, "Disposed")
                                     st.session_state.pop("edit_maintenance_id", None)
                                     st.session_state.pop("edit_maintenance_idx", None)
                                     st.rerun()
