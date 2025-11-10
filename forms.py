@@ -2964,6 +2964,22 @@ def asset_maintenance_form():
                 )
 
                 st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #d0d0d0;' />", unsafe_allow_html=True)
+                st.markdown(
+                    """
+                    <style>
+                    div[data-testid="stButton"] button:disabled,
+                    div[data-testid="stButton"] button:disabled:hover,
+                    div[data-testid="stButton"] button:disabled:focus {
+                        background-color: #cbd5e0 !important;
+                        color: #4a5568 !important;
+                        border-color: #cbd5e0 !important;
+                        cursor: not-allowed !important;
+                        opacity: 1 !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
                 editor_state = st.session_state.get("maintenance_table_view", {})
                 edited_df = deepcopy(editor_state.get("edited_rows", {}))
