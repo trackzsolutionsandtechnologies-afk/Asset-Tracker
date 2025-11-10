@@ -1700,152 +1700,201 @@ def asset_master_form():
         if not assets_df.empty:
             st.subheader("All Assets")
 
-            search_term = st.text_input(
-                "🔍 Search Assets",
-                placeholder="Search by Asset ID, Name, or Location...",
-                key="asset_search",
-            )
+            filter_cols = st.columns([2, 1, 1, 1])
+            with filter_cols[0]:
+                search_term = st.text_input(
+                    "🔍 Search Assets",
+                    placeholder="Search by Asset ID, Name, or Location...",
+                    key="asset_search",
+                )
+            with filter_cols[1]:
+                status_filter_options = ["All Status"] + sorted(
+                    {str(val).strip() for val in assets_df.get("Status", pd.Series()).dropna()}
+                )
+                selected_status = st.selectbox("Status Filter", status_filter_options, key="asset_status_filter")
+            with filter_cols[2]:
+                location_filter_options = ["All Locations"] + sorted(
+                    {str(val).strip() for val in assets_df.get("Location", pd.Series()).dropna()}
+                )
+                selected_location = st.selectbox("Location Filter", location_filter_options, key="asset_location_filter")
+            with filter_cols[3]:
+                assigned_filter_options = ["All Assignees"] + sorted(
+                    {str(val).strip() for val in assets_df.get("Assigned To", pd.Series()).dropna()}
+                )
+                selected_assigned = st.selectbox("Assigned To Filter", assigned_filter_options, key="asset_assigned_filter")
 
+            filtered_df = assets_df.copy()
             if search_term:
                 mask = (
-                    assets_df["Asset ID"].astype(str).str.contains(search_term, case=False, na=False)
-                    | assets_df["Asset Name"].astype(str).str.contains(search_term, case=False, na=False)
-                    | assets_df.get("Location", pd.Series(dtype=str)).astype(str).str.contains(search_term, case=False, na=False)
+                    filtered_df["Asset ID"].astype(str).str.contains(search_term, case=False, na=False)
+                    | filtered_df["Asset Name"].astype(str).str.contains(search_term, case=False, na=False)
+                    | filtered_df.get("Location", pd.Series(dtype=str)).astype(str).str.contains(search_term, case=False, na=False)
                 )
-                filtered_df = assets_df[mask]
-                if filtered_df.empty:
-                    st.info(f"No assets found matching '{search_term}'")
-                    filtered_df = pd.DataFrame()
-            else:
-                filtered_df = assets_df
+                filtered_df = filtered_df[mask]
 
-            if not filtered_df.empty:
+            if selected_status != "All Status":
+                filtered_df = filtered_df[
+                    filtered_df["Status"].astype(str).str.strip().str.lower()
+                    == selected_status.strip().lower()
+                ]
+
+            if selected_location != "All Locations":
+                filtered_df = filtered_df[
+                    filtered_df["Location"].astype(str).str.strip().str.lower()
+                    == selected_location.strip().lower()
+                ]
+
+            if selected_assigned != "All Assignees":
+                filtered_df = filtered_df[
+                    filtered_df["Assigned To"].astype(str).str.strip().str.lower()
+                    == selected_assigned.strip().lower()
+                ]
+
+            if filtered_df.empty:
+                st.info("No assets match the current filters.")
+            else:
                 st.caption(f"Showing {len(filtered_df)} of {len(assets_df)} asset(s)")
 
-                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-                is_admin = str(user_role).lower() == "admin"
+                asset_display_df = filtered_df[
+                    [
+                        "Asset ID",
+                        "Asset Name",
+                        "Category",
+                        "Sub Category",
+                        "Location",
+                        "Assigned To",
+                        "Status",
+                        "Condition",
+                        "Supplier",
+                        "Model / Serial No",
+                        "Purchase Date",
+                        "Purchase Cost",
+                        "Warranty",
+                        "Remarks",
+                    ]
+                ].copy()
 
-                view_placeholder = st.empty()
-                edit_placeholder = st.empty()
-
-                header_weights = [3, 4, 3, 2, 1, 1] + ([1] if is_admin else [])
-                header_labels = ["**Asset ID**", "**Asset Name**", "**Category**", "**Status**", "", ""]
-                if is_admin:
-                    header_labels.append("")
-
-                header_cols = st.columns(header_weights)
-                for col_widget, label in zip(header_cols, header_labels):
-                    with col_widget:
-                        st.write(label)
-                st.divider()
-
-                button_counter = 0
-                for idx, row in filtered_df.iterrows():
-                    asset_id_value = row.get("Asset ID", "")
-                    unique_suffix = f"{asset_id_value}_{button_counter}"
-                    button_counter += 1
-
-                    matching_rows = assets_df[assets_df["Asset ID"].astype(str) == str(asset_id_value)]
-                    original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
-
-                    if is_admin:
-                        col_id, col_name, col_category, col_status, col_view, col_edit, col_delete = st.columns(header_weights)
-                    else:
-                        col_id, col_name, col_category, col_status, col_view, col_edit = st.columns(header_weights)
-
-                    with col_id:
-                        st.markdown(f"<div style='text-align: left;'>{asset_id_value or 'N/A'}</div>", unsafe_allow_html=True)
-                    with col_name:
-                        st.markdown(f"<div style='text-align: left;'>{row.get('Asset Name', 'N/A')}</div>", unsafe_allow_html=True)
-                    with col_category:
-                        category_value = row.get("Category", row.get("Category Name", "N/A"))
-                        st.markdown(f"<div style='text-align: left;'>{category_value}</div>", unsafe_allow_html=True)
-
-                    status_value = row.get("Status", "N/A")
-                    status_lower = str(status_value).strip().lower()
-                    color_map = {
-                        "active": "#2d9c4b",
-                        "maintenance": "#c1121f",
-                        "assigned": "#1f6feb",
-                        "inactive": "#c1121f",
+                st.markdown(
+                    """
+                    <style>
+                    .asset-editor-container [data-testid="stDataEditor"] thead th,
+                    .asset-editor-container [data-testid="stDataEditor"] div[role="columnheader"] {
+                        background-color: #BF092F !important;
+                        color: #1A202C !important;
+                        font-weight: 600 !important;
                     }
-                    status_color = color_map.get(status_lower)
-                    with col_status:
-                        if status_color:
-                            st.markdown(
-                                f"<span style='color: {status_color}; font-weight: 600;'>{status_value}</span>",
-                                unsafe_allow_html=True,
-                            )
-                        else:
-                            st.write(status_value if status_value not in ("", None) else "N/A")
+                    .asset-editor-container [data-testid="stDataEditor"] div[role="columnheader"] * {
+                        color: #1A202C !important;
+                    }
+                    .asset-editor-container [data-testid="stDataEditor"] tbody td {
+                        border-right: 1px solid #f0f0f0 !important;
+                    }
+                    .asset-editor-container [data-testid="stDataEditor"] tbody td:last-child {
+                        border-right: none !important;
+                    }
+                    .asset-editor-container [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                        display: none !important;
+                    }
+                    .asset-editor-container div[data-testid="stButton"] button:disabled,
+                    .asset-editor-container div[data-testid="stButton"] button:disabled:hover,
+                    .asset-editor-container div[data-testid="stButton"] button:disabled:focus {
+                        background-color: #cbd5e0 !important;
+                        color: #4a5568 !important;
+                        border-color: #cbd5e0 !important;
+                        cursor: not-allowed !important;
+                        opacity: 1 !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-                    with col_view:
-                        if st.button("👁️", key=f"asset_view_{unique_suffix}", use_container_width=True, help="View details"):
-                            record = {
-                                "Asset ID": asset_id_value,
-                                "Asset Name": row.get("Asset Name", row.get("Asset Name *", "")),
-                                "Category": row.get("Category", row.get("Category Name", "")),
-                            "Sub Category": row.get("Sub Category", row.get("SubCategory Name", "")),
-                                "Location": row.get("Location", ""),
-                                "Assigned To": row.get("Assigned To", ""),
-                                "Status": row.get("Status", ""),
-                                "Condition": row.get("Condition", ""),
-                                "Supplier": row.get("Supplier", ""),
-                                "Model / Serial No": row.get("Model / Serial No", row.get("Model/Serial No", "")),
-                                "Purchase Date": row.get("Purchase Date", ""),
-                                "Purchase Cost": row.get("Purchase Cost", ""),
-                                "Warranty": row.get("Warranty", ""),
-                                "Remarks": row.get("Remarks", ""),
-                            }
-                            _open_view_modal(
-                                "asset",
-                                f"Asset Details: {asset_id_value}",
-                                record,
-                                [
-                                    "Asset ID",
-                                    "Asset Name",
-                                    "Category",
-                                    "Sub Category",
-                                    "Location",
-                                    "Assigned To",
-                                    "Status",
-                                    "Condition",
-                                    "Supplier",
-                                    "Model / Serial No",
-                                    "Purchase Date",
-                                    "Purchase Cost",
-                                    "Warranty",
-                                    "Remarks",
-                                ],
-                            )
+                with st.container():
+                    st.markdown('<div class="asset-editor-container">', unsafe_allow_html=True)
 
-                    with col_edit:
-                        if st.button("✏️", key=f"asset_edit_{unique_suffix}", use_container_width=True, help="Edit this asset"):
-                            st.session_state["edit_asset_id"] = asset_id_value
-                            st.session_state["edit_asset_idx"] = original_idx
-                            st.rerun()
+                    editor_response = st.data_editor(
+                        asset_display_df,
+                        hide_index=True,
+                        use_container_width=True,
+                        disabled=False,
+                        column_config={
+                            "Asset ID": st.column_config.TextColumn("Asset ID", disabled=True),
+                            "Asset Name": st.column_config.TextColumn("Asset Name"),
+                            "Category": st.column_config.TextColumn("Category"),
+                            "Sub Category": st.column_config.TextColumn("Sub Category"),
+                            "Location": st.column_config.TextColumn("Location"),
+                            "Assigned To": st.column_config.TextColumn("Assigned To"),
+                            "Status": st.column_config.TextColumn("Status"),
+                            "Condition": st.column_config.TextColumn("Condition"),
+                            "Supplier": st.column_config.TextColumn("Supplier"),
+                            "Model / Serial No": st.column_config.TextColumn("Model / Serial No"),
+                            "Purchase Date": st.column_config.TextColumn("Purchase Date"),
+                            "Purchase Cost": st.column_config.TextColumn("Purchase Cost"),
+                            "Warranty": st.column_config.TextColumn("Warranty"),
+                            "Remarks": st.column_config.TextColumn("Remarks"),
+                        },
+                        num_rows="dynamic",
+                        key="assets_table_view",
+                    )
 
-                    if is_admin:
-                        with col_delete:
-                            if st.button("🗑️", key=f"asset_delete_{unique_suffix}", use_container_width=True, help="Delete this asset"):
-                                if delete_data(SHEETS["assets"], original_idx):
-                                    st.session_state["asset_success_message"] = f"🗑️ Asset '{asset_id_value}' deleted."
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete asset")
+                    st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #d0d0d0;' />", unsafe_allow_html=True)
 
-                    st.divider()
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                _render_view_modal("asset", view_placeholder)
-            elif search_term:
-                # Search returned no results, but search was performed
-                view_placeholder = st.empty()
-                edit_placeholder = st.empty()
-                _render_view_modal("asset", view_placeholder)
-            else:
-                view_placeholder = st.empty()
-                edit_placeholder = st.empty()
-                st.info("No assets found. Add a new asset using the 'Add New Asset' tab.")
+                editor_state = st.session_state.get("assets_table_view", {})
+                edited_rows = deepcopy(editor_state.get("edited_rows", {}))
+                edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+                deleted_rows = list(editor_state.get("deleted_rows", []))
+                added_rows = list(editor_state.get("added_rows", []))
+
+                st.session_state.setdefault("assets_save_success", False)
+                st.session_state.setdefault("assets_pending_changes", False)
+                st.session_state.setdefault("assets_last_save_ts", 0.0)
+
+                has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+                if has_changes:
+                    st.session_state["assets_pending_changes"] = True
+                    st.session_state["assets_save_success"] = False
+                else:
+                    st.session_state["assets_pending_changes"] = False
+
+                cooldown_seconds = 10
+                current_ts = time.time()
+                last_save_ts = float(st.session_state.get("assets_last_save_ts", 0.0) or 0.0)
+                cooldown_remaining = max(0.0, cooldown_seconds - (current_ts - last_save_ts))
+
+                if st.session_state.get("assets_pending_changes", False) and not st.session_state.get("assets_save_success", False):
+                    st.info("You have unsaved asset changes. Click 'Save Changes' to apply them.", icon="✏️")
+                if cooldown_remaining > 0:
+                    st.warning(
+                        f"Please wait {cooldown_remaining:.0f} second(s) before saving again to avoid hitting Google Sheets limits.",
+                        icon="⏳",
+                    )
+
+                action_cols = st.columns([1, 1], gap="small")
+                with action_cols[0]:
+                    save_clicked = st.button(
+                        "Save Changes",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=(not st.session_state.get("assets_pending_changes", False)) or (cooldown_remaining > 0),
+                        key="assets_save_changes",
+                    )
+                with action_cols[1]:
+                    discard_clicked = st.button(
+                        "Discard Changes",
+                        use_container_width=True,
+                        disabled=not st.session_state.get("assets_pending_changes", False),
+                        key="assets_discard_changes",
+                    )
+
+                if discard_clicked and st.session_state.get("assets_pending_changes", False):
+                    st.session_state.pop("assets_table_view", None)
+                    st.session_state["assets_pending_changes"] = False
+                    st.session_state["assets_save_success"] = False
+                    st.rerun()
+
+                # existing modal/edit handling below remains
 
             if "edit_asset_id" in st.session_state and st.session_state["edit_asset_id"]:
                 with edit_placeholder.container():
