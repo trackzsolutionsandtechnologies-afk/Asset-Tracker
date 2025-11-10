@@ -4071,12 +4071,10 @@ def user_management_form():
                 "New Password": st.column_config.TextColumn(
                     "New Password",
                     help="Enter to reset password (leave blank to keep current)",
-                    input_type="password",
                 ),
                 "Confirm Password": st.column_config.TextColumn(
                     "Confirm Password",
                     help="Re-enter new password",
-                    input_type="password",
                 ),
             },
             num_rows="dynamic",
