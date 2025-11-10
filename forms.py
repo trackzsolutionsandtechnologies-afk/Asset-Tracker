@@ -1462,10 +1462,33 @@ def asset_master_form():
         st.session_state.setdefault(asset_form_keys["purchase_date"], datetime.now().date())
         st.session_state.setdefault(asset_form_keys["purchase_cost"], 0.0)
 
-        with st.form("asset_form"):
-            col1, col2 = st.columns(2)
-            
-            with col1:
+        asset_form_css = f"""
+        <style>
+        div[data-testid="stForm"][aria-label="asset_form_{form_version}"] {{
+            background-color: #ffffff !important;
+            padding: 1.5rem !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        }}
+        </style>
+        """
+        st.markdown(asset_form_css, unsafe_allow_html=True)
+
+        category_placeholder = "Select category"
+        subcategory_placeholder = "Select sub category"
+        if not categories_df.empty and category_name_col:
+            category_options = unique_clean(categories_df[category_name_col])
+        else:
+            category_options = []
+
+        if not subcategories_df.empty and subcat_name_col:
+            subcategory_options = unique_clean(subcategories_df[subcat_name_col])
+        else:
+            subcategory_options = []
+
+        with st.form(f"asset_form_{form_version}"):
+            top_cols = st.columns(3, gap="medium")
+            with top_cols[0]:
                 auto_generate = st.checkbox(
                     "Auto-generate Asset ID",
                     key=asset_form_keys["auto_generate"],
@@ -1480,23 +1503,15 @@ def asset_master_form():
                         st.session_state[asset_id_key] = ""
                     if "generated_asset_id" in st.session_state:
                         del st.session_state["generated_asset_id"]
-
                 asset_id_label = "Asset ID / Barcode" if auto_generate else "Asset ID / Barcode *"
                 asset_id = st.text_input(
                     asset_id_label,
                     key=asset_id_key,
                     disabled=auto_generate,
                 )
-                
+            with top_cols[1]:
                 asset_name = st.text_input("Asset Name *", key=asset_form_keys["asset_name"])
-                
-                category_placeholder = "Select category"
-                subcategory_placeholder = "Select sub category"
-                if not categories_df.empty and category_name_col:
-                    category_options = unique_clean(categories_df[category_name_col])
-                else:
-                    category_options = []
-
+            with top_cols[2]:
                 if category_options:
                     category = st.selectbox(
                         "Category *",
@@ -1512,10 +1527,8 @@ def asset_master_form():
                     )
                     category = ""
 
-                subcategory_options = []
-                if not subcategories_df.empty and subcat_name_col:
-                    subcategory_options = unique_clean(subcategories_df[subcat_name_col])
-
+            second_cols = st.columns(3, gap="medium")
+            with second_cols[0]:
                 if subcategory_options:
                     subcategory = st.selectbox(
                         "Sub Category *",
@@ -1530,15 +1543,17 @@ def asset_master_form():
                         key=asset_form_keys["subcategory_select"],
                     )
                     subcategory = ""
-                
+            with second_cols[1]:
                 model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
+            with second_cols[2]:
                 purchase_date = st.date_input(
                     "Purchase Date",
                     value=st.session_state.get(asset_form_keys["purchase_date"], datetime.now().date()),
                     key=asset_form_keys["purchase_date"],
                 )
-            
-            with col2:
+
+            third_cols = st.columns(3, gap="medium")
+            with third_cols[0]:
                 purchase_cost = st.number_input(
                     "Purchase Cost",
                     min_value=0.0,
@@ -1546,29 +1561,41 @@ def asset_master_form():
                     step=0.01,
                     key=asset_form_keys["purchase_cost"],
                 )
+            with third_cols[1]:
                 warranty = st.selectbox("Warranty", ["No", "Yes"], key=asset_form_keys["warranty"])
-                
+            with third_cols[2]:
                 if not suppliers_df.empty:
                     supplier_options = suppliers_df["Supplier Name"].tolist()
                     supplier = st.selectbox("Supplier", ["None"] + supplier_options, key=asset_form_keys["supplier"])
                 else:
                     supplier = st.text_input("Supplier", key=asset_form_keys["supplier"])
-                
+
+            refresh_key = st.session_state.pop("refresh_asset_users", False)
+            if refresh_key:
+                users_df = read_data(SHEETS["users"])
+
+            fourth_cols = st.columns(3, gap="medium")
+            with fourth_cols[0]:
                 if not locations_df.empty:
                     location_options = locations_df["Location Name"].tolist()
                     location = st.selectbox("Location", ["None"] + location_options, key=asset_form_keys["location"])
                 else:
                     location = st.text_input("Location", key=asset_form_keys["location"])
-                
-                refresh_key = st.session_state.pop("refresh_asset_users", False)
-                if refresh_key:
-                    users_df = read_data(SHEETS["users"])
+            with fourth_cols[1]:
                 if not users_df.empty and user_username_col and user_username_col in users_df.columns:
                     user_options = ["None"] + users_df[user_username_col].dropna().astype(str).tolist()
                     assigned_to = st.selectbox("Assigned To", user_options, key=asset_form_keys["assigned_to"])
                 else:
                     assigned_to = st.text_input("Assigned To", key=asset_form_keys["assigned_to"])
-                condition = st.selectbox("Condition", ["Excellent", "Good", "Fair", "Poor", "Damaged"], key=asset_form_keys["condition"])
+            with fourth_cols[2]:
+                condition = st.selectbox(
+                    "Condition",
+                    ["Excellent", "Good", "Fair", "Poor", "Damaged"],
+                    key=asset_form_keys["condition"],
+                )
+
+            fifth_cols = st.columns(3, gap="medium")
+            with fifth_cols[0]:
                 status = st.selectbox(
                     "Status",
                     [
@@ -1582,13 +1609,18 @@ def asset_master_form():
                     ],
                     key=asset_form_keys["status"],
                 )
-                remarks = st.text_area("Remarks", key=asset_form_keys["remarks"])
-                attachment_file = st.file_uploader(
-                    "Attachment (Image or File)",
-                    type=None,
-                    help="Upload related documents or images.",
-                    key=asset_form_keys["attachment"],
-                )
+            with fifth_cols[1]:
+                st.empty()
+            with fifth_cols[2]:
+                st.empty()
+
+            remarks = st.text_area("Remarks", key=asset_form_keys["remarks"])
+            attachment_file = st.file_uploader(
+                "Attachment (Image or File)",
+                type=None,
+                help="Upload related documents or images.",
+                key=asset_form_keys["attachment"],
+            )
                 attachment = ""
                 attachment_too_large = False
                 if attachment_file is not None:
