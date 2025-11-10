@@ -181,9 +181,9 @@ def login_page():
         background-color: #9c0725 !important;
         border-color: #9c0725 !important;
     }
-    header[data-testid="stHeader"] {visibility: hidden;}
-    div[data-testid="stToolbar"] {visibility: hidden;}
-    button[kind="header"] {visibility: hidden;}
+    header[data-testid="stHeader"], header {display: none !important;}
+    div[data-testid="stToolbar"] {display: none !important;}
+    button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
     </style>
     """,
     unsafe_allow_html=True,
