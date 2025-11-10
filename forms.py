@@ -2137,12 +2137,19 @@ def asset_master_form():
                 else []
             )
 
-            col_filters = st.columns(3)
+            col_filters = st.columns([2, 2, 2, 2])
             with col_filters[0]:
-                selected_status = st.multiselect("Filter by Status", status_options)
+                search_query = st.text_input(
+                    "Search",
+                    value="",
+                    help="Search across Asset ID, Name, Category, Sub Category, Location, Supplier, or Model/Serial No.",
+                    key="asset_report_search",
+                )
             with col_filters[1]:
-                selected_location = st.multiselect("Filter by Location", location_options)
+                selected_status = st.multiselect("Filter by Status", status_options)
             with col_filters[2]:
+                selected_location = st.multiselect("Filter by Location", location_options)
+            with col_filters[3]:
                 selected_category = st.multiselect("Filter by Category", category_options)
 
             report_df = assets_df.copy()
@@ -2159,6 +2166,26 @@ def asset_master_form():
                 report_df = report_df[
                     report_df[category_column_name].astype(str).str.strip().isin(selected_category)
                 ]
+            if search_query:
+                query_norm = search_query.strip().lower()
+                if query_norm:
+                    search_columns = [
+                        "Asset ID",
+                        "Asset Name",
+                        category_series.name if isinstance(category_series, pd.Series) else "Category",
+                        "Sub Category",
+                        "Location",
+                        "Supplier",
+                        "Model / Serial No",
+                        "Model/Serial No",
+                    ]
+                    available_columns = [col for col in search_columns if col in report_df.columns]
+                    if available_columns:
+                        report_df = report_df[
+                            report_df[available_columns]
+                            .astype(str)
+                            .apply(lambda row: query_norm in " ".join(row.str.lower()), axis=1)
+                        ]
 
             if report_df.empty:
                 st.warning("No records match the selected filters.")
