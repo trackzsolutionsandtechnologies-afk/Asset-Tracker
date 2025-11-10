@@ -3023,6 +3023,9 @@ def asset_maintenance_form():
 
                 if save_clicked and has_changes:
                     success = True
+                    if cooldown_remaining > 0:
+                        st.warning("Please wait for the save cooldown before saving again.", icon="⏱️")
+                        success = False
 
                     if deleted_rows:
                         for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
