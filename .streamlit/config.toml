@@ -8,7 +8,7 @@ gatherUsageStats = false
 
 [theme]
 base = "light"
-primaryColor = "#3C4F91"        # accent color (optional)
+primaryColor = "#B7A3E3"        # accent color (optional)
 backgroundColor = "#FFFFFF"     # main background (optional)
 secondaryBackgroundColor = "#F0F2F6"  # main background for input box 
 textColor = "#262730"
