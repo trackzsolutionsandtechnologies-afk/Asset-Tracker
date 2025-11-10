@@ -1627,68 +1627,67 @@ def asset_master_form():
                 help="Upload related documents or images.",
                 key=asset_form_keys["attachment"],
             )
+            attachment = ""
+            attachment_too_large = False
+            if attachment_file is not None:
+                file_content = attachment_file.getvalue()
+                encoded = base64.b64encode(file_content).decode("utf-8")
+                if len(encoded) > MAX_ATTACHMENT_CHARS:
+                    st.warning(
+                        "Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).",
+                        icon="⚠️",
+                    )
+                    attachment = ""
+                    attachment_too_large = True
+                else:
+                    attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
 
-                attachment = ""
-                attachment_too_large = False
-                if attachment_file is not None:
-                    file_content = attachment_file.getvalue()
-                    encoded = base64.b64encode(file_content).decode("utf-8")
-                    if len(encoded) > MAX_ATTACHMENT_CHARS:
-                        st.warning(
-                            "Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).",
-                            icon="⚠️",
-                        )
-                        attachment = ""
-                        attachment_too_large = True
+            submitted = st.form_submit_button("Add Asset", use_container_width=True)
+
+            if submitted:
+                if attachment_file is not None and attachment == "" and attachment_too_large:
+                    st.error(
+                        "Attachment was not uploaded because it exceeds the allowed size. Please upload a smaller file."
+                    )
+                elif not asset_id or not asset_name:
+                    st.error("Please fill in Asset ID and Asset Name")
+                elif not assets_df.empty and asset_id in assets_df["Asset ID"].values:
+                    st.error("Asset ID already exists")
+                elif category in ("", category_placeholder):
+                    st.error("Please select a category")
+                elif subcategory in ("", subcategory_placeholder):
+                    st.error("Please select a sub category")
+                else:
+                    data = [
+                        asset_id,
+                        asset_name,
+                        category if category not in ("", category_placeholder) else "",
+                        subcategory if subcategory not in ("", subcategory_placeholder) else "",
+                        model_serial,
+                        purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
+                        purchase_cost,
+                        warranty,
+                        supplier if supplier != "None" else "",
+                        location if location != "None" else "",
+                        assigned_to if assigned_to != "None" else "",
+                        condition,
+                        status,
+                        remarks,
+                        attachment,
+                    ]
+                    if append_data(SHEETS["assets"], data):
+                        st.success("Asset added successfully!")
+                        if "generated_asset_id" in st.session_state:
+                            del st.session_state["generated_asset_id"]
+
+                        st.session_state["asset_success_message"] = "Asset added successfully!"
+                        reset_keys = list(asset_form_keys.values())
+                        for state_key in reset_keys:
+                            st.session_state.pop(state_key, None)
+                        st.session_state["asset_form_version"] = form_version + 1
+                        st.rerun()
                     else:
-                        attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
-
-                submitted = st.form_submit_button("Add Asset", use_container_width=True)
-
-                if submitted:
-                    if attachment_file is not None and attachment == "" and attachment_too_large:
-                        st.error(
-                            "Attachment was not uploaded because it exceeds the allowed size. Please upload a smaller file."
-                        )
-                    elif not asset_id or not asset_name:
-                        st.error("Please fill in Asset ID and Asset Name")
-                    elif not assets_df.empty and asset_id in assets_df["Asset ID"].values:
-                        st.error("Asset ID already exists")
-                    elif category in ("", category_placeholder):
-                        st.error("Please select a category")
-                    elif subcategory in ("", subcategory_placeholder):
-                        st.error("Please select a sub category")
-                    else:
-                        data = [
-                            asset_id,
-                            asset_name,
-                            category if category not in ("", category_placeholder) else "",
-                            subcategory if subcategory not in ("", subcategory_placeholder) else "",
-                            model_serial,
-                            purchase_date.strftime("%Y-%m-%d") if purchase_date else "",
-                            purchase_cost,
-                            warranty,
-                            supplier if supplier != "None" else "",
-                            location if location != "None" else "",
-                            assigned_to if assigned_to != "None" else "",
-                            condition,
-                            status,
-                            remarks,
-                            attachment,
-                        ]
-                        if append_data(SHEETS["assets"], data):
-                            st.success("Asset added successfully!")
-                            if "generated_asset_id" in st.session_state:
-                                del st.session_state["generated_asset_id"]
-
-                            st.session_state["asset_success_message"] = "Asset added successfully!"
-                            reset_keys = list(asset_form_keys.values())
-                            for state_key in reset_keys:
-                                st.session_state.pop(state_key, None)
-                            st.session_state["asset_form_version"] = form_version + 1
-                            st.rerun()
-                        else:
-                            st.error("Failed to add asset")
+                        st.error("Failed to add asset")
 
             st.markdown("</div>", unsafe_allow_html=True)
     
