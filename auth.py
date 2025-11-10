@@ -175,7 +175,7 @@ def login_page():
     unsafe_allow_html=True,
 )
 
-    st.title("🔐 Asset Tracker - Sign In")
+    st.title("🔐 ASSET TRACKER")
 
     st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
 
