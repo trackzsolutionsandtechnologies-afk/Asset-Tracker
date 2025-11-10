@@ -261,7 +261,7 @@ def main():
         
         # Navigation menu
         selected = option_menu(
-            menu_title="🧭",
+            menu_title="",
             options=[
                 "Dashboard",
                 "Location",
@@ -274,7 +274,7 @@ def main():
                 "Assignment",
                 "Users",
                 "Scan Barcode",
-                "Print Barcodes"
+                "Print Barcodes",
             ],
             icons=[
                 "speedometer2",
@@ -285,13 +285,41 @@ def main():
                 "arrow-repeat",
                 "tools",
                 "graph-down",
-                "person-badge",
+                "briefcase",
                 "people",
-                "search",
-                "printer"
+                "upc-scan",
+                "printer",
             ],
             menu_icon="list",
             default_index=0,
+            styles={
+                "container": {
+                    "padding": "0 !important",
+                    "background-color": "transparent",
+                },
+                "icon": {
+                    "font-size": "1.05rem",
+                    "color": "#364152",
+                },
+                "nav-link": {
+                    "font-size": "0.92rem",
+                    "font-weight": "600",
+                    "padding": "0.6rem 0.95rem",
+                    "border-radius": "12px",
+                    "margin": "0.18rem 0",
+                    "color": "#1f2937",
+                    "text-transform": "none",
+                },
+                "nav-link-hover": {
+                    "background-color": "rgba(79, 70, 229, 0.12)",
+                    "color": "#312e81",
+                },
+                "nav-link-selected": {
+                    "background": "linear-gradient(90deg, #4C51FF 0%, #6366f1 100%)",
+                    "color": "#ffffff",
+                    "box-shadow": "0 10px 22px rgba(79, 70, 229, 0.20)",
+                },
+            },
         )
     # Main content area
     if selected == "Dashboard":
