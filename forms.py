@@ -2519,9 +2519,15 @@ def asset_maintenance_form():
     ]
     _ensure_headers_once("maintenance", maintenance_headers)
 
-    maintenance_df = read_data(SHEETS["maintenance"])
-    assets_df = read_data(SHEETS["assets"])
-    suppliers_df = read_data(SHEETS["suppliers"])
+    def _get_sheet_cached(sheet_key: str) -> pd.DataFrame:
+        cache_key = f"cached_sheet_{sheet_key}"
+        if cache_key not in st.session_state:
+            st.session_state[cache_key] = read_data(SHEETS[sheet_key])
+        return st.session_state[cache_key]
+
+    maintenance_df = _get_sheet_cached("maintenance")
+    assets_df = _get_sheet_cached("assets")
+    suppliers_df = _get_sheet_cached("suppliers")
     asset_status_col = None
     asset_name_col = None
     asset_option_labels = ["Select asset"]
@@ -3129,6 +3135,8 @@ def asset_maintenance_form():
                         st.warning("New rows must be added from the 'Add Maintenance Record' tab.")
 
                     if success:
+                        st.session_state["cached_sheet_maintenance"] = read_data(SHEETS["maintenance"])
+                        st.session_state["cached_sheet_assets"] = read_data(SHEETS["assets"])
                         table_state = st.session_state.get("maintenance_table_view")
                         if isinstance(table_state, dict):
                             table_state["edited_rows"] = {}
