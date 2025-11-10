@@ -39,6 +39,63 @@ def load_custom_css() -> None:
     st.markdown(
         """
         <style>
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%) !important;
+            padding: 1.5rem 1.25rem 2rem 1.25rem !important;
+            border-right: 1px solid #e2e8f0 !important;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            padding-top: 1rem !important;
+        }
+        [data-testid="stSidebar"] .nav {
+            gap: 0.35rem !important;
+        }
+        [data-testid="stSidebar"] .nav-pills .nav-link {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            border-radius: 12px !important;
+            padding: 0.55rem 0.85rem !important;
+            font-weight: 600 !important;
+            color: #2d3748 !important;
+            background: transparent !important;
+            border: 1px solid transparent !important;
+            transition: all 0.2s ease-in-out !important;
+        }
+        [data-testid="stSidebar"] .nav-pills .nav-link svg {
+            width: 1rem !important;
+            height: 1rem !important;
+            color: inherit !important;
+        }
+        [data-testid="stSidebar"] .nav-pills .nav-link:hover {
+            color: #1a365d !important;
+            background: rgba(82, 109, 255, 0.08) !important;
+            border-color: rgba(82, 109, 255, 0.2) !important;
+        }
+        [data-testid="stSidebar"] .nav-pills .nav-link.active {
+            background: linear-gradient(90deg, #3641f8 0%, #5a67ff 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 8px 18px rgba(54, 65, 248, 0.25) !important;
+        }
+        [data-testid="stSidebar"] .nav-pills .nav-link.active:hover {
+            color: #fff !important;
+        }
+        [data-testid="stSidebar"] hr {
+            border-top: 1px solid #d7dceb !important;
+            margin: 1.25rem 0 !important;
+        }
+        [data-testid="stSidebar"] button[kind="secondary"] {
+            border-radius: 12px !important;
+            border: 1px solid #d7dceb !important;
+            color: #2d3748 !important;
+            background: #f8fafc !important;
+            font-weight: 600 !important;
+        }
+        [data-testid="stSidebar"] button[kind="secondary"]:hover {
+            border-color: #5a67ff !important;
+            color: #1a365d !important;
+            background: #edf2ff !important;
+        }
         header[data-testid="stHeader"], header {
             display: none !important;
         }
