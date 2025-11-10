@@ -184,6 +184,11 @@ def login_page():
     header[data-testid="stHeader"], header {display: none !important;}
     div[data-testid="stToolbar"] {display: none !important;}
     button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
+    div[data-testid="stStatusWidget"],
+    button[data-testid="stActionButton"],
+    button[data-testid="stFeedbackButton"] {
+        display: none !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
