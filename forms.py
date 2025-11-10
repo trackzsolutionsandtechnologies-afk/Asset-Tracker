@@ -3504,95 +3504,123 @@ def employee_assignment_form():
 
         form_key = st.session_state["assignment_form_key"]
 
+        assignment_form_css = f"""
+        <style>
+        div[data-testid="stForm"][aria-label="assignment_form_{form_key}"] {{
+            background-color: #ffffff !important;
+            padding: 1.5rem !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        }}
+        </style>
+        """
+        st.markdown(assignment_form_css, unsafe_allow_html=True)
+
         with st.form(f"assignment_form_{form_key}"):
             auto_generate = st.checkbox(
                 "Auto-generate Assignment ID",
                 value=True,
                 key=f"assignment_auto_{form_key}",
             )
-            if auto_generate:
-                if "generated_assignment_id" not in st.session_state:
-                    st.session_state["generated_assignment_id"] = generate_assignment_id()
-                assignment_id = st.text_input(
-                    "Assignment ID *",
-                    value=st.session_state["generated_assignment_id"],
-                    disabled=True,
-                    key=f"assignment_id_{form_key}",
-                )
-            else:
-                assignment_id = st.text_input(
-                    "Assignment ID *",
-                    key=f"assignment_manual_id_{form_key}",
-                )
-                if "generated_assignment_id" in st.session_state:
-                    del st.session_state["generated_assignment_id"]
 
-            if user_options:
-                username = st.selectbox(
-                    "Username *",
-                    user_options,
-                    key=f"assignment_user_{form_key}",
-                )
-            else:
-                username = st.text_input(
-                    "Username *",
-                    key=f"assignment_user_text_{form_key}",
-                )
-                st.warning("No users found. Please add users first.")
+            id_col, user_col, asset_col = st.columns(3, gap="medium")
+            with id_col:
+                if auto_generate:
+                    if "generated_assignment_id" not in st.session_state:
+                        st.session_state["generated_assignment_id"] = generate_assignment_id()
+                    assignment_id = st.text_input(
+                        "Assignment ID *",
+                        value=st.session_state["generated_assignment_id"],
+                        disabled=True,
+                        key=f"assignment_id_{form_key}",
+                    )
+                else:
+                    assignment_id = st.text_input(
+                        "Assignment ID *",
+                        key=f"assignment_manual_id_{form_key}",
+                    )
+                    if "generated_assignment_id" in st.session_state:
+                        del st.session_state["generated_assignment_id"]
 
-            if asset_options:
-                asset_id = st.selectbox(
-                    "Asset ID *",
-                    asset_options,
-                    key=f"assignment_asset_{form_key}",
-                )
-            else:
-                asset_id = st.text_input(
-                    "Asset ID *",
-                    key=f"assignment_asset_text_{form_key}",
-                )
-                if assets_df.empty:
-                    st.warning("No assets found. Please add assets first.")
+            with user_col:
+                if user_options:
+                    username = st.selectbox(
+                        "Username *",
+                        user_options,
+                        key=f"assignment_user_{form_key}",
+                    )
+                else:
+                    username = st.text_input(
+                        "Username *",
+                        key=f"assignment_user_text_{form_key}",
+                    )
+                    st.warning("No users found. Please add users first.")
 
-            assignment_date = st.date_input(
-                "Assignment Date *",
-                value=datetime.now().date(),
-                key=f"assignment_date_{form_key}",
-            )
+            with asset_col:
+                if asset_options:
+                    asset_id = st.selectbox(
+                        "Asset ID *",
+                        asset_options,
+                        key=f"assignment_asset_{form_key}",
+                    )
+                else:
+                    asset_id = st.text_input(
+                        "Asset ID *",
+                        key=f"assignment_asset_text_{form_key}",
+                    )
+                    if assets_df.empty:
+                        st.warning("No assets found. Please add assets first.")
 
-            if issued_by_options:
-                issued_by = st.selectbox(
-                    "Issued By *",
-                    issued_by_options,
-                    key=f"assignment_issued_by_{form_key}",
+            issued_col, assign_date_col, expected_return_col = st.columns(3, gap="medium")
+            with issued_col:
+                if issued_by_options:
+                    issued_by = st.selectbox(
+                        "Issued By *",
+                        issued_by_options,
+                        key=f"assignment_issued_by_{form_key}",
+                    )
+                else:
+                    issued_by = st.text_input(
+                        "Issued By *",
+                        key=f"assignment_issued_by_text_{form_key}",
+                    )
+
+            with assign_date_col:
+                assignment_date = st.date_input(
+                    "Assignment Date *",
+                    value=datetime.now().date(),
+                    key=f"assignment_date_{form_key}",
                 )
-            else:
-                issued_by = st.text_input(
-                    "Issued By *",
-                    key=f"assignment_issued_by_text_{form_key}",
+
+            with expected_return_col:
+                expected_return_date = st.date_input(
+                    "Expected Return Date",
+                    value=assignment_date,
+                    key=f"assignment_expected_return_{form_key}",
                 )
 
-            expected_return_date = st.date_input(
-                "Expected Return Date",
-                value=assignment_date,
-                key=f"assignment_expected_return_{form_key}",
-            )
-            return_date = st.date_input(
-                "Return Date",
-                value=assignment_date,
-                key=f"assignment_return_date_{form_key}",
-            )
+            return_col, status_col, condition_col = st.columns(3, gap="medium")
+            with return_col:
+                return_date = st.date_input(
+                    "Return Date",
+                    value=assignment_date,
+                    key=f"assignment_return_date_{form_key}",
+                )
 
-            status = st.selectbox(
-                "Status",
-                ["Assigned", "Returned", "Under Repair"],
-                key=f"assignment_status_{form_key}",
-            )
-            condition_issue = st.selectbox(
-                "Condition on Issue",
-                ["Working", "Damaged", "Used"],
-                key=f"assignment_condition_{form_key}",
-            )
+            with status_col:
+                status = st.selectbox(
+                    "Status",
+                    ["Assigned", "Returned", "Under Repair"],
+                    key=f"assignment_status_{form_key}",
+                )
+
+            with condition_col:
+                condition_issue = st.selectbox(
+                    "Condition on Issue",
+                    ["Working", "Damaged", "Used"],
+                    key=f"assignment_condition_{form_key}",
+                )
+
             remarks = st.text_area(
                 "Remarks",
                 key=f"assignment_remarks_{form_key}",
