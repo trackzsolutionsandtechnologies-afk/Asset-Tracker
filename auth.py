@@ -164,38 +164,78 @@ def login_page():
     load_auth_css()
 
     st.markdown(
-    """
-    <style>
-    .auth-form-wrapper form[data-testid="stForm"] input {
-        background-color: #ff8000 !important;
-        color: rgba(255,255,255,0.7)  !important;
-    }
-    .auth-form-wrapper form button {
-        background-color: #BF092F !important;
-        border: 1px solid #BF092F !important;
-        color: #ffffff !important;
-        font-weight: 600 !important;
-        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-    }
-    .auth-form-wrapper form button:hover {
-        background-color: #9c0725 !important;
-        border-color: #9c0725 !important;
-    }
-    header[data-testid="stHeader"], header {display: none !important;}
-    div[data-testid="stToolbar"] {display: none !important;}
-    button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
-    div[data-testid="stStatusWidget"],
-    button[data-testid="stActionButton"],
-    button[data-testid="stFeedbackButton"],
-    div[data-testid="stDeployStatus"],
-    div[class*="viewerBadge"],
-    a[class*="viewerBadge"] {
-        display: none !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+        """
+        <style>
+        .auth-form-wrapper {
+            max-width: 420px;
+            margin: 2.5rem auto;
+            padding: 2.4rem 2.25rem 2.6rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 18px;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(6px);
+        }
+        .auth-form-wrapper h1,
+        .auth-form-wrapper h2,
+        .auth-form-wrapper h3 {
+            text-align: center;
+        }
+        .auth-form-wrapper form[data-testid="stForm"] label {
+            font-weight: 600 !important;
+            color: #1f2937 !important;
+        }
+        .auth-form-wrapper form[data-testid="stForm"] input {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-radius: 12px !important;
+            border: 1px solid #cbd5f5 !important;
+            padding: 0.6rem 0.8rem !important;
+        }
+        .auth-form-wrapper form[data-testid="stForm"] input:focus {
+            border-color: #6366f1 !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+        }
+        .auth-form-wrapper form button {
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.01em;
+            transition: all 0.2s ease-in-out;
+        }
+        .auth-form-wrapper form button[kind="primary"] {
+            background: linear-gradient(90deg, #4C51FF 0%, #6366f1 100%) !important;
+            border: 1px solid rgba(99, 102, 241, 0.95) !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 24px rgba(99, 102, 241, 0.25);
+        }
+        .auth-form-wrapper form button[kind="primary"]:hover {
+            background: linear-gradient(90deg, #4338ca 0%, #4c51ff 100%) !important;
+            border-color: rgba(99, 102, 241, 1) !important;
+        }
+        .auth-form-wrapper form button[kind="secondary"] {
+            border: 1px solid rgba(99, 102, 241, 0.4) !important;
+            color: #4338ca !important;
+            background: rgba(99, 102, 241, 0.12) !important;
+        }
+        .auth-form-wrapper form button[kind="secondary"]:hover {
+            background: rgba(99, 102, 241, 0.2) !important;
+            border-color: rgba(99, 102, 241, 0.5) !important;
+        }
+        header[data-testid="stHeader"], header {display: none !important;}
+        div[data-testid="stToolbar"] {display: none !important;}
+        button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
+        div[data-testid="stStatusWidget"],
+        button[data-testid="stActionButton"],
+        button[data-testid="stFeedbackButton"],
+        div[data-testid="stDeployStatus"],
+        div[class*="viewerBadge"],
+        a[class*="viewerBadge"] {
+            display: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.title("🔐 ASSET TRACKER")
 
