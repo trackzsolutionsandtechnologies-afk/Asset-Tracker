@@ -4014,116 +4014,253 @@ def user_management_form():
 
         st.subheader("Existing Users")
 
-        search_term = st.text_input(
-            "🔍 Search Users",
-            placeholder="Search by Username, Email, or Role...",
-            key="user_search",
-        )
+        filter_cols = st.columns([2, 1, 1])
+        with filter_cols[0]:
+            search_term = st.text_input(
+                "🔍 Search Users",
+                placeholder="Search by Username, Email, or Role...",
+                key="user_search",
+            )
+        with filter_cols[1]:
+            role_filter_options = ["All Roles"] + sorted(
+                {str(role).strip() for role in users_df.get("Role", pd.Series()).dropna()}
+            )
+            selected_role = st.selectbox("Role Filter", role_filter_options, key="user_role_filter")
+        with filter_cols[2]:
+            st.write("")
 
+        filtered_df = users_df.copy()
         if search_term:
             mask = (
-                users_df["Username"].astype(str).str.contains(search_term, case=False, na=False)
-                | users_df["Email"].astype(str).str.contains(search_term, case=False, na=False)
-                | users_df["Role"].astype(str).str.contains(search_term, case=False, na=False)
+                filtered_df["Username"].astype(str).str.contains(search_term, case=False, na=False)
+                | filtered_df["Email"].astype(str).str.contains(search_term, case=False, na=False)
+                | filtered_df["Role"].astype(str).str.contains(search_term, case=False, na=False)
             )
-            filtered_df = users_df[mask]
-            if filtered_df.empty:
-                st.info(f"No users found matching '{search_term}'")
-                return
-        else:
-            filtered_df = users_df
+            filtered_df = filtered_df[mask]
+
+        if selected_role != "All Roles":
+            filtered_df = filtered_df[
+                filtered_df["Role"].astype(str).str.strip().str.lower()
+                == selected_role.strip().lower()
+            ]
+
+        if filtered_df.empty:
+            st.info("No users match the current filters.")
+            return
 
         st.caption(f"Showing {len(filtered_df)} of {len(users_df)} user(s)")
 
-        header_username, header_email, header_role, header_edit, header_delete = st.columns([2, 3, 2, 1, 1])
-        with header_username:
-            st.write("**Username**")
-        with header_email:
-            st.write("**Email**")
-        with header_role:
-            st.write("**Role**")
-        with header_edit:
-            st.write("**Edit**")
-        with header_delete:
-            st.write("**Delete**")
+        display_df = filtered_df[["Username", "Email", "Role"]].copy()
+        display_df = display_df.fillna("")
+        display_df["New Password"] = ""
+        display_df["Confirm Password"] = ""
+        base_df = display_df.copy()
 
-        st.divider()
+        editor_response = st.data_editor(
+            display_df,
+            hide_index=True,
+            use_container_width=True,
+            disabled=False,
+            column_config={
+                "Username": st.column_config.TextColumn("Username", disabled=True),
+                "Email": st.column_config.TextColumn("Email"),
+                "Role": st.column_config.SelectboxColumn(
+                    "Role",
+                    options=sorted({str(role).strip() or "user" for role in users_df.get("Role", pd.Series()).dropna()} | {"admin", "user"}),
+                ),
+                "New Password": st.column_config.TextColumn(
+                    "New Password",
+                    help="Enter to reset password (leave blank to keep current)",
+                    input_type="password",
+                ),
+                "Confirm Password": st.column_config.TextColumn(
+                    "Confirm Password",
+                    help="Re-enter new password",
+                    input_type="password",
+                ),
+            },
+            num_rows="dynamic",
+            key="users_table_view",
+        )
 
-        for idx, row in filtered_df.iterrows():
-            user_name = row.get("Username")
-            matching_rows = users_df[users_df["Username"].astype(str) == str(user_name)]
-            original_idx = int(matching_rows.index[0]) if not matching_rows.empty else int(idx)
+        st.markdown("<hr style='margin: 0.75rem 0; border: 0; border-top: 1px solid #d0d0d0;' />", unsafe_allow_html=True)
 
-            col_username, col_email, col_role, col_edit, col_delete = st.columns([2, 3, 2, 1, 1])
-            with col_username:
-                st.write(user_name or "-")
-            with col_email:
-                st.write(row.get("Email", "-"))
-            with col_role:
-                st.write(row.get("Role", "-"))
-            with col_edit:
-                if st.button("✏️", key=f"user_edit_{user_name}", use_container_width=True, help="Edit this user"):
-                    st.session_state["edit_user_username"] = user_name
-                    st.session_state["edit_user_idx"] = original_idx
-                    st.rerun()
-            with col_delete:
-                if st.button("🗑️", key=f"user_delete_{user_name}", use_container_width=True, help="Delete this user"):
-                    if delete_data(SHEETS["users"], original_idx):
-                        st.session_state["user_success_message"] = f"🗑️ User '{user_name}' deleted."
-                        if "user_search" in st.session_state:
-                            del st.session_state["user_search"]
-                        st.rerun()
-                    else:
-                        st.error("Failed to delete user")
-            st.divider()
+        editor_state = st.session_state.get("users_table_view", {})
+        edited_df = deepcopy(editor_state.get("edited_rows", {}))
+        edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+        deleted_rows = list(editor_state.get("deleted_rows", []))
+        added_rows = list(editor_state.get("added_rows", []))
 
-        if "edit_user_username" in st.session_state and st.session_state["edit_user_username"]:
-            edit_username = st.session_state["edit_user_username"]
-            edit_idx = st.session_state.get("edit_user_idx", 0)
+        st.session_state.setdefault("users_save_success", False)
+        st.session_state.setdefault("users_pending_changes", False)
+        st.session_state.setdefault("users_last_save_ts", 0.0)
 
-            user_rows = users_df[users_df["Username"] == edit_username]
-            if not user_rows.empty:
-                user_row = user_rows.iloc[0]
+        has_password_input = False
+        if isinstance(editor_response, pd.DataFrame) and not editor_response.empty:
+            has_password_input = (
+                editor_response["New Password"].fillna("").str.strip().ne("").any()
+                or editor_response["Confirm Password"].fillna("").str.strip().ne("").any()
+            )
 
-                st.subheader(f"Edit User: {edit_username}")
-                with st.form("edit_user_form"):
-                    st.text_input("Username", value=edit_username, disabled=True)
-                    new_email = st.text_input("Email", value=user_row.get("Email", ""))
-                    new_role = st.selectbox(
-                        "Role",
-                        ["admin", "user"],
-                        index=0 if str(user_row.get("Role", "user")).lower() == "admin" else 1,
-                    )
-                    new_password = st.text_input("New Password", type="password")
-                    confirm_password = st.text_input("Confirm Password", type="password")
+        has_changes = bool(edited_df or edited_cells or deleted_rows or added_rows or has_password_input)
+        if has_changes:
+            st.session_state["users_pending_changes"] = True
+            st.session_state["users_save_success"] = False
+        else:
+            st.session_state["users_pending_changes"] = False
+        pending_changes = st.session_state.get("users_pending_changes", False)
 
-                    col_save, col_cancel = st.columns(2)
-                    with col_save:
-                        if st.form_submit_button("Update User", use_container_width=True):
-                            if new_password and new_password != confirm_password:
-                                st.error("Passwords do not match")
+        cooldown_seconds = 10
+        current_ts = time.time()
+        last_save_ts = float(st.session_state.get("users_last_save_ts", 0.0) or 0.0)
+        cooldown_remaining = max(0.0, cooldown_seconds - (current_ts - last_save_ts))
+
+        if pending_changes and not st.session_state.get("users_save_success", False):
+            st.info("You have unsaved user changes. Click 'Save Changes' to apply them.", icon="✏️")
+        if cooldown_remaining > 0:
+            st.warning(
+                f"Please wait {cooldown_remaining:.0f} second(s) before saving again to avoid hitting Google Sheets limits.",
+                icon="⏳",
+            )
+
+        action_cols = st.columns([1, 1], gap="small")
+        with action_cols[0]:
+            save_clicked = st.button(
+                "Save Changes",
+                type="primary",
+                use_container_width=True,
+                disabled=(not pending_changes) or (cooldown_remaining > 0),
+                key="users_save_changes",
+            )
+        with action_cols[1]:
+            discard_clicked = st.button(
+                "Discard Changes",
+                use_container_width=True,
+                disabled=not pending_changes,
+                key="users_discard_changes",
+            )
+
+        success = False
+        messages: list[str] = []
+
+        if discard_clicked and pending_changes:
+            st.session_state.pop("users_table_view", None)
+            st.session_state["users_pending_changes"] = False
+            st.session_state["users_save_success"] = False
+            st.rerun()
+
+        if save_clicked and pending_changes:
+            success = True
+            st.session_state["users_save_success"] = False
+            if cooldown_remaining > 0:
+                st.warning("Please wait for the save cooldown before saving again.", icon="⏱️")
+                success = False
+
+            if added_rows:
+                st.warning("Please use the 'Add User' tab to create new users.", icon="ℹ️")
+
+            if deleted_rows and success:
+                for delete_idx in sorted(deleted_rows, reverse=True):
+                    try:
+                        normalized_idx = int(delete_idx)
+                    except (TypeError, ValueError):
+                        normalized_idx = delete_idx
+                    if isinstance(normalized_idx, int) and normalized_idx < len(base_df):
+                        row = base_df.iloc[normalized_idx]
+                        username_value = row.get("Username", "")
+                        match_df = users_df[
+                            users_df["Username"].astype(str).str.strip().str.lower()
+                            == str(username_value).strip().lower()
+                        ]
+                        if not match_df.empty:
+                            original_idx = int(match_df.index[0])
+                            if delete_data(SHEETS["users"], original_idx):
+                                messages.append(f"🗑️ User '{username_value}' deleted.")
+                                users_df = users_df.drop(index=original_idx)
                             else:
-                                hashed = user_row.get("Password", "")
-                                if new_password:
-                                    hashed = hash_password(new_password)
-                                updated_data = [
-                                    edit_username,
-                                    hashed,
-                                    new_email,
-                                    new_role,
-                                ]
-                                if update_data(SHEETS["users"], edit_idx, updated_data):
-                                    st.session_state["user_success_message"] = f"✅ User '{edit_username}' updated successfully!"
-                                    st.session_state.pop("edit_user_username", None)
-                                    st.session_state.pop("edit_user_idx", None)
-                                    if "user_search" in st.session_state:
-                                        del st.session_state["user_search"]
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to update user")
-                    with col_cancel:
-                        if st.form_submit_button("Cancel", use_container_width=True):
-                            st.session_state.pop("edit_user_username", None)
-                            st.session_state.pop("edit_user_idx", None)
-                            st.rerun()
+                                st.error(f"Failed to delete user '{username_value}'.")
+                                success = False
+                        else:
+                            st.error(f"Unable to locate user '{username_value}' for deletion.")
+                            success = False
+                    else:
+                        st.error("Unable to resolve user row for deletion.")
+                        success = False
+
+            if success:
+                rows_to_update: set[int] = set()
+                for idx_key in list(edited_df.keys()) + list(edited_cells.keys()):
+                    try:
+                        norm_idx = int(idx_key)
+                    except (TypeError, ValueError):
+                        try:
+                            norm_idx = int(str(idx_key))
+                        except ValueError:
+                            norm_idx = idx_key
+                    if isinstance(norm_idx, int):
+                        rows_to_update.add(norm_idx)
+
+                if isinstance(editor_response, pd.DataFrame):
+                    for idx, row in editor_response.reset_index(drop=True).iterrows():
+                        if str(row.get("New Password", "")).strip() or str(row.get("Confirm Password", "")).strip():
+                            rows_to_update.add(idx)
+
+                for idx in sorted(rows_to_update):
+                    if not isinstance(idx, int) or idx >= len(editor_response):
+                        continue
+                    current_row = editor_response.iloc[idx]
+                    username_value = str(current_row.get("Username", "")).strip()
+                    if not username_value:
+                        continue
+
+                    new_email = str(current_row.get("Email", "")).strip()
+                    new_role = str(current_row.get("Role", "")).strip() or "user"
+                    new_password = str(current_row.get("New Password", "")).strip()
+                    confirm_password = str(current_row.get("Confirm Password", "")).strip()
+
+                    if new_password or confirm_password:
+                        if new_password != confirm_password:
+                            st.error(f"Passwords do not match for user '{username_value}'.")
+                            success = False
+                            continue
+
+                    match_df = users_df[
+                        users_df["Username"].astype(str).str.strip().str.lower()
+                        == username_value.lower()
+                    ]
+                    if match_df.empty:
+                        st.error(f"Unable to locate user '{username_value}' for update.")
+                        success = False
+                        continue
+
+                    original_idx = int(match_df.index[0])
+                    hashed_password = match_df.iloc[0].get("Password", "")
+                    if new_password:
+                        hashed_password = hash_password(new_password)
+
+                    updated_payload = [
+                        username_value,
+                        hashed_password,
+                        new_email,
+                        new_role,
+                    ]
+
+                    if update_data(SHEETS["users"], original_idx, updated_payload):
+                        messages.append(f"✅ User '{username_value}' updated successfully!")
+                        users_df.loc[original_idx, "Email"] = new_email
+                        users_df.loc[original_idx, "Role"] = new_role
+                        users_df.loc[original_idx, "Password"] = hashed_password
+                    else:
+                        st.error(f"Failed to update user '{username_value}'.")
+                        success = False
+
+            if success:
+                st.session_state["users_save_success"] = True
+                st.session_state["users_pending_changes"] = False
+                st.session_state["users_last_save_ts"] = time.time()
+                st.session_state.pop("users_table_view", None)
+                st.session_state["user_success_message"] = (
+                    " ".join(messages) if messages else "✅ User changes saved successfully!"
+                )
+                st.rerun()
 
