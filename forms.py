@@ -700,9 +700,16 @@ def asset_depreciation_form():
                     st.error("Failed to save the schedule. Please try again.")
 
     with tab_view:
+        if "depreciation_success_message" in st.session_state:
+            st.success(st.session_state["depreciation_success_message"])
+            del st.session_state["depreciation_success_message"]
+
         if depreciation_df.empty:
             st.info("No depreciation schedules found. Generate one to get started.")
             return
+
+        user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+        is_admin = str(user_role).lower() == "admin"
 
         asset_filter_options = ["All Assets"] + sorted(
             depreciation_df.get("Asset ID", pd.Series(dtype=str)).dropna().astype(str).unique().tolist()
@@ -717,15 +724,241 @@ def asset_depreciation_form():
             st.info("No schedules match the selected filters.")
             return
 
-        schedule_ids = filtered_df["Schedule ID"].dropna().unique().tolist()
+        schedule_ids = filtered_df["Schedule ID"].dropna().astype(str).unique().tolist()
         schedule_filter_options = ["All Schedules"] + schedule_ids
         schedule_filter = st.selectbox("Filter by Schedule", schedule_filter_options)
 
         if schedule_filter != "All Schedules":
-            filtered_df = filtered_df[filtered_df["Schedule ID"] == schedule_filter]
+            filtered_df = filtered_df[filtered_df["Schedule ID"].astype(str) == schedule_filter]
+
+        if filtered_df.empty:
+            st.info("No schedules match the selected filters.")
+            return
 
         st.caption(f"Showing {len(filtered_df)} depreciation row(s).")
-        st.dataframe(filtered_df, use_container_width=True)
+
+        st.markdown(
+            """
+            <style>
+            [data-testid="stDataEditor"] thead th,
+            [data-testid="stDataEditor"] div[role="columnheader"] {
+                background-color: #BF092F !important;
+                color: #1A202C !important;
+                font-weight: 600 !important;
+            }
+            [data-testid="stDataEditor"] div[role="columnheader"] * {
+                color: #1A202C !important;
+            }
+            [data-testid="stDataEditor"] tbody td {
+                border-right: 1px solid #f0f0f0 !important;
+            }
+            [data-testid="stDataEditor"] tbody td:last-child {
+                border-right: none !important;
+            }
+            [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                display: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        display_columns = [
+            "Schedule ID",
+            "Asset ID",
+            "Asset Name",
+            "Purchase Date",
+            "Purchase Cost",
+            "Useful Life (Years)",
+            "Salvage Value",
+            "Method",
+            "Period",
+            "Period End",
+            "Opening Value",
+            "Depreciation",
+            "Closing Value",
+            "Generated On",
+        ]
+        display_columns = [col for col in display_columns if col in filtered_df.columns]
+        table_df = filtered_df[display_columns].copy()
+
+        st.data_editor(
+            table_df,
+            hide_index=True,
+            use_container_width=True,
+            num_rows="dynamic",
+            key="depreciation_table_view",
+            column_config={
+                "Schedule ID": st.column_config.TextColumn("Schedule ID", disabled=True),
+                "Asset ID": st.column_config.TextColumn("Asset ID", disabled=True),
+                "Asset Name": st.column_config.TextColumn("Asset Name", disabled=True),
+                "Method": st.column_config.TextColumn("Method", disabled=True),
+                "Generated On": st.column_config.TextColumn("Generated On", disabled=True),
+                "Purchase Date": st.column_config.TextColumn(
+                    "Purchase Date", help="Format: YYYY-MM-DD"
+                ),
+                "Purchase Cost": st.column_config.NumberColumn(
+                    "Purchase Cost", format="%.2f", step=0.01
+                ),
+                "Useful Life (Years)": st.column_config.NumberColumn(
+                    "Useful Life (Years)", min_value=1, step=1
+                ),
+                "Salvage Value": st.column_config.NumberColumn(
+                    "Salvage Value", format="%.2f", step=0.01
+                ),
+                "Period End": st.column_config.TextColumn("Period End", help="Format: YYYY-MM-DD"),
+                "Opening Value": st.column_config.NumberColumn(
+                    "Opening Value", format="%.2f", step=0.01
+                ),
+                "Depreciation": st.column_config.NumberColumn(
+                    "Depreciation", format="%.2f", step=0.01
+                ),
+                "Closing Value": st.column_config.NumberColumn(
+                    "Closing Value", format="%.2f", step=0.01
+                ),
+            },
+        )
+
+        editor_state = st.session_state.get("depreciation_table_view", {})
+        edited_rows = deepcopy(editor_state.get("edited_rows", {}))
+        edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+        deleted_rows = list(editor_state.get("deleted_rows", []))
+        added_rows = list(editor_state.get("added_rows", []))
+
+        if deleted_rows and not is_admin:
+            st.warning("Only administrators can delete depreciation schedules. Deletions will be ignored.", icon="⚠️")
+            deleted_rows = []
+            if isinstance(editor_state, dict):
+                editor_state["deleted_rows"] = []
+
+        def _normalize_idx(idx_value):
+            try:
+                return int(idx_value)
+            except (TypeError, ValueError):
+                return idx_value
+
+        def _get_edits(source_dict, idx_value):
+            if idx_value in source_dict:
+                return source_dict[idx_value]
+            idx_str = str(idx_value)
+            return source_dict.get(idx_str, {})
+
+        st.session_state.setdefault("depreciation_pending_changes", False)
+        st.session_state.setdefault("depreciation_save_success", False)
+
+        has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+        st.session_state["depreciation_pending_changes"] = has_changes
+        if has_changes:
+            st.session_state["depreciation_save_success"] = False
+
+        action_cols = st.columns([1, 1], gap="small")
+        with action_cols[0]:
+            save_clicked = st.button(
+                "Save Changes",
+                use_container_width=True,
+                type="primary",
+                disabled=not has_changes,
+                key="depreciation_save_changes",
+            )
+        with action_cols[1]:
+            discard_clicked = st.button(
+                "Discard Changes",
+                use_container_width=True,
+                disabled=not has_changes,
+                key="depreciation_discard_changes",
+            )
+
+        if discard_clicked and has_changes:
+            table_state = st.session_state.get("depreciation_table_view")
+            if isinstance(table_state, dict):
+                table_state["edited_rows"] = {}
+                table_state["edited_cells"] = {}
+                table_state["deleted_rows"] = []
+                table_state["added_rows"] = []
+            st.session_state.pop("depreciation_table_view", None)
+            st.session_state["depreciation_pending_changes"] = False
+            st.experimental_rerun()
+
+        if save_clicked and has_changes:
+            success = True
+
+            if added_rows:
+                st.warning("Please generate new schedules from the 'Generate Schedule' tab.", icon="ℹ️")
+                success = False
+
+            if success and deleted_rows:
+                for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
+                    if isinstance(delete_idx, int) and delete_idx < len(filtered_df):
+                        target_row = filtered_df.iloc[delete_idx]
+                        original_idx = int(filtered_df.index[delete_idx])
+                        if delete_data(SHEETS["depreciation"], original_idx):
+                            st.session_state["depreciation_success_message"] = (
+                                f"🗑️ Schedule row for '{target_row.get('Schedule ID', '')}' removed."
+                            )
+                        else:
+                            st.error("Failed to delete depreciation row.")
+                            success = False
+                    else:
+                        st.error("Unable to resolve the selected row for deletion.")
+                        success = False
+
+            rows_to_update: set[int] = set()
+            for idx_key in list(edited_rows.keys()) + list(edited_cells.keys()):
+                norm_idx = _normalize_idx(idx_key)
+                if isinstance(norm_idx, int):
+                    rows_to_update.add(norm_idx)
+
+            if success and rows_to_update:
+                column_order = list(depreciation_df.columns)
+                for idx in rows_to_update:
+                    if idx >= len(filtered_df):
+                        continue
+                    current_row = filtered_df.iloc[idx].copy()
+                    edits = dict(_get_edits(edited_rows, idx))
+                    cell_changes = _get_edits(edited_cells, idx)
+                    if cell_changes:
+                        edits.update(cell_changes)
+                    if not edits:
+                        continue
+
+                    for column, new_value in edits.items():
+                        current_row[column] = new_value
+
+                    update_map = {col: current_row.get(col, "") for col in column_order}
+
+                    for numeric_col in [
+                        "Purchase Cost",
+                        "Useful Life (Years)",
+                        "Salvage Value",
+                        "Opening Value",
+                        "Depreciation",
+                        "Closing Value",
+                    ]:
+                        if numeric_col in update_map:
+                            try:
+                                update_map[numeric_col] = f"{float(str(update_map[numeric_col]).replace(',', '')):.2f}"
+                            except Exception:
+                                update_map[numeric_col] = str(update_map[numeric_col])
+
+                    original_idx = int(filtered_df.index[idx])
+                    updated_row = [update_map.get(col, "") for col in column_order]
+                    if update_data(SHEETS["depreciation"], original_idx, updated_row):
+                        st.session_state["depreciation_success_message"] = "✅ Depreciation data updated successfully!"
+                    else:
+                        st.error("Failed to update depreciation data.")
+                        success = False
+
+            if success:
+                st.session_state["depreciation_pending_changes"] = False
+                st.session_state["depreciation_save_success"] = True
+                st.session_state.pop("depreciation_table_view", None)
+                st.experimental_rerun()
+
+        if (
+            st.session_state.get("depreciation_pending_changes", False)
+            and not st.session_state.get("depreciation_save_success", False)
+        ):
+            st.info("You have unsaved depreciation changes. Click 'Save Changes' to apply them.", icon="✏️")
 
         csv_export = filtered_df.to_csv(index=False).encode("utf-8")
         st.download_button(
