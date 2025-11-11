@@ -103,8 +103,7 @@ def get_drive_credentials(user_id: Optional[str] = None) -> Optional[Credentials
     states[key] = state
     st.info("Connect your Google Drive to upload attachments.")
     st.markdown(
-        f'<a href="{auth_url}" target="_self" style="text-decoration: none;">'
-        "Authorize Google Drive</a>",
+        f'<a href="{auth_url}" target="_self">Authorize Google Drive</a>',
         unsafe_allow_html=True,
     )
     return None
