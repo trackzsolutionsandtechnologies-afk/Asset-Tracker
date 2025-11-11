@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers, get_worksheet
 from google_drive import upload_file_to_drive
+from google_oauth import get_drive_credentials, disconnect_drive_credentials
+
 def _ensure_headers_once(sheet_key: str, headers: list[str]) -> None:
     """
     Ensure Google Sheet headers only once per session to reduce API calls.
@@ -1698,6 +1700,15 @@ def attachments_form():
     assets_df = read_data(SHEETS["assets"])
     attachments_df = read_data(SHEETS["attachments"])
 
+    try:
+        drive_creds = get_drive_credentials()
+    except RuntimeError as exc:
+        st.error(str(exc))
+        return
+
+    if drive_creds is None:
+        return
+
     st.markdown(
         "Upload supporting documents or photos for an asset. Files are stored in Google Drive and the shareable link is recorded in Google Sheets."
     )
@@ -1752,7 +1763,12 @@ def attachments_form():
             drive_filename = f"{safe_asset}_{timestamp}_{uploaded_file.name}"
 
             with st.spinner("Uploading to Google Drive..."):
-                drive_file = upload_file_to_drive(file_bytes, drive_filename, mime_type)
+                drive_file = upload_file_to_drive(
+                    file_bytes,
+                    drive_filename,
+                    mime_type,
+                    credentials=drive_creds,
+                )
 
             if not drive_file:
                 return
@@ -1788,6 +1804,8 @@ def attachments_form():
                 display_df["Timestamp"] = pd.to_datetime(display_df["Timestamp"], errors="coerce")
                 display_df = display_df.sort_values("Timestamp", ascending=False)
             st.dataframe(display_df.head(50), use_container_width=True)
+
+    st.button("Disconnect Google Drive", on_click=disconnect_drive_credentials, key="disconnect_drive")
 
 def asset_transfer_form():
     """Asset Transfer Form"""

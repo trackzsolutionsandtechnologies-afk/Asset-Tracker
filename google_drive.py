@@ -17,16 +17,17 @@ from google_sheets import get_google_client, get_cached_credentials
 DRIVE_FILE_FIELDS = "id, name, webViewLink"
 
 
+def _build_drive_service(creds):
+    return build("drive", "v3", credentials=creds, cache_discovery=False)
+
+
 @st.cache_resource(show_spinner=False)
-def get_drive_service():
-    """Build and cache the Google Drive service using the gspread client's credentials."""
+def _get_service_account_drive_service():
     client = get_google_client()
     if client is None:
         return None
 
-    credentials = get_cached_credentials()
-    if credentials is None:
-        credentials = getattr(client, "auth", None)
+    credentials = get_cached_credentials() or getattr(client, "auth", None)
     if credentials is None:
         st.error("Google credentials are not available. Please check configuration.")
         return None
@@ -36,7 +37,14 @@ def get_drive_service():
     except AttributeError:
         scoped = credentials
 
-    return build("drive", "v3", credentials=scoped, cache_discovery=False)
+    return _build_drive_service(scoped)
+
+
+def get_drive_service(credentials=None):
+    """Build and cache the Google Drive service using provided or service-account credentials."""
+    if credentials is not None:
+        return _build_drive_service(credentials)
+    return _get_service_account_drive_service()
 
 
 def upload_file_to_drive(
@@ -44,6 +52,7 @@ def upload_file_to_drive(
     filename: str,
     mime_type: str,
     folder_id: Optional[str] = None,
+    credentials=None,
 ) -> Optional[dict]:
     """
     Upload a file to Google Drive and return metadata containing the shareable link.
@@ -51,7 +60,7 @@ def upload_file_to_drive(
     Returns:
         dict with keys  id, name, webViewLink  if successful, otherwise None.
     """
-    service = get_drive_service()
+    service = get_drive_service(credentials=credentials)
     if service is None:
         st.error("Google Drive service is not available. Please check credentials.")
         return None
