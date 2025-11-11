@@ -4,6 +4,7 @@ Main Streamlit Application for Asset Tracker
 import streamlit as st
 import streamlit.components.v1 as components
 import time
+from datetime import datetime
 from pathlib import Path
 from streamlit_option_menu import option_menu
 from config import get_config
@@ -415,10 +416,26 @@ def main():
 
         st.markdown(
             """
-            <div style="text-align: center; margin-top: 2.5rem; padding: 1.75rem 0 1rem; color: #64748b; font-size: 0.9rem;">
-                <span style="letter-spacing: 0.08em; text-transform: uppercase;">Trackz</span>
+            <div style="
+                margin-top: 2.5rem;
+                padding: 1.5rem 0;
+                border-top: 1px solid rgba(148, 163, 184, 0.35);
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+                align-items: center;
+                color: #475569;
+                font-size: 0.85rem;
+            ">
+                <div>
+                    Powered by
+                    <span style="font-weight: 600; color: #2563eb;">Trackz</span>
+                </div>
+                <div style="color: #94a3b8; font-size: 0.78rem;">
+                    © {year} Trackz. All rights reserved.
+                </div>
             </div>
-            """,
+            """.format(year=datetime.now().year),
             unsafe_allow_html=True,
         )
 
