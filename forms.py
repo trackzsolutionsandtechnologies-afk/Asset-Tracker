@@ -221,167 +221,233 @@ def location_form():
                             st.error("Failed to add location")
     
     with tab2:
-        # Show success message if exists
         if "location_success_message" in st.session_state:
             st.success(st.session_state["location_success_message"])
-            # Clear message after showing
             del st.session_state["location_success_message"]
-        
-        if not df.empty and "Location ID" in df.columns:
-            st.subheader("All Locations")
-            
-            # Search bar
-            search_term = st.text_input("🔍 Search Locations", placeholder="Search by Location ID or Name...", key="location_search")
-            
-            # Filter data based on search
-            if search_term and not df.empty:
-                search_mask = pd.Series([False] * len(df), index=df.index)
-                if "Location ID" in df.columns:
-                    search_mask = search_mask | df["Location ID"].astype(str).str.contains(search_term, case=False, na=False)
-                if "Location Name" in df.columns:
-                    search_mask = search_mask | df["Location Name"].astype(str).str.contains(search_term, case=False, na=False)
-                filtered_df = df[search_mask] if not df.empty else pd.DataFrame()
-                if filtered_df.empty:
-                    st.info(f"No locations found matching '{search_term}'")
-                    filtered_df = pd.DataFrame()
-            else:
-                filtered_df = df
-            
-            if not filtered_df.empty:
-                # Show count
-                st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
 
-                # Determine admin
-                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-                is_admin = user_role.lower() == "admin"
+        if df.empty or "Location ID" not in df.columns:
+            st.info("No locations found. Add a new location using the 'Add New Location' tab.")
+            return
 
-                view_placeholder = st.empty()
-                edit_placeholder = st.empty()
+        user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+        is_admin = str(user_role).lower() == "admin"
 
-                # Table header - adjust columns based on admin status
-                if is_admin:
-                    header_cols = st.columns([4, 4, 1, 1, 1])
-                else:
-                    header_cols = st.columns([4, 4, 1, 1])
+        search_term = st.text_input(
+            "🔍 Search Locations",
+            placeholder="Search by Location ID or Name...",
+            key="location_search",
+        )
 
-                header_labels = ["**Location ID**", "**Location Name**", "**View**", "**Edit**"]
-                if is_admin:
-                    header_labels.append("**Delete**")
+        filtered_df = df.copy()
+        if search_term:
+            search_mask = pd.Series([False] * len(filtered_df), index=filtered_df.index)
+            search_mask |= filtered_df["Location ID"].astype(str).str.contains(search_term, case=False, na=False)
+            if "Location Name" in filtered_df.columns:
+                search_mask |= filtered_df["Location Name"].astype(str).str.contains(search_term, case=False, na=False)
+            filtered_df = filtered_df[search_mask]
 
-                for col_widget, label in zip(header_cols, header_labels):
-                    with col_widget:
-                        st.markdown(f"<div style='text-align: left;'>{label}</div>", unsafe_allow_html=True)
-                st.divider()
-
-                # Display table with edit/delete buttons
-                button_counter = 0
-                for idx, row in filtered_df.iterrows():
-                    location_id_value = row.get("Location ID", "")
-                    unique_suffix = f"{location_id_value}_{button_counter}"
-                    button_counter += 1
-
-                    if not df[df["Location ID"] == location_id_value].empty:
-                        original_idx = int(df[df["Location ID"] == location_id_value].index[0])
-                    else:
-                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
-
-                    if is_admin:
-                        col1, col2, col_view, col_edit, col_delete = st.columns([4, 4, 1, 1, 1])
-                    else:
-                        col1, col2, col_view, col_edit = st.columns([4, 4, 1, 1])
-
-                    with col1:
-                        st.write(row.get("Location ID", "N/A"))
-                    with col2:
-                        st.write(row.get("Location Name", "N/A"))
-                    with col_view:
-                        if st.button("👁️", key=f"location_view_{unique_suffix}", use_container_width=True, help="View details"):
-                            record = {
-                                "Location ID": location_id_value,
-                                "Location Name": row.get("Location Name", ""),
-                            }
-                            _open_view_modal(
-                                "location",
-                                f"Location Details: {row.get('Location Name', '')}",
-                                record,
-                                ["Location ID", "Location Name"],
-                            )
-                    with col_edit:
-                        edit_key = f"location_edit_{unique_suffix}"
-                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this location"):
-                            st.session_state["edit_location_id"] = location_id_value
-                            st.session_state["edit_location_idx"] = int(original_idx)
-                            st.rerun()
-                    if is_admin:
-                        with col_delete:
-                            delete_key = f"location_delete_{unique_suffix}"
-                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this location"):
-                                location_name_to_delete = row.get("Location Name", "Unknown")
-                                location_id_to_delete = location_id_value or "Unknown"
-                                if delete_data(SHEETS["locations"], original_idx):
-                                    st.session_state["location_success_message"] = (
-                                        f"✅ Location '{location_name_to_delete}' (ID: {location_id_to_delete}) deleted successfully!"
-                                    )
-                                    if "location_search" in st.session_state:
-                                        del st.session_state["location_search"]
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete location")
-
-                    st.divider()
-
-                _render_view_modal("location", view_placeholder)
-
-            elif search_term:
-                # Search returned no results, but search was performed
-                pass
+        if filtered_df.empty:
+            if search_term:
+                st.info(f"No locations found matching '{search_term}'.")
             else:
                 st.info("No locations found. Add a new location using the 'Add New Location' tab.")
+            return
 
-            # Edit form (shown when edit button is clicked)
-            if "edit_location_id" in st.session_state and st.session_state["edit_location_id"]:
-                with edit_placeholder.container():
-                    st.subheader("Edit Location")
-                    edit_id = st.session_state["edit_location_id"]
-                    edit_idx = st.session_state.get("edit_location_idx", 0)
-                    
-                    location_rows = df[df["Location ID"] == edit_id]
-                    if not location_rows.empty:
-                        location = location_rows.iloc[0]
-                        
-                        with st.form("edit_location_form"):
-                            new_location_id = st.text_input("Location ID", value=location.get("Location ID", ""), disabled=True)
-                            new_location_name = st.text_input("Location Name", value=location.get("Location Name", ""))
-                            
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.form_submit_button("Update Location", use_container_width=True):
-                                    with st.spinner("Updating location..."):
-                                        column_order = list(df.columns) if not df.empty else expected_headers
-                                        if not column_order:
-                                            column_order = expected_headers
-                                        data_map = {
-                                            "Location ID": new_location_id,
-                                            "Location Name": new_location_name,
-                                        }
-                                        row_data = [data_map.get(col, "") for col in column_order]
-                                        if update_data(SHEETS["locations"], edit_idx, row_data):
-                                            st.session_state["location_success_message"] = f"✅ Location '{new_location_name}' (ID: {new_location_id}) updated successfully!"
-                                            st.session_state.pop("edit_location_id", None)
-                                            st.session_state.pop("edit_location_idx", None)
-                                            if "location_search" in st.session_state:
-                                                del st.session_state["location_search"]
-                                            st.rerun()
-                                        else:
-                                            st.error("Failed to update location")
-                            with col2:
-                                if st.form_submit_button("Cancel", use_container_width=True):
-                                    st.session_state.pop("edit_location_id", None)
-                                    st.session_state.pop("edit_location_idx", None)
-                                    st.rerun()
+        st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
 
-        else:
-            st.info("No locations found. Add a new location using the 'Add New Location' tab.")
+        st.markdown(
+            """
+            <style>
+            [data-testid="stDataEditor"] thead th,
+            [data-testid="stDataEditor"] div[role="columnheader"] {
+                background-color: #BF092F !important;
+                color: #1A202C !important;
+                font-weight: 600 !important;
+            }
+            [data-testid="stDataEditor"] div[role="columnheader"] * {
+                color: #1A202C !important;
+            }
+            [data-testid="stDataEditor"] tbody td {
+                border-right: 1px solid #f0f0f0 !important;
+            }
+            [data-testid="stDataEditor"] tbody td:last-child {
+                border-right: none !important;
+            }
+            [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                display: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        table_df = filtered_df[["Location ID", "Location Name"]].copy()
+        st.data_editor(
+            table_df,
+            hide_index=True,
+            use_container_width=True,
+            num_rows="dynamic",
+            key="location_table_view",
+            column_config={
+                "Location ID": st.column_config.TextColumn("Location ID", disabled=True),
+                "Location Name": st.column_config.TextColumn("Location Name", help="Edit the name and save your changes."),
+            },
+        )
+
+        editor_state = st.session_state.get("location_table_view", {})
+        edited_rows = deepcopy(editor_state.get("edited_rows", {}))
+        edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+        deleted_rows = list(editor_state.get("deleted_rows", []))
+        added_rows = list(editor_state.get("added_rows", []))
+
+        if deleted_rows and not is_admin:
+            st.warning("Only administrators can delete locations. Deletions will be ignored.", icon="⚠️")
+            deleted_rows = []
+            if isinstance(editor_state, dict):
+                editor_state["deleted_rows"] = []
+
+        def _normalize_idx(idx_value):
+            try:
+                return int(idx_value)
+            except (TypeError, ValueError):
+                return idx_value
+
+        def _get_edits(source_dict, idx_value):
+            if idx_value in source_dict:
+                return source_dict[idx_value]
+            idx_str = str(idx_value)
+            return source_dict.get(idx_str, {})
+
+        st.session_state.setdefault("location_pending_changes", False)
+        st.session_state.setdefault("location_save_success", False)
+
+        has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+        st.session_state["location_pending_changes"] = has_changes
+        if has_changes:
+            st.session_state["location_save_success"] = False
+
+        action_cols = st.columns([1, 1], gap="small")
+        with action_cols[0]:
+            save_clicked = st.button(
+                "Save Changes",
+                type="primary",
+                use_container_width=True,
+                disabled=not has_changes,
+                key="location_save_changes",
+            )
+        with action_cols[1]:
+            discard_clicked = st.button(
+                "Discard Changes",
+                use_container_width=True,
+                disabled=not has_changes,
+                key="location_discard_changes",
+            )
+
+        if discard_clicked and has_changes:
+            table_state = st.session_state.get("location_table_view")
+            if isinstance(table_state, dict):
+                table_state["edited_rows"] = {}
+                table_state["edited_cells"] = {}
+                table_state["deleted_rows"] = []
+                table_state["added_rows"] = []
+            st.session_state.pop("location_table_view", None)
+            st.session_state["location_pending_changes"] = False
+            st.experimental_rerun()
+
+        if save_clicked and has_changes:
+            success = True
+
+            if added_rows:
+                st.warning("Please add new locations from the 'Add New Location' tab.", icon="ℹ️")
+                success = False
+
+            if success and deleted_rows:
+                for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
+                    if isinstance(delete_idx, int) and delete_idx < len(filtered_df):
+                        target_row = filtered_df.iloc[delete_idx]
+                        match_df = df[
+                            df["Location ID"].astype(str).str.strip()
+                            == str(target_row.get("Location ID", "")).strip()
+                        ]
+                        if not match_df.empty:
+                            original_idx = int(match_df.index[0])
+                            if delete_data(SHEETS["locations"], original_idx):
+                                st.session_state["location_success_message"] = (
+                                    f"🗑️ Location '{target_row.get('Location Name', '')}' "
+                                    f"(ID: {target_row.get('Location ID', '')}) deleted."
+                                )
+                            else:
+                                st.error("Failed to delete location.")
+                                success = False
+                        else:
+                            st.error("Unable to find the selected location for deletion.")
+                            success = False
+                    else:
+                        st.error("Unable to resolve the selected row for deletion.")
+                        success = False
+
+            rows_to_update: set[int] = set()
+            for idx_key in list(edited_rows.keys()) + list(edited_cells.keys()):
+                norm_idx = _normalize_idx(idx_key)
+                if isinstance(norm_idx, int):
+                    rows_to_update.add(norm_idx)
+
+            if success and rows_to_update:
+                for idx in rows_to_update:
+                    if idx >= len(filtered_df):
+                        continue
+                    current_row = filtered_df.iloc[idx].copy()
+                    edits = dict(_get_edits(edited_rows, idx))
+                    cell_changes = _get_edits(edited_cells, idx)
+                    if cell_changes:
+                        edits.update(cell_changes)
+                    if not edits:
+                        continue
+
+                    for column, new_value in edits.items():
+                        current_row[column] = new_value
+
+                    location_id_value = str(current_row.get("Location ID", "")).strip()
+                    location_name_value = str(current_row.get("Location Name", "")).strip()
+
+                    match_df = df[
+                        df["Location ID"].astype(str).str.strip() == location_id_value
+                    ]
+                    if not match_df.empty:
+                        original_idx = int(match_df.index[0])
+                        column_order = list(df.columns) if not df.empty else expected_headers
+                        updated_row = []
+                        for col in column_order:
+                            if col == "Location ID":
+                                updated_row.append(location_id_value)
+                            elif col == "Location Name":
+                                updated_row.append(location_name_value)
+                            else:
+                                updated_row.append(match_df.iloc[0].get(col, ""))
+                        if update_data(SHEETS["locations"], original_idx, updated_row):
+                            st.session_state["location_success_message"] = (
+                                f"✅ Location '{location_name_value}' (ID: {location_id_value}) updated successfully!"
+                            )
+                        else:
+                            st.error(f"Failed to update location '{location_id_value}'.")
+                            success = False
+                    else:
+                        st.error("Unable to locate the selected location for updating.")
+                        success = False
+
+            if success:
+                st.session_state["location_pending_changes"] = False
+                st.session_state["location_save_success"] = True
+                if "location_search" in st.session_state:
+                    del st.session_state["location_search"]
+                st.session_state.pop("location_table_view", None)
+                st.experimental_rerun()
+
+        if (
+            st.session_state.get("location_pending_changes", False)
+            and not st.session_state.get("location_save_success", False)
+        ):
+            st.info("You have unsaved location changes. Click 'Save Changes' to apply them.", icon="✏️")
 
 def asset_depreciation_form():
     """Depreciation schedules based on Asset Master data."""
