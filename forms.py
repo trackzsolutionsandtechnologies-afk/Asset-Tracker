@@ -588,7 +588,12 @@ def asset_depreciation_form():
 
             asset_options = sorted(asset_options, key=lambda x: x[0])
 
-            with st.form("depreciation_form"):
+            if "depreciation_form_key" not in st.session_state:
+                st.session_state["depreciation_form_key"] = 0
+
+            form_key = st.session_state["depreciation_form_key"]
+
+            with st.form(f"depreciation_form_{form_key}"):
                 asset_labels = [option[0] for option in asset_options]
                 selection = st.selectbox(
                     "Select Asset",
@@ -643,7 +648,7 @@ def asset_depreciation_form():
                 )
 
                 submitted = st.form_submit_button(
-                    "Calculate Depreciation", use_container_width=True
+                    "Calculate Depreciation", use_container_width=True, key=f"depreciation_submit_{form_key}"
                 )
 
             if submitted:
@@ -668,6 +673,8 @@ def asset_depreciation_form():
                             **schedule_result,
                         }
                         st.success("Depreciation schedule generated.")
+                        st.session_state["depreciation_form_key"] += 1
+                        st.experimental_rerun()
 
         state_key = "depreciation_generated_schedule"
         if state_key in st.session_state:
