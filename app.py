@@ -336,9 +336,10 @@ def main():
         show_spinner = st.session_state["active_page"] is not None
         st.session_state["active_page"] = selected
 
+    content_placeholder = st.empty()
     spinner_context = st.spinner("Loading...") if show_spinner else nullcontext()
 
-    with spinner_context:
+    with spinner_context, content_placeholder.container():
         # Main content area
         if selected == "Dashboard":
             dashboard_page()
