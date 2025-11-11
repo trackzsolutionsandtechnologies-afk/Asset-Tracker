@@ -303,30 +303,24 @@ def main():
         
         st.divider()
         
-        options = [
-            "Dashboard",
-            "Location",
-            "Supplier",
-            "Category",
-            "Asset Master",
-            "Asset Transfer",
-            "Attachments",
-            "Maintenance",
-            "Depreciation",
-            "Assignment",
-            "Users",
-            "Scan Barcode",
-            "Print Barcodes",
-        ]
-        slug_to_option = {opt.lower().replace(" ", "-"): opt for opt in options}
-        params = st.experimental_get_query_params()
-        initial_slug = params.get("page", [None])[0]
-        initial_option = slug_to_option.get(initial_slug, options[0])
-        default_index = options.index(initial_option)
-
+        # Navigation menu
         selected = option_menu(
             menu_title="",
-            options=options,
+            options=[
+                "Dashboard",
+                "Location",
+                "Supplier",
+                "Category",
+                "Asset Master",
+                "Asset Transfer",
+                "Attachments",
+                "Maintenance",
+                "Depreciation",
+                "Assignment",
+                "Users",
+                "Scan Barcode",
+                "Print Barcodes",
+            ],
             icons=[
                 "speedometer2",
                 "geo-alt",
@@ -343,7 +337,7 @@ def main():
                 "printer",
             ],
             menu_icon="list",
-            default_index=default_index,
+            default_index=0,
             styles={
                 "container": {
                     "padding": "0 !important",
@@ -380,8 +374,6 @@ def main():
     if st.session_state["active_page"] != selected:
         show_spinner = st.session_state["active_page"] is not None
         st.session_state["active_page"] = selected
-        slug = selected.lower().replace(" ", "-")
-        st.experimental_set_query_params(page=slug)
 
     content_placeholder = st.empty()
     spinner_context = st.spinner("Loading...") if show_spinner else nullcontext()
