@@ -2,6 +2,7 @@
 Main Streamlit Application for Asset Tracker
 """
 import streamlit as st
+import time
 from pathlib import Path
 from streamlit_option_menu import option_menu
 from config import get_config
@@ -340,6 +341,7 @@ def main():
     spinner_context = st.spinner("Loading...") if show_spinner else nullcontext()
 
     with spinner_context, content_placeholder.container():
+        start_time = time.perf_counter() if show_spinner else None
         # Main content area
         if selected == "Dashboard":
             dashboard_page()
@@ -367,6 +369,12 @@ def main():
             barcode_scanner_page()
         elif selected == "Print Barcodes":
             barcode_print_page()
+
+        if show_spinner and start_time is not None:
+            min_duration = 0.6
+            elapsed = time.perf_counter() - start_time
+            if elapsed < min_duration:
+                time.sleep(min_duration - elapsed)
 
 if __name__ == "__main__":
     main()
