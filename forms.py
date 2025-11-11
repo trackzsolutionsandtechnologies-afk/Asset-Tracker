@@ -1805,33 +1805,30 @@ def attachments_form():
                 display_df["Timestamp"] = pd.to_datetime(display_df["Timestamp"], errors="coerce")
                 display_df = display_df.sort_values("Timestamp", ascending=False)
             display_df = display_df.head(50)
-            st.dataframe(display_df, use_container_width=True)
+
+            augmented_df = _augment_attachments_display(display_df)
+            for col in ("View", "Download"):
+                if col in augmented_df.columns:
+                    augmented_df[col] = augmented_df[col].astype(str)
+
+            st.markdown(
+                augmented_df.to_html(escape=False, index=False),
+                unsafe_allow_html=True,
+            )
+
+            st.caption("Click View to open the attachment or Download to save it.")
             st.divider()
 
             for idx, row in display_df.iterrows():
                 file_name = row.get("File Name", f"Attachment {idx + 1}")
-                drive_url = row.get("Drive URL", "")
                 notes = row.get("Notes", "")
                 timestamp = row.get("Timestamp", "")
-                file_id = _extract_drive_file_id(drive_url)
-                download_link = f"https://drive.google.com/uc?export=download&id={file_id}" if file_id else drive_url
 
                 with st.expander(file_name or f"Attachment {idx + 1}"):
                     if timestamp is not None and timestamp != "":
                         st.caption(f"Uploaded: {timestamp}")
                     if notes:
                         st.write(f"**Notes:** {notes}")
-
-                    action_cols = st.columns(2)
-                    if drive_url:
-                        action_cols[0].link_button("View", drive_url, use_container_width=True)
-                    else:
-                        action_cols[0].info("View link unavailable")
-
-                    if download_link:
-                        action_cols[1].link_button("Download", download_link, use_container_width=True)
-                    else:
-                        action_cols[1].info("Download link unavailable")
 
     st.button("Disconnect Google Drive", on_click=disconnect_drive_credentials, key="disconnect_drive")
 
@@ -4220,4 +4217,34 @@ def _extract_drive_file_id(url: str) -> str:
         if match:
             return match.group(1)
     return ""
+
+
+def _augment_attachments_display(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    result = df.copy()
+    view_links = []
+    download_links = []
+
+    for drive_url in result.get("Drive URL", []):
+        file_id = _extract_drive_file_id(drive_url)
+        if drive_url:
+            view_links.append(
+                f'<a href="{drive_url}" target="_blank">View</a>'
+            )
+        else:
+            view_links.append("")
+
+        if file_id:
+            dl_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            download_links.append(
+                f'<a href="{dl_url}" target="_blank">Download</a>'
+            )
+        else:
+            download_links.append("")
+
+    result["View"] = view_links
+    result["Download"] = download_links
+    return result
 
