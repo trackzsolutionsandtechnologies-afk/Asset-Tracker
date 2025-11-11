@@ -4,6 +4,7 @@ Forms module for Asset Tracker
 import base64
 from copy import deepcopy
 from io import BytesIO
+import re
 import time
 import streamlit as st
 import pandas as pd
@@ -1803,7 +1804,34 @@ def attachments_form():
             if "Timestamp" in display_df.columns:
                 display_df["Timestamp"] = pd.to_datetime(display_df["Timestamp"], errors="coerce")
                 display_df = display_df.sort_values("Timestamp", ascending=False)
-            st.dataframe(display_df.head(50), use_container_width=True)
+            display_df = display_df.head(50)
+            st.dataframe(display_df, use_container_width=True)
+            st.divider()
+
+            for idx, row in display_df.iterrows():
+                file_name = row.get("File Name", f"Attachment {idx + 1}")
+                drive_url = row.get("Drive URL", "")
+                notes = row.get("Notes", "")
+                timestamp = row.get("Timestamp", "")
+                file_id = _extract_drive_file_id(drive_url)
+                download_link = f"https://drive.google.com/uc?export=download&id={file_id}" if file_id else drive_url
+
+                with st.expander(file_name or f"Attachment {idx + 1}"):
+                    if timestamp is not None and timestamp != "":
+                        st.caption(f"Uploaded: {timestamp}")
+                    if notes:
+                        st.write(f"**Notes:** {notes}")
+
+                    action_cols = st.columns(2)
+                    if drive_url:
+                        action_cols[0].link_button("View", drive_url, use_container_width=True)
+                    else:
+                        action_cols[0].info("View link unavailable")
+
+                    if download_link:
+                        action_cols[1].link_button("Download", download_link, use_container_width=True)
+                    else:
+                        action_cols[1].info("Download link unavailable")
 
     st.button("Disconnect Google Drive", on_click=disconnect_drive_credentials, key="disconnect_drive")
 
@@ -4177,4 +4205,19 @@ def user_management_form():
                     " ".join(messages) if messages else "✅ User changes saved successfully!"
                 )
                 st.rerun()
+
+
+def _extract_drive_file_id(url: str) -> str:
+    if not url:
+        return ""
+    patterns = [
+        r"/d/([a-zA-Z0-9_-]+)/",
+        r"/d/([a-zA-Z0-9_-]+)$",
+        r"id=([a-zA-Z0-9_-]+)"
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    return ""
 
