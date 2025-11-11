@@ -1701,8 +1701,11 @@ def attachments_form():
     assets_df = read_data(SHEETS["assets"])
     attachments_df = read_data(SHEETS["attachments"])
 
+    username = st.session_state.get(SESSION_KEYS.get("username", "username"), "default")
+    user_key = str(username or "default")
+
     try:
-        drive_creds = get_drive_credentials()
+        drive_creds = get_drive_credentials(user_key)
     except RuntimeError as exc:
         st.error(str(exc))
         return
@@ -1837,7 +1840,12 @@ def attachments_form():
                 unsafe_allow_html=True,
             )
 
-    st.button("Disconnect Google Drive", on_click=disconnect_drive_credentials, key="disconnect_drive")
+    st.button(
+        "Disconnect Google Drive",
+        on_click=disconnect_drive_credentials,
+        args=(user_key,),
+        key="disconnect_drive",
+    )
 
 def asset_transfer_form():
     """Asset Transfer Form"""

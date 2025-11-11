@@ -22,6 +22,7 @@ SHEETS = {
     "password_resets": "PasswordResets",
     "depreciation": "Depreciation",
     "attachments": "Attachments",
+    "drive_credentials": "DriveCredentials",
 }
 
 def get_config():
@@ -65,6 +66,7 @@ def get_config():
                 "password_resets": sheets_config.get("password_resets", SHEETS["password_resets"]),
                 "depreciation": sheets_config.get("depreciation", SHEETS["depreciation"]),
                 "attachments": sheets_config.get("attachments", SHEETS["attachments"]),
+                "drive_credentials": sheets_config.get("drive_credentials", SHEETS["drive_credentials"]),
             }
     except Exception as e:
         # If secrets are not available, use defaults

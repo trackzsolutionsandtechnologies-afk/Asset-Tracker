@@ -263,6 +263,12 @@ def get_worksheet(sheet_name: str):
                     "Uploaded By",
                     "Notes",
                 ])
+            elif sheet_name == SHEETS["drive_credentials"]:
+                worksheet.append_row([
+                    "Username",
+                    "Credentials",
+                    "Updated At",
+                ])
         
         return worksheet
     except gspread.exceptions.APIError as e:
