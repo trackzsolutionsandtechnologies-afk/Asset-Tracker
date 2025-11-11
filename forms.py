@@ -701,6 +701,7 @@ def asset_depreciation_form():
                         break
                 if all_saved:
                     st.success("Depreciation schedule saved to Google Sheet.")
+                    st.session_state.pop("depreciation_form_key", None)
                     st.session_state.pop(state_key, None)
                     st.rerun()
                 else:
