@@ -1709,47 +1709,47 @@ def attachments_form():
 
     with tab_upload:
         with st.form("attachment_upload_form"):
-        if assets_df.empty:
-            st.warning("No assets found. You can still enter the asset details manually.")
-            st.session_state["attachment_asset_id_current"] = st.session_state.get(
-                "attachment_asset_id_current", ""
-            )
-            st.session_state["attachment_asset_name_current"] = st.session_state.get(
-                "attachment_asset_name_current", ""
-            )
-        else:
-            asset_options = ["-- Select Asset --"] + [
-                f"{row.get('Asset ID', '').strip()} - {row.get('Asset Name', '').strip()}"
-                for _, row in assets_df.iterrows()
-                if str(row.get("Asset ID", "")).strip()
-            ]
-            selection = st.selectbox(
-                "Choose an existing asset",
-                asset_options,
-                index=0,
-                key="attachment_asset_select",
-            )
-            if selection != "-- Select Asset --":
-                parts = selection.split(" - ", 1)
-                st.session_state["attachment_asset_id_current"] = parts[0].strip()
-                st.session_state["attachment_asset_name_current"] = (
-                    parts[1].strip() if len(parts) > 1 else ""
+            if assets_df.empty:
+                st.warning("No assets found. You can still enter the asset details manually.")
+                st.session_state["attachment_asset_id_current"] = st.session_state.get(
+                    "attachment_asset_id_current", ""
                 )
+                st.session_state["attachment_asset_name_current"] = st.session_state.get(
+                    "attachment_asset_name_current", ""
+                )
+            else:
+                asset_options = ["-- Select Asset --"] + [
+                    f"{row.get('Asset ID', '').strip()} - {row.get('Asset Name', '').strip()}"
+                    for _, row in assets_df.iterrows()
+                    if str(row.get("Asset ID", "")).strip()
+                ]
+                selection = st.selectbox(
+                    "Choose an existing asset",
+                    asset_options,
+                    index=0,
+                    key="attachment_asset_select",
+                )
+                if selection != "-- Select Asset --":
+                    parts = selection.split(" - ", 1)
+                    st.session_state["attachment_asset_id_current"] = parts[0].strip()
+                    st.session_state["attachment_asset_name_current"] = (
+                        parts[1].strip() if len(parts) > 1 else ""
+                    )
 
-        asset_id = st.text_input(
-            "Asset ID *",
-            key="attachment_asset_id_current",
-        )
-        asset_name = st.text_input(
-            "Asset Name *",
-            key="attachment_asset_name_current",
-        )
-        uploaded_file = st.file_uploader(
-            "Attachment *",
-            type=["png", "jpg", "jpeg", "pdf", "doc", "docx", "xls", "xlsx"],
-            accept_multiple_files=False,
-        )
-        add_notes = st.text_area("Notes (optional)", placeholder="Describe the attachment...")
+            asset_id = st.text_input(
+                "Asset ID *",
+                key="attachment_asset_id_current",
+            )
+            asset_name = st.text_input(
+                "Asset Name *",
+                key="attachment_asset_name_current",
+            )
+            uploaded_file = st.file_uploader(
+                "Attachment *",
+                type=["png", "jpg", "jpeg", "pdf", "doc", "docx", "xls", "xlsx"],
+                accept_multiple_files=False,
+            )
+            add_notes = st.text_area("Notes (optional)", placeholder="Describe the attachment...")
 
             submitted = st.form_submit_button("Upload Attachment", type="primary", use_container_width=True)
 
