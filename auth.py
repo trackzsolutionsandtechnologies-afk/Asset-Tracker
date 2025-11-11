@@ -163,6 +163,11 @@ def login_page():
 
     load_auth_css()
 
+    if st.session_state.get("logged_in", False):
+        st.session_state[SESSION_KEYS["authenticated"]] = True
+        st.session_state.setdefault("current_page", "Dashboard")
+        st.rerun()
+
     st.markdown(
     """
     <style>
@@ -215,6 +220,7 @@ def login_page():
         
         if submit_button:
             if authenticate_user(username, password):
+                st.session_state["logged_in"] = True
                 st.session_state[SESSION_KEYS["authenticated"]] = True
                 st.session_state[SESSION_KEYS["username"]] = username
                 user_role = get_user_role(username)
@@ -312,13 +318,16 @@ def forgot_password_page():
 
 def check_authentication():
     """Check if user is authenticated"""
-    # Ensure flag exists
+    if "logged_in" not in st.session_state:
+        st.session_state["logged_in"] = False
     if SESSION_KEYS["authenticated"] not in st.session_state:
         st.session_state[SESSION_KEYS["authenticated"]] = False
 
     # Validate existing session token
     token = st.session_state.get(SESSION_KEYS["auth_token"])
     if token and _validate_and_refresh_token(token):
+        st.session_state[SESSION_KEYS["authenticated"]] = True
+        st.session_state["logged_in"] = True
         return True
 
     # Attempt to restore from query parameters
@@ -330,9 +339,16 @@ def check_authentication():
         st.session_state[SESSION_KEYS["username"]] = token_info.get("username", "User")
         st.session_state[SESSION_KEYS["user_role"]] = token_info.get("role", "user")
         st.session_state[SESSION_KEYS["auth_token"]] = token_from_url
+        st.session_state["logged_in"] = True
         return True
 
-    return st.session_state[SESSION_KEYS["authenticated"]]
+    if st.session_state["logged_in"]:
+        st.session_state[SESSION_KEYS["authenticated"]] = True
+        return True
+
+    st.session_state["logged_in"] = False
+    st.session_state[SESSION_KEYS["authenticated"]] = False
+    return False
 
 
 def _validate_and_refresh_token(token: str) -> bool:
@@ -365,4 +381,6 @@ def logout():
     for key in SESSION_KEYS.values():
         if key in st.session_state:
             del st.session_state[key]
+    if "logged_in" in st.session_state:
+        st.session_state["logged_in"] = False
     st.rerun()
