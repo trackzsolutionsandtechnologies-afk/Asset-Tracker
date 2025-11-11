@@ -1822,22 +1822,6 @@ def attachments_form():
                 unsafe_allow_html=True,
             )
 
-            st.caption("Click View to open the attachment or Download to save it.")
-            st.divider()
-
-            for idx, row in display_df.iterrows():
-                file_name = row.get("File Name", "")
-                notes = row.get("Notes", "")
-                timestamp = row.get("Timestamp", "")
-
-                expander_label = file_name or row.get("Asset ID", f"Attachment {idx + 1}")
-
-                with st.expander(expander_label):
-                    if timestamp is not None and timestamp != "":
-                        st.caption(f"Uploaded: {timestamp}")
-                    if notes:
-                        st.write(f"**Notes:** {notes}")
-
     st.button("Disconnect Google Drive", on_click=disconnect_drive_credentials, key="disconnect_drive")
 
 def asset_transfer_form():
