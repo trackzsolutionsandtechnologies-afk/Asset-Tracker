@@ -240,6 +240,8 @@ def dashboard_page():
     # Asset Summary Table
     st.subheader("Asset Summary")
     summary_cols = ["Asset ID", "Asset Name", "Category", "Location", "Status", "Condition"]
-    available_cols = [col for col in summary_cols if col in filtered_assets_df.columns]
-    table_source = filtered_assets_df[available_cols] if available_cols else filtered_assets_df
-    st.dataframe(table_source.head(50), use_container_width=True)
+    available_cols = [col for col in summary_cols if col in assets_df.columns]
+    if available_cols:
+        st.dataframe(assets_df[available_cols].head(20), use_container_width=True)
+    else:
+        st.dataframe(assets_df.head(20), use_container_width=True)
