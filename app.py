@@ -413,5 +413,14 @@ def main():
             if elapsed < min_duration:
                 time.sleep(min_duration - elapsed)
 
+        st.markdown(
+            """
+            <div style="text-align: center; margin-top: 2.5rem; padding: 1.75rem 0 1rem; color: #64748b; font-size: 0.9rem;">
+                <span style="letter-spacing: 0.08em; text-transform: uppercase;">Trackz</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
 if __name__ == "__main__":
     main()
