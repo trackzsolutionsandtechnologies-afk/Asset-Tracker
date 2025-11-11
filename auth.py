@@ -329,6 +329,7 @@ def check_authentication():
     if token and _validate_and_refresh_token(token):
         st.session_state[SESSION_KEYS["authenticated"]] = True
         st.session_state["logged_in"] = True
+        st.experimental_set_query_params(auth=token)
         return True
 
     # Attempt to restore from query parameters
@@ -341,7 +342,7 @@ def check_authentication():
         st.session_state[SESSION_KEYS["user_role"]] = token_info.get("role", "user")
         st.session_state[SESSION_KEYS["auth_token"]] = token_from_url
         st.session_state["logged_in"] = True
-        st.experimental_set_query_params(**{k: v for k, v in params.items() if k != "auth"})
+        st.experimental_set_query_params(auth=token_from_url)
         st.rerun()
         return True
 
