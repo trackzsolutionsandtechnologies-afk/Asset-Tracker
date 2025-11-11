@@ -26,6 +26,8 @@ def get_drive_service():
 
     credentials = get_cached_credentials()
     if credentials is None:
+        credentials = getattr(client, "auth", None)
+    if credentials is None:
         st.error("Google credentials are not available. Please check configuration.")
         return None
 
