@@ -63,6 +63,7 @@
         pointer-events: none;
       }
     </style>
+    <script src="https://unpkg.com/@streamlit/component-lib@1.1.0/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   </head>
   <body>
@@ -72,7 +73,7 @@
       <div id="message">Initializing camera…</div>
     </div>
     <script>
-      const Streamlit = window.parent.Streamlit;
+      const { Streamlit } = window;
       let initialized = false;
       let lastCode = null;
 
@@ -161,22 +162,15 @@
         });
       }
 
-      function onRender(event) {
-        if (!event || !event.data) {
-          return;
-        }
-        const data = event.data;
-        if (data.type !== "streamlit:render") {
-          return;
-        }
+      Streamlit.events.addEventListener("render", (event) => {
+        const data = event.detail;
         if (!initialized) {
           initialized = true;
           initScanner(data.args || {});
         }
         Streamlit.setFrameHeight(document.body.scrollHeight);
-      }
+      });
 
-      window.addEventListener("message", onRender);
       window.addEventListener("beforeunload", stopScanner);
       Streamlit.setComponentReady();
       Streamlit.setFrameHeight(document.body.scrollHeight);
