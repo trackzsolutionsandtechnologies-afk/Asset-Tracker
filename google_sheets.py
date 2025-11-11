@@ -247,6 +247,16 @@ def get_worksheet(sheet_name: str):
                 ])
             elif sheet_name == SHEETS["password_resets"]:
                 worksheet.append_row(["Username", "Reset Token", "Expiry"])
+            elif sheet_name == SHEETS["attachments"]:
+                worksheet.append_row([
+                    "Timestamp",
+                    "Asset ID",
+                    "Asset Name",
+                    "File Name",
+                    "Drive URL",
+                    "Uploaded By",
+                    "Notes",
+                ])
         
         return worksheet
     except gspread.exceptions.APIError as e:

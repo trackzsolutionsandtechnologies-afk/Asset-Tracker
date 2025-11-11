@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from google_sheets import read_data, append_data, update_data, delete_data, find_row, ensure_sheet_headers, get_worksheet
+from google_drive import upload_file_to_drive
 def _ensure_headers_once(sheet_key: str, headers: list[str]) -> None:
     """
     Ensure Google Sheet headers only once per session to reduce API calls.
@@ -1670,6 +1671,140 @@ def asset_master_form():
                         else:
                             st.error("Failed to add asset")
     
+    with tab3:
+        if not assets_df.empty:
+            st.subheader("Asset Reports")
+            asset_counts = assets_df["Status"].value_counts().reset_index()
+            asset_counts.columns = ["Status", "Count"]
+            st.dataframe(asset_counts, hide_index=True)
+        else:
+            st.info("No assets available for reporting.")
+
+
+def attachments_form():
+    """Upload files to Google Drive and record the link in Google Sheets."""
+    st.header("📎 Asset Attachments")
+    attachment_headers = [
+        "Timestamp",
+        "Asset ID",
+        "Asset Name",
+        "File Name",
+        "Drive URL",
+        "Uploaded By",
+        "Notes",
+    ]
+    _ensure_headers_once("attachments", attachment_headers)
+
+    assets_df = read_data(SHEETS["assets"])
+    attachments_df = read_data(SHEETS["attachments"])
+
+    st.markdown(
+        "Upload supporting documents or photos for an asset. Files are stored in Google Drive and the shareable link is recorded in Google Sheets."
+    )
+
+    st.session_state.setdefault("attachment_asset_id_current", "")
+    st.session_state.setdefault("attachment_asset_name_current", "")
+
+    with st.form("attachment_upload_form"):
+        if assets_df.empty:
+            st.warning("No assets found. You can still enter the asset details manually.")
+            st.session_state["attachment_asset_id_current"] = st.session_state.get(
+                "attachment_asset_id_current", ""
+            )
+            st.session_state["attachment_asset_name_current"] = st.session_state.get(
+                "attachment_asset_name_current", ""
+            )
+        else:
+            asset_options = ["-- Select Asset --"] + [
+                f"{row.get('Asset ID', '').strip()} - {row.get('Asset Name', '').strip()}"
+                for _, row in assets_df.iterrows()
+                if str(row.get("Asset ID", "")).strip()
+            ]
+            selection = st.selectbox(
+                "Choose an existing asset",
+                asset_options,
+                index=0,
+                key="attachment_asset_select",
+            )
+            if selection != "-- Select Asset --":
+                parts = selection.split(" - ", 1)
+                st.session_state["attachment_asset_id_current"] = parts[0].strip()
+                st.session_state["attachment_asset_name_current"] = (
+                    parts[1].strip() if len(parts) > 1 else ""
+                )
+
+        asset_id = st.text_input(
+            "Asset ID *",
+            key="attachment_asset_id_current",
+        )
+        asset_name = st.text_input(
+            "Asset Name *",
+            key="attachment_asset_name_current",
+        )
+        uploaded_file = st.file_uploader(
+            "Attachment *",
+            type=["png", "jpg", "jpeg", "pdf", "doc", "docx", "xls", "xlsx"],
+            accept_multiple_files=False,
+        )
+        add_notes = st.text_area("Notes (optional)", placeholder="Describe the attachment...")
+
+        submitted = st.form_submit_button("Upload Attachment", type="primary", use_container_width=True)
+
+    if submitted:
+        if not asset_id.strip():
+            st.error("Please provide Asset ID.")
+            return
+        if not asset_name.strip():
+            st.error("Please provide Asset Name.")
+            return
+        if uploaded_file is None:
+            st.error("Please choose a file to upload.")
+            return
+
+        file_bytes = uploaded_file.getvalue()
+        mime_type = uploaded_file.type or "application/octet-stream"
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        safe_asset = asset_id.strip().replace(" ", "_")
+        drive_filename = f"{safe_asset}_{timestamp}_{uploaded_file.name}"
+
+        with st.spinner("Uploading to Google Drive..."):
+            drive_file = upload_file_to_drive(file_bytes, drive_filename, mime_type)
+
+        if not drive_file:
+            return
+
+        drive_url = drive_file.get("webViewLink", "")
+        uploaded_by = st.session_state.get(SESSION_KEYS.get("username", "username"), "Unknown")
+        sheet_row = [
+            datetime.utcnow().isoformat(),
+            asset_id.strip(),
+            asset_name.strip(),
+            drive_file.get("name", uploaded_file.name),
+            drive_url,
+            uploaded_by,
+            add_notes.strip() if add_notes else "",
+        ]
+
+        success = append_data(SHEETS["attachments"], sheet_row)
+        if success:
+            st.success("Attachment uploaded successfully!")
+            st.session_state["attachment_asset_id_current"] = ""
+            st.session_state["attachment_asset_name_current"] = ""
+            st.rerun()
+        else:
+            st.error("Failed to record attachment in Google Sheets.")
+
+    st.divider()
+    st.subheader("Recent Attachments")
+    if attachments_df.empty:
+        st.info("No attachments uploaded yet.")
+    else:
+        display_df = attachments_df.copy()
+        if "Timestamp" in display_df.columns:
+            display_df["Timestamp"] = pd.to_datetime(display_df["Timestamp"], errors="coerce")
+            display_df = display_df.sort_values("Timestamp", ascending=False)
+        st.dataframe(display_df.head(50), use_container_width=True)
+
     with tab2:
         if "asset_success_message" in st.session_state:
             st.success(st.session_state["asset_success_message"])

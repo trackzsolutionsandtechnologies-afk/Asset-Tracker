@@ -17,3 +17,4 @@ opencv-contrib-python-headless>=4.8.0.74
 streamlit-webrtc>=0.47.0
 av>=10.0.0
 streamlit-plotly-events>=0.0.6
+google-api-python-client>=2.129.0

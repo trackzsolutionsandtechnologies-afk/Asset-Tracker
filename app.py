@@ -13,6 +13,7 @@ from forms import (
     supplier_form,
     category_form,
     asset_master_form,
+    attachments_form,
     asset_transfer_form,
     asset_maintenance_form,
     asset_depreciation_form,
@@ -272,6 +273,7 @@ def main():
                 "Category",
                 "Asset Master",
                 "Asset Transfer",
+                "Attachments",
                 "Maintenance",
                 "Depreciation",
                 "Assignment",
@@ -286,6 +288,7 @@ def main():
                 "folder",
                 "box-seam",
                 "arrow-repeat",
+                "paperclip",
                 "tools",
                 "graph-down",
                 "briefcase",
@@ -337,6 +340,8 @@ def main():
         asset_master_form()
     elif selected == "Asset Transfer":
         asset_transfer_form()
+    elif selected == "Attachments":
+        attachments_form()
     elif selected == "Maintenance":
         asset_maintenance_form()
     elif selected == "Depreciation":

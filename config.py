@@ -6,6 +6,7 @@ import os
 # Default values - will be overridden by secrets if available
 GOOGLE_SHEET_ID = "1kFlJLYC6I7NojaXr2UUX68Al4SO76bDlr-ojBl1mvZo"
 GOOGLE_CREDENTIALS_FILE = "credentials.json"
+GOOGLE_DRIVE_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "16D-x6aZKUq9Tl2Ijx3-tqrnF9GB0YJsk")
 
 # Default sheet names
 SHEETS = {
@@ -20,6 +21,7 @@ SHEETS = {
     "assignments": "EmployeeAssignments",
     "password_resets": "PasswordResets",
     "depreciation": "Depreciation",
+    "attachments": "Attachments",
 }
 
 def get_config():
@@ -39,6 +41,12 @@ def get_config():
             creds_file = st.secrets["google_sheets"].get("credentials_file")
             if creds_file:
                 GOOGLE_CREDENTIALS_FILE = creds_file
+
+        if hasattr(st, 'secrets') and "google_drive" in st.secrets:
+            global GOOGLE_DRIVE_FOLDER_ID
+            folder_id = st.secrets["google_drive"].get("folder_id")
+            if folder_id:
+                GOOGLE_DRIVE_FOLDER_ID = folder_id
         
         # Sheet Names from secrets
         if hasattr(st, 'secrets') and "sheets" in st.secrets:
@@ -56,6 +64,7 @@ def get_config():
                 "assignments": sheets_config.get("assignments", SHEETS["assignments"]),
                 "password_resets": sheets_config.get("password_resets", SHEETS["password_resets"]),
                 "depreciation": sheets_config.get("depreciation", SHEETS["depreciation"]),
+                "attachments": sheets_config.get("attachments", SHEETS["attachments"]),
             }
     except Exception as e:
         # If secrets are not available, use defaults
