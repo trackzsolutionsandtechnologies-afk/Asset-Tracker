@@ -41,12 +41,276 @@ def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image
         return None
 
 def barcode_scanner_page():
-    """Display the streamlit-qrcode-scanner component."""
+    """Display the streamlit-qrcode-scanner component and enable asset editing."""
     st.header("📸 Live Barcode Scanner")
 
-    code = qrcode_scanner(key="live_barcode_scanner")
-    if code:
-        st.success(f"Detected code: {code}")
+    scanned_code = qrcode_scanner(key="live_barcode_scanner")
+    if scanned_code:
+        st.session_state["scanned_barcode"] = scanned_code
+        st.success(f"Detected code: {scanned_code}")
+
+    detected_code = st.session_state.get("scanned_barcode")
+    if not detected_code:
+        st.info("Point the camera at a barcode to scan and edit the matching asset.")
+        return
+
+    st.caption(f"Last scanned code: `{detected_code}`")
+
+    assets_df = read_data(SHEETS["assets"])
+    if assets_df.empty:
+        st.warning("No assets found. Please add assets first.")
+        return
+
+    asset_id_col = next(
+        (
+            col
+            for col in assets_df.columns
+            if str(col).strip().lower()
+            in {
+                "asset id",
+                "asset id / barcode",
+                "asset id/barcode",
+                "asset id barcode",
+                "barcode",
+            }
+        ),
+        None,
+    )
+
+    if not asset_id_col:
+        st.error("Could not identify the Asset ID column in the Assets sheet.")
+        return
+
+    assets_df = assets_df.copy()
+    assets_df[asset_id_col] = assets_df[asset_id_col].astype(str).str.strip()
+    matches = assets_df[
+        assets_df[asset_id_col].str.contains(detected_code.strip(), case=False, na=False)
+    ]
+
+    if matches.empty:
+        st.warning("No matching assets found for this barcode.")
+        if st.button("Clear scanned code", type="secondary"):
+            st.session_state.pop("scanned_barcode", None)
+            st.session_state.pop("edit_asset_index", None)
+            st.rerun()
+        return
+
+    st.success(f"Found {len(matches)} asset(s) matching the scanned code.")
+
+    for idx, asset_row in matches.iterrows():
+        asset_id = asset_row.get(asset_id_col, "")
+        asset_name = asset_row.get("Asset Name", "N/A")
+        with st.expander(f"{asset_id} • {asset_name}", expanded=len(matches) == 1):
+            st.write("**Asset Details**")
+            for col, value in asset_row.items():
+                st.write(f"- **{col}:** {value}")
+
+            if st.button("Edit this asset", key=f"edit_asset_{idx}"):
+                st.session_state["edit_asset_index"] = int(idx)
+                st.rerun()
+
+    if "edit_asset_index" not in st.session_state:
+        if st.button("Clear scanned code", type="secondary"):
+            st.session_state.pop("scanned_barcode", None)
+            st.rerun()
+        return
+
+    edit_index = st.session_state["edit_asset_index"]
+    if edit_index not in assets_df.index:
+        st.session_state.pop("edit_asset_index", None)
+        st.warning("The selected asset is no longer available.")
+        return
+
+    asset_series = assets_df.loc[edit_index].copy()
+    asset_id_value = asset_series.get(asset_id_col, "")
+
+    locations_df = read_data(SHEETS["locations"])
+    suppliers_df = read_data(SHEETS["suppliers"])
+    categories_df = read_data(SHEETS["categories"])
+    subcategories_df = read_data(SHEETS["subcategories"])
+
+    def _options(df: pd.DataFrame, column: str) -> list[str]:
+        if df.empty or column not in df.columns:
+            return []
+        return sorted(
+            {
+                str(value).strip()
+                for value in df[column].fillna("").astype(str)
+                if value
+            }
+        )
+
+    location_options = _options(locations_df, "Location Name")
+    supplier_options = _options(suppliers_df, "Supplier Name")
+    category_options = _options(categories_df, "Category Name")
+
+    st.subheader(f"Edit Asset: {asset_id_value}")
+    with st.form("edit_scanned_asset"):
+        st.text_input("Asset ID", value=asset_id_value, disabled=True)
+        asset_name = st.text_input(
+            "Asset Name", value=str(asset_series.get("Asset Name", ""))
+        )
+        category = st.selectbox(
+            "Category",
+            ["Select category"] + category_options,
+            index=(
+                category_options.index(asset_series.get("Category", "")) + 1
+                if asset_series.get("Category", "") in category_options
+                else 0
+            ),
+        )
+
+        if category != "Select category":
+            if (
+                not categories_df.empty
+                and not subcategories_df.empty
+                and "Category Name" in categories_df.columns
+                and "Category ID" in categories_df.columns
+            ):
+                selected_cat = categories_df[
+                    categories_df["Category Name"] == category
+                ]
+                if not selected_cat.empty and "Category ID" in subcategories_df.columns:
+                    category_id = selected_cat["Category ID"].iloc[0]
+                    subcat_options = _options(
+                        subcategories_df[subcategories_df["Category ID"] == category_id],
+                        "SubCategory Name",
+                    )
+                else:
+                    subcat_options = []
+            else:
+                subcat_options = []
+        else:
+            subcat_options = []
+
+        subcategory = st.selectbox(
+            "Sub Category",
+            ["None"] + subcat_options,
+            index=(
+                subcat_options.index(asset_series.get("Sub Category", "")) + 1
+                if asset_series.get("Sub Category", "") in subcat_options
+                else 0
+            ),
+        )
+
+        location = st.selectbox(
+            "Location",
+            ["None"] + location_options,
+            index=(
+                location_options.index(asset_series.get("Location", "")) + 1
+                if asset_series.get("Location", "") in location_options
+                else 0
+            ),
+        )
+
+        supplier = st.selectbox(
+            "Supplier",
+            ["None"] + supplier_options,
+            index=(
+                supplier_options.index(asset_series.get("Supplier", "")) + 1
+                if asset_series.get("Supplier", "") in supplier_options
+                else 0
+            ),
+        )
+
+        assigned_to = st.text_input(
+            "Assigned To", value=str(asset_series.get("Assigned To", ""))
+        )
+        condition = st.selectbox(
+            "Condition",
+            ["Excellent", "Good", "Fair", "Poor", "Damaged"],
+            index={
+                "Excellent": 0,
+                "Good": 1,
+                "Fair": 2,
+                "Poor": 3,
+                "Damaged": 4,
+            }.get(str(asset_series.get("Condition", "Good")), 1),
+        )
+
+        status = st.selectbox(
+            "Status",
+            ["Active", "Inactive", "Maintenance", "Retired"],
+            index={
+                "Active": 0,
+                "Inactive": 1,
+                "Maintenance": 2,
+                "Retired": 3,
+            }.get(str(asset_series.get("Status", "Active")), 0),
+        )
+
+        model_serial = st.text_input(
+            "Model / Serial No", value=str(asset_series.get("Model/Serial No", ""))
+        )
+        purchase_cost = st.number_input(
+            "Purchase Cost",
+            min_value=0.0,
+            value=float(asset_series.get("Purchase Cost", 0) or 0),
+            step=0.01,
+        )
+
+        purchase_date_raw = str(asset_series.get("Purchase Date", "") or "")
+        if purchase_date_raw:
+            try:
+                purchase_date_default = datetime.strptime(
+                    purchase_date_raw, "%Y-%m-%d"
+                ).date()
+            except Exception:
+                purchase_date_default = datetime.today().date()
+        else:
+            purchase_date_default = datetime.today().date()
+        purchase_date = st.date_input("Purchase Date", value=purchase_date_default)
+
+        remarks = st.text_area(
+            "Remarks", value=str(asset_series.get("Remarks", ""))
+        )
+        attachment = st.text_input(
+            "Attachment URL", value=str(asset_series.get("Attachment", ""))
+        )
+
+        submitted = st.form_submit_button("Update Asset", type="primary")
+
+    if submitted:
+        if not asset_name.strip():
+            st.error("Asset Name is required.")
+            return
+
+        asset_series["Asset Name"] = asset_name.strip()
+        asset_series["Category"] = "" if category == "Select category" else category
+        asset_series["Sub Category"] = "" if subcategory == "None" else subcategory
+        asset_series["Location"] = "" if location == "None" else location
+        asset_series["Supplier"] = "" if supplier == "None" else supplier
+        asset_series["Assigned To"] = assigned_to.strip()
+        asset_series["Condition"] = condition
+        asset_series["Status"] = status
+        asset_series["Model/Serial No"] = model_serial.strip()
+        asset_series["Purchase Cost"] = purchase_cost
+        asset_series["Purchase Date"] = purchase_date.strftime("%Y-%m-%d")
+        asset_series["Remarks"] = remarks.strip()
+        asset_series["Attachment"] = attachment.strip()
+
+        def _sanitise(value):
+            if isinstance(value, float) and pd.isna(value):
+                return ""
+            if pd.isna(value):
+                return ""
+            return value
+
+        updated_row = [
+            _sanitise(asset_series.get(col, "")) for col in assets_df.columns
+        ]
+
+        if update_data(SHEETS["assets"], int(edit_index), updated_row):
+            st.success("Asset updated successfully.")
+            st.session_state.pop("edit_asset_index", None)
+            st.session_state.pop("scanned_barcode", None)
+            st.rerun()
+        else:
+            st.error("Failed to update the asset. Please try again.")
+
+    if st.button("Cancel editing", type="secondary"):
+        st.session_state.pop("edit_asset_index", None)
+        st.rerun()
 
 def barcode_print_page():
     """Multiple barcode printing page"""
