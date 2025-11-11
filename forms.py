@@ -1705,7 +1705,10 @@ def attachments_form():
     st.session_state.setdefault("attachment_asset_id_current", "")
     st.session_state.setdefault("attachment_asset_name_current", "")
 
-    with st.form("attachment_upload_form"):
+    tab_upload, tab_recent = st.tabs(["Upload Attachment", "Recent Attachments"])
+
+    with tab_upload:
+        with st.form("attachment_upload_form"):
         if assets_df.empty:
             st.warning("No assets found. You can still enter the asset details manually.")
             st.session_state["attachment_asset_id_current"] = st.session_state.get(
@@ -1748,62 +1751,62 @@ def attachments_form():
         )
         add_notes = st.text_area("Notes (optional)", placeholder="Describe the attachment...")
 
-        submitted = st.form_submit_button("Upload Attachment", type="primary", use_container_width=True)
+            submitted = st.form_submit_button("Upload Attachment", type="primary", use_container_width=True)
 
-    if submitted:
-        if not asset_id.strip():
-            st.error("Please provide Asset ID.")
-            return
-        if not asset_name.strip():
-            st.error("Please provide Asset Name.")
-            return
-        if uploaded_file is None:
-            st.error("Please choose a file to upload.")
-            return
+        if submitted:
+            if not asset_id.strip():
+                st.error("Please provide Asset ID.")
+                return
+            if not asset_name.strip():
+                st.error("Please provide Asset Name.")
+                return
+            if uploaded_file is None:
+                st.error("Please choose a file to upload.")
+                return
 
-        file_bytes = uploaded_file.getvalue()
-        mime_type = uploaded_file.type or "application/octet-stream"
-        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-        safe_asset = asset_id.strip().replace(" ", "_")
-        drive_filename = f"{safe_asset}_{timestamp}_{uploaded_file.name}"
+            file_bytes = uploaded_file.getvalue()
+            mime_type = uploaded_file.type or "application/octet-stream"
+            timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+            safe_asset = asset_id.strip().replace(" ", "_")
+            drive_filename = f"{safe_asset}_{timestamp}_{uploaded_file.name}"
 
-        with st.spinner("Uploading to Google Drive..."):
-            drive_file = upload_file_to_drive(file_bytes, drive_filename, mime_type)
+            with st.spinner("Uploading to Google Drive..."):
+                drive_file = upload_file_to_drive(file_bytes, drive_filename, mime_type)
 
-        if not drive_file:
-            return
+            if not drive_file:
+                return
 
-        drive_url = drive_file.get("webViewLink", "")
-        uploaded_by = st.session_state.get(SESSION_KEYS.get("username", "username"), "Unknown")
-        sheet_row = [
-            datetime.utcnow().isoformat(),
-            asset_id.strip(),
-            asset_name.strip(),
-            drive_file.get("name", uploaded_file.name),
-            drive_url,
-            uploaded_by,
-            add_notes.strip() if add_notes else "",
-        ]
+            drive_url = drive_file.get("webViewLink", "")
+            uploaded_by = st.session_state.get(SESSION_KEYS.get("username", "username"), "Unknown")
+            sheet_row = [
+                datetime.utcnow().isoformat(),
+                asset_id.strip(),
+                asset_name.strip(),
+                drive_file.get("name", uploaded_file.name),
+                drive_url,
+                uploaded_by,
+                add_notes.strip() if add_notes else "",
+            ]
 
-        success = append_data(SHEETS["attachments"], sheet_row)
-        if success:
-            st.success("Attachment uploaded successfully!")
-            st.session_state["attachment_asset_id_current"] = ""
-            st.session_state["attachment_asset_name_current"] = ""
-            st.rerun()
+            success = append_data(SHEETS["attachments"], sheet_row)
+            if success:
+                st.success("Attachment uploaded successfully!")
+                st.session_state["attachment_asset_id_current"] = ""
+                st.session_state["attachment_asset_name_current"] = ""
+                st.rerun()
+            else:
+                st.error("Failed to record attachment in Google Sheets.")
+
+    with tab_recent:
+        st.subheader("Recent Attachments")
+        if attachments_df.empty:
+            st.info("No attachments uploaded yet.")
         else:
-            st.error("Failed to record attachment in Google Sheets.")
-
-    st.divider()
-    st.subheader("Recent Attachments")
-    if attachments_df.empty:
-        st.info("No attachments uploaded yet.")
-    else:
-        display_df = attachments_df.copy()
-        if "Timestamp" in display_df.columns:
-            display_df["Timestamp"] = pd.to_datetime(display_df["Timestamp"], errors="coerce")
-            display_df = display_df.sort_values("Timestamp", ascending=False)
-        st.dataframe(display_df.head(50), use_container_width=True)
+            display_df = attachments_df.copy()
+            if "Timestamp" in display_df.columns:
+                display_df["Timestamp"] = pd.to_datetime(display_df["Timestamp"], errors="coerce")
+                display_df = display_df.sort_values("Timestamp", ascending=False)
+            st.dataframe(display_df.head(50), use_container_width=True)
 
     with tab2:
         if "asset_success_message" in st.session_state:
