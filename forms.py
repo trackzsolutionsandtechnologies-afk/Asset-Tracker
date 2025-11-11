@@ -959,7 +959,7 @@ def asset_depreciation_form():
                 st.session_state["depreciation_pending_changes"] = False
                 st.session_state["depreciation_save_success"] = True
                 st.session_state.pop("depreciation_table_view", None)
-                st.experimental_rerun()
+                st.rerun()
 
         if (
             st.session_state.get("depreciation_pending_changes", False)
