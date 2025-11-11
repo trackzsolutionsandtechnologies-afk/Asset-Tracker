@@ -1811,8 +1811,14 @@ def attachments_form():
                 if col in augmented_df.columns:
                     augmented_df[col] = augmented_df[col].astype(str)
 
+            columns_to_show = [
+                col
+                for col in augmented_df.columns
+                if col not in {"File Name", "Drive URL"}
+            ]
+
             st.markdown(
-                augmented_df.to_html(escape=False, index=False),
+                augmented_df[columns_to_show].to_html(escape=False, index=False),
                 unsafe_allow_html=True,
             )
 
@@ -1820,11 +1826,13 @@ def attachments_form():
             st.divider()
 
             for idx, row in display_df.iterrows():
-                file_name = row.get("File Name", f"Attachment {idx + 1}")
+                file_name = row.get("File Name", "")
                 notes = row.get("Notes", "")
                 timestamp = row.get("Timestamp", "")
 
-                with st.expander(file_name or f"Attachment {idx + 1}"):
+                expander_label = file_name or row.get("Asset ID", f"Attachment {idx + 1}")
+
+                with st.expander(expander_label):
                     if timestamp is not None and timestamp != "":
                         st.caption(f"Uploaded: {timestamp}")
                     if notes:
