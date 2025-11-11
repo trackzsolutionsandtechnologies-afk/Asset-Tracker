@@ -674,7 +674,7 @@ def asset_depreciation_form():
                         }
                         st.success("Depreciation schedule generated.")
                         st.session_state["depreciation_form_key"] += 1
-                        st.experimental_rerun()
+                        st.rerun()
 
         state_key = "depreciation_generated_schedule"
         if state_key in st.session_state:
