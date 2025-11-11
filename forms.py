@@ -1720,31 +1720,74 @@ def attachments_form():
     tab_upload, tab_recent = st.tabs(["Upload Attachment", "Recent Attachments"])
 
     with tab_upload:
-        with st.form("attachment_upload_form"):
-            selected_option = ""
+        if "attachment_success_message" in st.session_state:
+            st.success(st.session_state["attachment_success_message"])
+            del st.session_state["attachment_success_message"]
+
+        form_key = st.session_state.setdefault("attachment_form_key", 0)
+        asset_select_key = f"attachment_asset_select_{form_key}"
+        file_key = f"attachment_file_{form_key}"
+        notes_key = f"attachment_notes_{form_key}"
+
+        form_css = f"""
+        <style>
+        div[data-testid="stForm"][aria-label="attachment_upload_form_{form_key}"] {{
+            background-color: #ffffff !important;
+            padding: 1.5rem !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        }}
+        div[data-testid="stForm"][aria-label="attachment_upload_form_{form_key}"] label {{
+            font-weight: 600 !important;
+        }}
+        </style>
+        """
+        st.markdown(form_css, unsafe_allow_html=True)
+
+        with st.form(f"attachment_upload_form_{form_key}"):
+            top_cols = st.columns([3, 2], gap="medium")
             if assets_df.empty:
-                st.warning("No assets found. Attachments can only be uploaded once assets exist.")
+                with top_cols[0]:
+                    st.selectbox(
+                        "Choose an asset *",
+                        ["No assets available"],
+                        key=asset_select_key,
+                        disabled=True,
+                    )
+                    st.warning("No assets found. Attachments can only be uploaded once assets exist.")
+                selected_option = ""
             else:
                 asset_options = ["-- Select Asset --"] + [
                     f"{row.get('Asset ID', '').strip()} - {row.get('Asset Name', '').strip()}"
                     for _, row in assets_df.iterrows()
                     if str(row.get("Asset ID", "")).strip()
                 ]
-                selected_option = st.selectbox(
-                    "Choose an asset *",
-                    asset_options,
-                    index=0,
-                    key="attachment_asset_select",
+                with top_cols[0]:
+                    selected_option = st.selectbox(
+                        "Choose an asset *",
+                        asset_options,
+                        index=0,
+                        key=asset_select_key,
+                    )
+            with top_cols[1]:
+                uploaded_file = st.file_uploader(
+                    "Attachment *",
+                    type=["png", "jpg", "jpeg", "pdf", "doc", "docx", "xls", "xlsx"],
+                    accept_multiple_files=False,
+                    key=file_key,
                 )
 
-            uploaded_file = st.file_uploader(
-                "Attachment *",
-                type=["png", "jpg", "jpeg", "pdf", "doc", "docx", "xls", "xlsx"],
-                accept_multiple_files=False,
+            add_notes = st.text_area(
+                "Notes (optional)",
+                placeholder="Describe the attachment...",
+                key=notes_key,
             )
-            add_notes = st.text_area("Notes (optional)", placeholder="Describe the attachment...")
 
-            submitted = st.form_submit_button("Upload Attachment", type="primary", use_container_width=True)
+            submitted = st.form_submit_button(
+                "Upload Attachment",
+                type="primary",
+                use_container_width=True,
+            )
 
         if submitted:
             if assets_df.empty:
@@ -1791,9 +1834,10 @@ def attachments_form():
 
             success = append_data(SHEETS["attachments"], sheet_row)
             if success:
-                st.success("Attachment uploaded successfully!")
-                if "attachment_asset_select" in st.session_state:
-                    st.session_state.pop("attachment_asset_select", None)
+                st.session_state["attachment_success_message"] = "Attachment uploaded successfully!"
+                for state_key in (asset_select_key, file_key, notes_key):
+                    st.session_state.pop(state_key, None)
+                st.session_state["attachment_form_key"] = form_key + 1
                 st.rerun()
             else:
                 st.error("Failed to record attachment in Google Sheets.")
