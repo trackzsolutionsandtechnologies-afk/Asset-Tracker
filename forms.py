@@ -1337,346 +1337,463 @@ def category_form():
                                 st.error("Failed to add sub category")
     
     with tab3:
-        # Show success message if exists
         if "category_success_message" in st.session_state:
             st.success(st.session_state["category_success_message"])
-            # Clear message after showing
             del st.session_state["category_success_message"]
-        
-        if not categories_df.empty and "Category ID" in categories_df.columns:
-            st.subheader("All Categories")
-            
-            # Search bar
-            search_term = st.text_input("🔍 Search Categories", placeholder="Search by Category ID or Name...", key="category_search")
-            
-            # Filter data based on search
+
+        if categories_df.empty or "Category ID" not in categories_df.columns:
+            st.info("No categories found. Add a new category using the 'Add Category' tab.")
+        else:
+            search_term = st.text_input(
+                "🔍 Search Categories",
+                placeholder="Search by Category ID or Name...",
+                key="category_search",
+            )
+
+            filtered_df = categories_df.copy()
             if search_term:
                 mask = (
-                    categories_df["Category ID"].astype(str).str.contains(search_term, case=False, na=False) |
-                    categories_df["Category Name"].astype(str).str.contains(search_term, case=False, na=False)
+                    filtered_df["Category ID"].astype(str).str.contains(search_term, case=False, na=False)
+                    | filtered_df["Category Name"].astype(str).str.contains(search_term, case=False, na=False)
                 )
-                filtered_df = categories_df[mask]
-                if filtered_df.empty:
-                    st.info(f"No categories found matching '{search_term}'")
-                    filtered_df = pd.DataFrame()
-            else:
-                filtered_df = categories_df
-            
-            if not filtered_df.empty:
-                # Show count
-                st.caption(f"Showing {len(filtered_df)} of {len(categories_df)} category(ies)")
-                
-                # Check if user is admin
-                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-                is_admin = user_role.lower() == "admin"
-                
-                # Table header - adjust columns based on admin status
-                header_cols = st.columns([3, 4, 1, 1] + ([1] if is_admin else []))
-                header_labels = ["**Category ID**", "**Category Name**", "**View**", "**Edit**"]
-                if is_admin:
-                    header_labels.append("**Delete**")
-                for col_widget, label in zip(header_cols, header_labels):
-                    with col_widget:
-                        st.write(label)
-                st.divider()
+                filtered_df = filtered_df[mask]
 
-                # Display table with edit/delete buttons
-                for idx, row in filtered_df.iterrows():
-                    # Get original index from df for delete/update operations
-                    # Convert to Python int to avoid JSON serialization issues
-                    if not categories_df[categories_df["Category ID"] == row.get('Category ID', '')].empty:
-                        original_idx = int(categories_df[categories_df["Category ID"] == row.get('Category ID', '')].index[0])
-                    else:
-                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
-
-                    cols = st.columns([3, 4, 1, 1] + ([1] if is_admin else []))
-                    col1, col2, col_view, col_edit = cols[:4]
-                    col_delete = cols[4] if is_admin else None
-
-                    with col1:
-                        st.write(row.get('Category ID', 'N/A'))
-                    with col2:
-                        st.write(row.get('Category Name', 'N/A'))
-                    with col_view:
-                        if st.button("👁️", key=f"category_view_{row.get('Category ID', idx)}", use_container_width=True, help="View details"):
-                            record = {
-                                "Category ID": row.get("Category ID", ""),
-                                "Category Name": row.get("Category Name", ""),
-                            }
-                            _open_view_modal(
-                                "category",
-                                f"Category Details: {row.get('Category Name', '')}",
-                                record,
-                                ["Category ID", "Category Name"],
-                            )
-                    with col_edit:
-                        edit_key = f"edit_cat_{row.get('Category ID', idx)}"
-                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this category"):
-                            st.session_state["edit_category_id"] = row.get('Category ID', '')
-                            st.session_state["edit_category_idx"] = int(original_idx)  # Ensure it's a Python int
-                            st.rerun()
-                    # Only show delete button for admin users
-                    if is_admin and col_delete is not None:
-                        with col_delete:
-                            delete_key = f"delete_cat_{row.get('Category ID', idx)}"
-                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this category"):
-                                category_name_to_delete = row.get('Category Name', 'Unknown')
-                                category_id_to_delete = row.get('Category ID', 'Unknown')
-                                if delete_data(SHEETS["categories"], original_idx):
-                                    # Set success message
-                                    st.session_state["category_success_message"] = f"✅ Category '{category_name_to_delete}' (ID: {category_id_to_delete}) deleted successfully!"
-                                    # Clear search bar
-                                    if "category_search" in st.session_state:
-                                        del st.session_state["category_search"]
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete category")
-                    
-                    st.divider()
-            elif search_term:
-                # Search returned no results, but search was performed
-                pass
-            else:
-                st.info("No categories found. Add a new category using the 'Add Category' tab.")
-
-            # Edit form (shown when edit button is clicked)
-            if "edit_category_id" in st.session_state and st.session_state["edit_category_id"]:
-                st.subheader("Edit Category")
-                edit_id = st.session_state["edit_category_id"]
-                edit_idx = st.session_state.get("edit_category_idx", 0)
-                
-                category_rows = categories_df[categories_df["Category ID"] == edit_id]
-                if not category_rows.empty:
-                    category = category_rows.iloc[0]
-                    
-                    with st.form("edit_category_form"):
-                        new_category_id = st.text_input("Category ID", value=category.get("Category ID", ""), disabled=True)
-                        new_category_name = st.text_input("Category Name", value=category.get("Category Name", ""))
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.form_submit_button("Update Category", use_container_width=True):
-                                with st.spinner("Updating category..."):
-                                    if update_data(SHEETS["categories"], edit_idx, [new_category_id, new_category_name]):
-                                        # Set success message
-                                        st.session_state["category_success_message"] = f"✅ Category '{new_category_name}' (ID: {new_category_id}) updated successfully!"
-                                        if "edit_category_id" in st.session_state:
-                                            del st.session_state["edit_category_id"]
-                                        if "edit_category_idx" in st.session_state:
-                                            del st.session_state["edit_category_idx"]
-                                        # Clear search bar
-                                        if "category_search" in st.session_state:
-                                            del st.session_state["category_search"]
-                                        st.rerun()
-                                    else:
-                                        st.error("Failed to update category")
-                        with col2:
-                            if st.form_submit_button("Cancel", use_container_width=True):
-                                if "edit_category_id" in st.session_state:
-                                    del st.session_state["edit_category_id"]
-                                if "edit_category_idx" in st.session_state:
-                                    del st.session_state["edit_category_idx"]
-                                st.rerun()
+            if filtered_df.empty:
+                if search_term:
+                    st.info(f"No categories found matching '{search_term}'.")
                 else:
-                    st.warning("Selected category not found in data.")
-        else:
-            st.info("No categories found. Add a new category using the 'Add Category' tab.")
+                    st.info("No categories found. Add a new category using the 'Add Category' tab.")
+            else:
+                st.caption(f"Showing {len(filtered_df)} of {len(categories_df)} category(ies)")
+
+                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+                is_admin = str(user_role).lower() == "admin"
+
+                st.markdown(
+                    """
+                    <style>
+                    [data-testid="stDataEditor"] thead th,
+                    [data-testid="stDataEditor"] div[role="columnheader"] {
+                        background-color: #BF092F !important;
+                        color: #1A202C !important;
+                        font-weight: 600 !important;
+                    }
+                    [data-testid="stDataEditor"] div[role="columnheader"] * {
+                        color: #1A202C !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td {
+                        border-right: 1px solid #f0f0f0 !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td:last-child {
+                        border-right: none !important;
+                    }
+                    [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                        display: none !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                table_df = filtered_df[["Category ID", "Category Name"]].copy()
+                st.data_editor(
+                    table_df,
+                    hide_index=True,
+                    use_container_width=True,
+                    num_rows="dynamic",
+                    key="category_table_view",
+                    column_config={
+                        "Category ID": st.column_config.TextColumn("Category ID", disabled=True),
+                        "Category Name": st.column_config.TextColumn("Category Name"),
+                    },
+                )
+
+                editor_state = st.session_state.get("category_table_view", {})
+                edited_rows = deepcopy(editor_state.get("edited_rows", {}))
+                edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+                deleted_rows = list(editor_state.get("deleted_rows", []))
+                added_rows = list(editor_state.get("added_rows", []))
+
+                if deleted_rows and not is_admin:
+                    st.warning("Only administrators can delete categories. Deletions will be ignored.", icon="⚠️")
+                    deleted_rows = []
+                    if isinstance(editor_state, dict):
+                        editor_state["deleted_rows"] = []
+
+                def _normalize_idx(idx_value):
+                    try:
+                        return int(idx_value)
+                    except (TypeError, ValueError):
+                        return idx_value
+
+                def _get_edits(source_dict, idx_value):
+                    if idx_value in source_dict:
+                        return source_dict[idx_value]
+                    return source_dict.get(str(idx_value), {})
+
+                st.session_state.setdefault("category_pending_changes", False)
+                st.session_state.setdefault("category_save_success", False)
+
+                has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+                st.session_state["category_pending_changes"] = has_changes
+                if has_changes:
+                    st.session_state["category_save_success"] = False
+
+                action_cols = st.columns([1, 1], gap="small")
+                with action_cols[0]:
+                    save_clicked = st.button(
+                        "Save Changes",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=not has_changes,
+                        key="category_save_changes",
+                    )
+                with action_cols[1]:
+                    discard_clicked = st.button(
+                        "Discard Changes",
+                        use_container_width=True,
+                        disabled=not has_changes,
+                        key="category_discard_changes",
+                    )
+
+                if discard_clicked and has_changes:
+                    table_state = st.session_state.get("category_table_view")
+                    if isinstance(table_state, dict):
+                        table_state["edited_rows"] = {}
+                        table_state["edited_cells"] = {}
+                        table_state["deleted_rows"] = []
+                        table_state["added_rows"] = []
+                    st.session_state.pop("category_table_view", None)
+                    st.session_state["category_pending_changes"] = False
+                    st.experimental_rerun()
+
+                if save_clicked and has_changes:
+                    success = True
+                    success_messages: list[str] = []
+
+                    if added_rows:
+                        st.warning(
+                            "Please add new categories from the 'Add Category' tab.",
+                            icon="ℹ️",
+                        )
+                        success = False
+
+                    if success and deleted_rows:
+                        for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
+                            if isinstance(delete_idx, int) and delete_idx < len(filtered_df):
+                                target_row = filtered_df.iloc[delete_idx]
+                                cat_id = str(target_row.get("Category ID", "")).strip()
+                                match_df = categories_df[
+                                    categories_df["Category ID"].astype(str).str.strip() == cat_id
+                                ]
+                                if not match_df.empty:
+                                    original_idx = int(match_df.index[0])
+                                    if delete_data(SHEETS["categories"], original_idx):
+                                        success_messages.append(
+                                            f"🗑️ Category '{target_row.get('Category Name', '')}' deleted."
+                                        )
+                                    else:
+                                        st.error("Failed to delete category.")
+                                        success = False
+                                else:
+                                    st.error("Unable to locate category to delete.")
+                                    success = False
+                            else:
+                                st.error("Unable to resolve category row for deletion.")
+                                success = False
+
+                    rows_to_update: set[int] = set()
+                    for idx_key in list(edited_rows.keys()) + list(edited_cells.keys()):
+                        norm_idx = _normalize_idx(idx_key)
+                        if isinstance(norm_idx, int):
+                            rows_to_update.add(norm_idx)
+
+                    if success and rows_to_update:
+                        for idx in rows_to_update:
+                            if idx >= len(filtered_df):
+                                continue
+                            current_row = filtered_df.iloc[idx].copy()
+                            edits = dict(_get_edits(edited_rows, idx))
+                            edits.update(_get_edits(edited_cells, idx))
+                            if not edits:
+                                continue
+
+                            for column, new_value in edits.items():
+                                current_row[column] = new_value
+
+                            category_id_value = str(current_row.get("Category ID", "")).strip()
+                            category_name_value = str(current_row.get("Category Name", "")).strip()
+                            match_df = categories_df[
+                                categories_df["Category ID"].astype(str).str.strip() == category_id_value
+                            ]
+                            if not match_df.empty:
+                                original_idx = int(match_df.index[0])
+                                updated_row = [category_id_value, category_name_value]
+                                if update_data(SHEETS["categories"], original_idx, updated_row):
+                                    success_messages.append(
+                                        f"✏️ Category '{category_id_value}' updated."
+                                    )
+                                else:
+                                    st.error(f"Failed to update category '{category_id_value}'.")
+                                    success = False
+                            else:
+                                st.error("Unable to locate category to update.")
+                                success = False
+
+                    if success:
+                        if success_messages:
+                            st.session_state["category_success_message"] = " ".join(success_messages)
+                            if "category_search" in st.session_state:
+                                del st.session_state["category_search"]
+                        st.session_state["category_pending_changes"] = False
+                        st.session_state["category_save_success"] = True
+                        st.session_state.pop("category_table_view", None)
+                        st.experimental_rerun()
+
+                if (
+                    st.session_state.get("category_pending_changes", False)
+                    and not st.session_state.get("category_save_success", False)
+                ):
+                    st.info("You have unsaved category changes. Click 'Save Changes' to apply them.", icon="✏️")
     
     with tab4:
-        # Show success message if exists
         if "subcategory_success_message" in st.session_state:
             st.success(st.session_state["subcategory_success_message"])
-            # Clear message after showing
             del st.session_state["subcategory_success_message"]
-        
-        if not subcategories_df.empty and "SubCategory ID" in subcategories_df.columns:
-            st.subheader("All Sub Categories")
-            
-            # Search bar
-            search_term = st.text_input("🔍 Search Sub Categories", placeholder="Search by Sub Category ID, Name, Category ID, or Category Name...", key="subcategory_search")
-            
-            # Filter data based on search
+
+        if subcategories_df.empty or "SubCategory ID" not in subcategories_df.columns:
+            st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
+        else:
+            search_term = st.text_input(
+                "🔍 Search Sub Categories",
+                placeholder="Search by Sub Category ID, Name, Category ID, or Category Name...",
+                key="subcategory_search",
+            )
+
+            filtered_df = subcategories_df.copy()
             if search_term:
                 mask = (
-                    subcategories_df["SubCategory ID"].astype(str).str.contains(search_term, case=False, na=False) |
-                    subcategories_df["SubCategory Name"].astype(str).str.contains(search_term, case=False, na=False) |
-                    subcategories_df["Category ID"].astype(str).str.contains(search_term, case=False, na=False)
+                    filtered_df["SubCategory ID"].astype(str).str.contains(search_term, case=False, na=False)
+                    | filtered_df["SubCategory Name"].astype(str).str.contains(search_term, case=False, na=False)
+                    | filtered_df["Category ID"].astype(str).str.contains(search_term, case=False, na=False)
                 )
-                # Add Category Name to search if column exists
-                if "Category Name" in subcategories_df.columns:
-                    mask = mask | subcategories_df["Category Name"].astype(str).str.contains(search_term, case=False, na=False)
-                filtered_df = subcategories_df[mask]
-                if filtered_df.empty:
-                    st.info(f"No subcategories found matching '{search_term}'")
-                    filtered_df = pd.DataFrame()
-            else:
-                filtered_df = subcategories_df
-            
-            if not filtered_df.empty:
-                # Show count
-                st.caption(f"Showing {len(filtered_df)} of {len(subcategories_df)} subcategory(ies)")
-                
-                # Check if user is admin
-                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-                is_admin = user_role.lower() == "admin"
-                
-                header_cols = st.columns([2, 2, 3, 3, 1, 1] + ([1] if is_admin else []))
-                header_labels = [
-                    "**Sub Category ID**",
-                    "**Category ID**",
-                    "**Category Name**",
-                    "**Sub Category Name**",
-                    "**View**",
-                    "**Edit**",
-                ]
-                if is_admin:
-                    header_labels.append("**Delete**")
-                for col_widget, label in zip(header_cols, header_labels):
-                    with col_widget:
-                        st.write(label)
-                st.divider()
+                if "Category Name" in filtered_df.columns:
+                    mask = mask | filtered_df["Category Name"].astype(str).str.contains(search_term, case=False, na=False)
+                filtered_df = filtered_df[mask]
 
-                # Display table with edit/delete buttons
-                for idx, row in filtered_df.iterrows():
-                    # Get original index from df for delete/update operations
-                    # Convert to Python int to avoid JSON serialization issues
-                    if not subcategories_df[subcategories_df["SubCategory ID"] == row.get('SubCategory ID', '')].empty:
-                        original_idx = int(subcategories_df[subcategories_df["SubCategory ID"] == row.get('SubCategory ID', '')].index[0])
-                    else:
-                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
-
-                    cols = st.columns([2, 2, 3, 3, 1, 1] + ([1] if is_admin else []))
-                    col1, col2, col3, col4, col_view, col_edit = cols[:6]
-                    col_delete = cols[6] if is_admin else None
-
-                    with col1:
-                        st.write(row.get('SubCategory ID', 'N/A'))
-                    with col2:
-                        st.write(row.get('Category ID', 'N/A'))
-                    with col3:
-                        st.write(row.get('Category Name', 'N/A'))
-                    with col4:
-                        st.write(row.get('SubCategory Name', 'N/A'))
-                    with col_view:
-                        if st.button("👁️", key=f"subcategory_view_{row.get('SubCategory ID', idx)}", use_container_width=True, help="View details"):
-                            record = {
-                                "Sub Category ID": row.get("SubCategory ID", ""),
-                                "Category ID": row.get("Category ID", ""),
-                                "Category Name": row.get("Category Name", ""),
-                                "Sub Category Name": row.get("SubCategory Name", ""),
-                            }
-                            _open_view_modal(
-                                "subcategory",
-                                f"Sub Category Details: {row.get('SubCategory Name', '')}",
-                                record,
-                                ["Sub Category ID", "Category ID", "Category Name", "Sub Category Name"],
-                            )
-                    with col_edit:
-                        edit_key = f"edit_subcat_{row.get('SubCategory ID', idx)}"
-                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this subcategory"):
-                            st.session_state["edit_subcategory_id"] = row.get('SubCategory ID', '')
-                            st.session_state["edit_subcategory_idx"] = int(original_idx)  # Ensure it's a Python int
-                            st.rerun()
-                    # Only show delete button for admin users
-                    if is_admin and col_delete is not None:
-                        with col_delete:
-                            delete_key = f"delete_subcat_{row.get('SubCategory ID', idx)}"
-                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this subcategory"):
-                                subcategory_name_to_delete = row.get('SubCategory Name', 'Unknown')
-                                subcategory_id_to_delete = row.get('SubCategory ID', 'Unknown')
-                                if delete_data(SHEETS["subcategories"], original_idx):
-                                    # Set success message
-                                    st.session_state["subcategory_success_message"] = f"✅ Sub Category '{subcategory_name_to_delete}' (ID: {subcategory_id_to_delete}) deleted successfully!"
-                                    # Clear search bar
-                                    if "subcategory_search" in st.session_state:
-                                        del st.session_state["subcategory_search"]
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete subcategory")
-                    
-                    st.divider()
-                _render_view_modal("subcategory")
-            elif search_term:
-                # Search returned no results, but search was performed
-                pass
-            else:
-                st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
-
-            # Edit form (shown when edit button is clicked)
-            if "edit_subcategory_id" in st.session_state and st.session_state["edit_subcategory_id"]:
-                st.subheader("Edit Sub Category")
-                edit_id = st.session_state["edit_subcategory_id"]
-                edit_idx = st.session_state.get("edit_subcategory_idx", 0)
-                
-                subcategory_rows = subcategories_df[subcategories_df["SubCategory ID"] == edit_id]
-                if not subcategory_rows.empty:
-                    subcategory = subcategory_rows.iloc[0]
-                    
-                    with st.form("edit_subcategory_form"):
-                        new_subcategory_id = st.text_input("Sub Category ID", value=subcategory.get("SubCategory ID", ""), disabled=True)
-                        
-                        # Category dropdown for editing - show category names
-                        selected_category_name = None
-                        if not categories_df.empty:
-                            category_options = categories_df["Category Name"].tolist()
-                            current_category_id = subcategory.get("Category ID", "")
-                            # Find the category name for the current category ID
-                            if not categories_df[categories_df["Category ID"] == current_category_id].empty:
-                                current_category_name = categories_df[categories_df["Category ID"] == current_category_id]["Category Name"].iloc[0]
-                                if current_category_name in category_options:
-                                    default_index = category_options.index(current_category_name) + 1
-                                else:
-                                    default_index = 0
-                            else:
-                                default_index = 0
-                            selected_category_name = st.selectbox("Category *", ["Select category"] + category_options, index=default_index)
-                            
-                            # Map selected category name back to category ID
-                            if selected_category_name != "Select category":
-                                new_category_id = categories_df[categories_df["Category Name"] == selected_category_name]["Category ID"].iloc[0]
-                                new_category_name = selected_category_name
-                            else:
-                                new_category_id = "Select category"
-                                new_category_name = ""
-                        else:
-                            new_category_id = st.text_input("Category ID *", value=subcategory.get("Category ID", ""))
-                            new_category_name = st.text_input("Category Name *", value=subcategory.get("Category Name", ""))
-                            selected_category_name = None
-                        
-                        new_subcategory_name = st.text_input("Sub Category Name", value=subcategory.get("SubCategory Name", ""))
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.form_submit_button("Update Sub Category", use_container_width=True):
-                                if selected_category_name == "Select category" or (selected_category_name is None and new_category_id == "Select category"):
-                                    st.error("Please select a category")
-                                else:
-                                    with st.spinner("Updating subcategory..."):
-                                        # Update: SubCategory ID, Category ID, SubCategory Name, Category Name
-                                        if update_data(SHEETS["subcategories"], edit_idx, [new_subcategory_id, new_category_id, new_subcategory_name, new_category_name]):
-                                            # Set success message
-                                            st.session_state["subcategory_success_message"] = f"✅ Sub Category '{new_subcategory_name}' (ID: {new_subcategory_id}) updated successfully!"
-                                            if "edit_subcategory_id" in st.session_state:
-                                                del st.session_state["edit_subcategory_id"]
-                                            if "edit_subcategory_idx" in st.session_state:
-                                                del st.session_state["edit_subcategory_idx"]
-                                            # Clear search bar
-                                            if "subcategory_search" in st.session_state:
-                                                del st.session_state["subcategory_search"]
-                                            st.rerun()
-                                        else:
-                                            st.error("Failed to update subcategory")
-                        with col2:
-                            if st.form_submit_button("Cancel", use_container_width=True):
-                                if "edit_subcategory_id" in st.session_state:
-                                    del st.session_state["edit_subcategory_id"]
-                                if "edit_subcategory_idx" in st.session_state:
-                                    del st.session_state["edit_subcategory_idx"]
-                                st.rerun()
+            if filtered_df.empty:
+                if search_term:
+                    st.info(f"No subcategories found matching '{search_term}'.")
                 else:
-                    st.warning("Selected subcategory not found in data.")
-        else:
-            st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
+                    st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
+            else:
+                st.caption(f"Showing {len(filtered_df)} of {len(subcategories_df)} subcategory(ies)")
+
+                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+                is_admin = str(user_role).lower() == "admin"
+
+                st.markdown(
+                    """
+                    <style>
+                    [data-testid="stDataEditor"] thead th,
+                    [data-testid="stDataEditor"] div[role="columnheader"] {
+                        background-color: #BF092F !important;
+                        color: #1A202C !important;
+                        font-weight: 600 !important;
+                    }
+                    [data-testid="stDataEditor"] div[role="columnheader"] * {
+                        color: #1A202C !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td {
+                        border-right: 1px solid #f0f0f0 !important;
+                    }
+                    [data-testid="stDataEditor"] tbody td:last-child {
+                        border-right: none !important;
+                    }
+                    [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                        display: none !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                table_df = filtered_df[
+                    ["SubCategory ID", "Category ID", "Category Name", "SubCategory Name"]
+                ].copy()
+
+                st.data_editor(
+                    table_df,
+                    hide_index=True,
+                    use_container_width=True,
+                    num_rows="dynamic",
+                    key="subcategory_table_view",
+                    column_config={
+                        "SubCategory ID": st.column_config.TextColumn("Sub Category ID", disabled=True),
+                        "Category ID": st.column_config.TextColumn("Category ID"),
+                        "Category Name": st.column_config.TextColumn("Category Name"),
+                        "SubCategory Name": st.column_config.TextColumn("Sub Category Name"),
+                    },
+                )
+
+                editor_state = st.session_state.get("subcategory_table_view", {})
+                edited_rows = deepcopy(editor_state.get("edited_rows", {}))
+                edited_cells = deepcopy(editor_state.get("edited_cells", {}))
+                deleted_rows = list(editor_state.get("deleted_rows", []))
+                added_rows = list(editor_state.get("added_rows", []))
+
+                if deleted_rows and not is_admin:
+                    st.warning("Only administrators can delete subcategories. Deletions will be ignored.", icon="⚠️")
+                    deleted_rows = []
+                    if isinstance(editor_state, dict):
+                        editor_state["deleted_rows"] = []
+
+                def _normalize_idx(idx_value):
+                    try:
+                        return int(idx_value)
+                    except (TypeError, ValueError):
+                        return idx_value
+
+                def _get_edits(source_dict, idx_value):
+                    if idx_value in source_dict:
+                        return source_dict[idx_value]
+                    return source_dict.get(str(idx_value), {})
+
+                st.session_state.setdefault("subcategory_pending_changes", False)
+                st.session_state.setdefault("subcategory_save_success", False)
+
+                has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+                st.session_state["subcategory_pending_changes"] = has_changes
+                if has_changes:
+                    st.session_state["subcategory_save_success"] = False
+
+                action_cols = st.columns([1, 1], gap="small")
+                with action_cols[0]:
+                    save_clicked = st.button(
+                        "Save Changes",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=not has_changes,
+                        key="subcategory_save_changes",
+                    )
+                with action_cols[1]:
+                    discard_clicked = st.button(
+                        "Discard Changes",
+                        use_container_width=True,
+                        disabled=not has_changes,
+                        key="subcategory_discard_changes",
+                    )
+
+                if discard_clicked and has_changes:
+                    table_state = st.session_state.get("subcategory_table_view")
+                    if isinstance(table_state, dict):
+                        table_state["edited_rows"] = {}
+                        table_state["edited_cells"] = {}
+                        table_state["deleted_rows"] = []
+                        table_state["added_rows"] = []
+                    st.session_state.pop("subcategory_table_view", None)
+                    st.session_state["subcategory_pending_changes"] = False
+                    st.experimental_rerun()
+
+                if save_clicked and has_changes:
+                    success = True
+                    success_messages: list[str] = []
+
+                    if added_rows:
+                        st.warning(
+                            "Please add new subcategories from the 'Add Sub Category' tab.",
+                            icon="ℹ️",
+                        )
+                        success = False
+
+                    if success and deleted_rows:
+                        for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
+                            if isinstance(delete_idx, int) and delete_idx < len(filtered_df):
+                                target_row = filtered_df.iloc[delete_idx]
+                                subcat_id = str(target_row.get("SubCategory ID", "")).strip()
+                                match_df = subcategories_df[
+                                    subcategories_df["SubCategory ID"].astype(str).str.strip() == subcat_id
+                                ]
+                                if not match_df.empty:
+                                    original_idx = int(match_df.index[0])
+                                    if delete_data(SHEETS["subcategories"], original_idx):
+                                        success_messages.append(
+                                            f"🗑️ Sub Category '{target_row.get('SubCategory Name', '')}' deleted."
+                                        )
+                                    else:
+                                        st.error("Failed to delete subcategory.")
+                                        success = False
+                                else:
+                                    st.error("Unable to locate subcategory to delete.")
+                                    success = False
+                            else:
+                                st.error("Unable to resolve subcategory row for deletion.")
+                                success = False
+
+                    rows_to_update: set[int] = set()
+                    for idx_key in list(edited_rows.keys()) + list(edited_cells.keys()):
+                        norm_idx = _normalize_idx(idx_key)
+                        if isinstance(norm_idx, int):
+                            rows_to_update.add(norm_idx)
+
+                    if success and rows_to_update:
+                        for idx in rows_to_update:
+                            if idx >= len(filtered_df):
+                                continue
+                            current_row = filtered_df.iloc[idx].copy()
+                            edits = dict(_get_edits(edited_rows, idx))
+                            edits.update(_get_edits(edited_cells, idx))
+                            if not edits:
+                                continue
+
+                            for column, new_value in edits.items():
+                                current_row[column] = new_value
+
+                            subcat_id_value = str(current_row.get("SubCategory ID", "")).strip()
+                            category_id_value = str(current_row.get("Category ID", "")).strip()
+                            category_name_value = str(current_row.get("Category Name", "")).strip()
+                            subcat_name_value = str(current_row.get("SubCategory Name", "")).strip()
+
+                            match_df = subcategories_df[
+                                subcategories_df["SubCategory ID"].astype(str).str.strip() == subcat_id_value
+                            ]
+                            if not match_df.empty:
+                                original_idx = int(match_df.index[0])
+                                updated_row = [
+                                    subcat_id_value,
+                                    category_id_value,
+                                    subcat_name_value,
+                                    category_name_value,
+                                ]
+                                if update_data(SHEETS["subcategories"], original_idx, updated_row):
+                                    success_messages.append(
+                                        f"✏️ Sub Category '{subcat_id_value}' updated."
+                                    )
+                                else:
+                                    st.error(f"Failed to update subcategory '{subcat_id_value}'.")
+                                    success = False
+                            else:
+                                st.error("Unable to locate subcategory to update.")
+                                success = False
+
+                    if success:
+                        if success_messages:
+                            st.session_state["subcategory_success_message"] = " ".join(success_messages)
+                            if "subcategory_search" in st.session_state:
+                                del st.session_state["subcategory_search"]
+                        st.session_state["subcategory_pending_changes"] = False
+                        st.session_state["subcategory_save_success"] = True
+                        st.session_state.pop("subcategory_table_view", None)
+                        st.experimental_rerun()
+
+                if (
+                    st.session_state.get("subcategory_pending_changes", False)
+                    and not st.session_state.get("subcategory_save_success", False)
+                ):
+                    st.info(
+                        "You have unsaved subcategory changes. Click 'Save Changes' to apply them.",
+                        icon="✏️",
+                    )
 
 def generate_asset_id() -> str:
     """Generate a unique Asset ID/Barcode"""
