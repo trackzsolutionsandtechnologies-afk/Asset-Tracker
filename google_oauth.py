@@ -30,7 +30,7 @@ def _get_client_config() -> dict:
             "Missing google_oauth configuration in Streamlit secrets."
         )
 
-    redirect_uri = oauth_section.get("redirect_uri", "https://trackzasset.streamlit.app/")
+    redirect_uri = oauth_section.get("redirect_uri", "http://localhost:8501/")
     return {
         "web": {
             "client_id": oauth_section["client_id"],
