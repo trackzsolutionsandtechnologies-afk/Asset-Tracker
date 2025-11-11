@@ -594,17 +594,22 @@ def asset_depreciation_form():
             form_key = st.session_state["depreciation_form_key"]
 
             with st.form(f"depreciation_form_{form_key}"):
-                asset_labels = [option[0] for option in asset_options]
+                asset_labels = ["Select an asset"] + [option[0] for option in asset_options]
                 selection = st.selectbox(
                     "Select Asset",
                     asset_labels,
                     help="Choose the asset to calculate depreciation for.",
+                    key=f"depreciation_asset_{form_key}",
                 )
-                selected_asset_id = next(
-                    (asset_id for label, asset_id in asset_options if label == selection),
-                    "",
-                )
-                asset_record = _get_asset_record(selected_asset_id)
+                if selection == "Select an asset":
+                    selected_asset_id = ""
+                    asset_record = {}
+                else:
+                    selected_asset_id = next(
+                        (asset_id for label, asset_id in asset_options if label == selection),
+                        "",
+                    )
+                    asset_record = _get_asset_record(selected_asset_id)
 
                 default_cost = 0.0
                 if asset_record:
@@ -621,30 +626,35 @@ def asset_depreciation_form():
                     "Purchase Date",
                     value=default_purchase_date.date(),
                     help="Adjust if the purchase date in Asset Master is incorrect.",
+                    key=f"depreciation_purchase_date_{form_key}",
                 )
                 purchase_cost_input = st.number_input(
                     "Purchase Cost",
                     min_value=0.0,
                     value=float(round(default_cost, 2)) if default_cost else 0.0,
                     step=0.01,
+                    key=f"depreciation_purchase_cost_{form_key}",
                 )
                 useful_life_input = st.number_input(
                     "Useful Life (years)",
                     min_value=1,
                     value=5,
                     step=1,
+                    key=f"depreciation_useful_life_{form_key}",
                 )
                 salvage_value_input = st.number_input(
                     "Salvage Value",
                     min_value=0.0,
                     value=0.0,
                     step=0.01,
+                    key=f"depreciation_salvage_value_{form_key}",
                 )
                 st.selectbox(
                     "Depreciation Method",
                     ["Straight-Line"],
                     index=0,
                     help="Straight-line depreciation spreads cost evenly across years.",
+                    key=f"depreciation_method_{form_key}",
                 )
 
                 submitted = st.form_submit_button(
@@ -674,7 +684,6 @@ def asset_depreciation_form():
                         }
                         st.success("Depreciation schedule generated.")
                         st.session_state["depreciation_form_key"] += 1
-                        st.rerun()
 
         state_key = "depreciation_generated_schedule"
         if state_key in st.session_state:
