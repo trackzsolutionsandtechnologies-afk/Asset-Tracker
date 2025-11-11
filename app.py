@@ -43,6 +43,10 @@ st.markdown(
         background: url("https://images.unsplash.com/photo-1517502166878-35c93a0072bb?auto=format&fit=crop&w=1920&q=80") no-repeat center center fixed !important;
         background-size: cover !important;
     }
+    div[data-testid="stAppViewPort"],
+    div[data-testid="block-container"] {
+        background: transparent !important;
+    }
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #e9f7ef 0%, #fefefe 100%) !important;
         padding: clamp(1.25rem, 5vw, 1.75rem) clamp(1rem, 6vw, 1.5rem) clamp(2rem, 6vw, 2.25rem) clamp(1rem, 6vw, 1.5rem) !important;
