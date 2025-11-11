@@ -1,27 +1,24 @@
-"""
-Barcode utilities for scanning and printing
-"""
+"""Barcode utilities for scanning and printing."""
+
 import base64
-import streamlit as st
-import streamlit.components.v1 as components
-import qrcode
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps
 import io
-import pandas as pd
-import barcode
-from barcode.writer import ImageWriter
-import uuid
-from google_sheets import read_data, update_data
-from config import SHEETS
-import numpy as np
-from datetime import datetime
 import subprocess
 import sys
+import uuid
+from datetime import datetime
+
+import barcode
+import numpy as np
+import pandas as pd
+import qrcode
 import streamlit as st
 import streamlit.components.v1 as components
+from barcode.writer import ImageWriter
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps
 
-
-SCAN_COMPONENT = "streamlit_quagga_scanner"
+from components.quagga_scanner import quagga_scanner
+from config import SHEETS
+from google_sheets import read_data, update_data
 
 # Try to import barcode scanning libraries
 PYZBAR_AVAILABLE = False
@@ -227,16 +224,16 @@ def decode_barcode_from_array(array: np.ndarray):
         return None
 
 def barcode_scanner_page():
-    """Display an embedded JS barcode scanner."""
+    """Display the embedded QuaggaJS barcode scanner component."""
     st.header("📸 Live Barcode Scanner")
 
-    scanned_value = components.iframe(
-        src="https://quaggajs.com",  # placeholder for JS scanner
-        height=600,
-        scrolling=True,
-    )
+    result = quagga_scanner(key="live_barcode_scanner")
 
-    st.write(scanned_value)
+    if result:
+        if "error" in result:
+            st.error(f"Scanner error: {result['error']}")
+        elif code := result.get("code"):
+            st.success(f"Detected barcode: {code}")
 
 def barcode_print_page():
     """Multiple barcode printing page"""
