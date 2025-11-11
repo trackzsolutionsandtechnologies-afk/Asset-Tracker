@@ -107,6 +107,7 @@ st.markdown(
         border-radius: 999px !important;
         border: none !important;
         box-shadow: 0 4px 12px rgba(56, 161, 105, 0.35) !important;
+        display: none !important
     }
     button[title="Show sidebar"] svg,
     button[title="Hide sidebar"] svg { color: #ffffff !important; }
@@ -138,12 +139,13 @@ def load_custom_css() -> None:
             display: none !important;
         }
         button[title="Show sidebar"],
-        button[title="Hide sidebar"] {
+    button[title="Hide sidebar"] {
             background-color: #38a169 !important;
             color: #ffffff !important;
             border-radius: 999px !important;
             border: none !important;
             box-shadow: 0 4px 12px rgba(56, 161, 105, 0.35) !important;
+        display: none !important;
         }
         button[title="Show sidebar"] svg,
         button[title="Hide sidebar"] svg {
