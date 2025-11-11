@@ -1806,6 +1806,21 @@ def attachments_form():
                 display_df = display_df.sort_values("Timestamp", ascending=False)
             display_df = display_df.head(50)
 
+            search_query = st.text_input(
+                "Search attachments",
+                placeholder="Search by asset, file name, or notes...",
+                key="attachments_search",
+            )
+
+            if search_query:
+                q = search_query.strip().lower()
+                def _row_matches(row):
+                    for col in ("Asset ID", "Asset Name", "File Name", "Notes", "Uploaded By"):
+                        if col in row and q in str(row[col]).lower():
+                            return True
+                    return False
+                display_df = display_df[display_df.apply(_row_matches, axis=1)]
+
             augmented_df = _augment_attachments_display(display_df)
             for col in ("View", "Download"):
                 if col in augmented_df.columns:
