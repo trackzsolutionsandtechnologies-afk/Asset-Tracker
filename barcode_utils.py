@@ -2,98 +2,18 @@
 
 import base64
 import io
-import subprocess
-import sys
-import uuid
 from datetime import datetime
 
 import barcode
-import numpy as np
 import pandas as pd
 import qrcode
 import streamlit as st
 import streamlit.components.v1 as components
 from barcode.writer import ImageWriter
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps
-
-from components.quagga_scanner import quagga_scanner
+from PIL import Image, ImageDraw, ImageFont
+from streamlit_qrcode_scanner import qrcode_scanner
 from config import SHEETS
 from google_sheets import read_data, update_data
-
-# Try to import barcode scanning libraries
-PYZBAR_AVAILABLE = False
-PYZBAR_IMPORT_ERROR = None
-CV2_AVAILABLE = False
-
-def _attempt_pyzbar_import():
-    global PYZBAR_AVAILABLE, PYZBAR_IMPORT_ERROR, pyzbar_decode
-    try:
-        from pyzbar.pyzbar import decode as pyzbar_decode  # type: ignore
-        PYZBAR_AVAILABLE = True
-        PYZBAR_IMPORT_ERROR = None
-    except (ImportError, OSError) as err:
-        PYZBAR_AVAILABLE = False
-        PYZBAR_IMPORT_ERROR = str(err)
-
-_attempt_pyzbar_import()
-
-if not PYZBAR_AVAILABLE:
-    # Try to install pyzbar dynamically (best effort)
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pyzbar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        _attempt_pyzbar_import()
-    except Exception:
-        pass
-
-try:
-    import cv2  # type: ignore
-    CV2_AVAILABLE = True
-except ImportError:
-    CV2_AVAILABLE = False
-
-try:
-    from streamlit_webrtc import webrtc_streamer, WebRtcMode
-    import av
-    WEBRTC_AVAILABLE = True
-except ImportError:
-    WEBRTC_AVAILABLE = False
-class BarcodeStreamProcessor:
-    def __init__(self) -> None:
-        self.latest_result: str | None = None
-        self._last_announced: str | None = None
-
-    def recv(self, frame: "av.VideoFrame") -> "av.VideoFrame":  # type: ignore[name-defined]
-        img = frame.to_ndarray(format="bgr24")
-        display_img = img.copy()
-
-        result = decode_barcode_from_array(img)
-
-        if PYZBAR_AVAILABLE:
-            try:
-                decoded_objects = pyzbar_decode(img)
-                if decoded_objects and CV2_AVAILABLE:
-                    import cv2  # type: ignore
-
-                    for obj in decoded_objects:
-                        x, y, w, h = obj.rect
-                        cv2.rectangle(display_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                        cv2.putText(
-                            display_img,
-                            obj.data.decode("utf-8"),
-                            (x, max(y - 10, 0)),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.6,
-                            (0, 255, 0),
-                            2,
-                        )
-            except Exception:
-                pass
-
-        if result and result != self._last_announced:
-            self.latest_result = result
-            self._last_announced = result
-
-        return av.VideoFrame.from_ndarray(display_img, format="bgr24")
 
 def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image.Image:
     """Generate a barcode image for an asset ID"""
@@ -120,120 +40,13 @@ def generate_barcode_image(asset_id: str, format_type: str = "code128") -> Image
         st.error(f"Error generating barcode: {str(e)}")
         return None
 
-def _generate_image_variants(image: Image.Image) -> list[np.ndarray]:
-    """Create multiple pre-processed variants of the image to improve decoding success."""
-    variants: list[np.ndarray] = []
-    base = image.convert("RGB")
-    variants.append(np.array(base))
-
-    try:
-        contrast_img = ImageEnhance.Contrast(base).enhance(2.0)
-        variants.append(np.array(contrast_img))
-    except Exception:
-        pass
-
-    try:
-        sharpen_img = ImageEnhance.Sharpness(base).enhance(2.0)
-        variants.append(np.array(sharpen_img))
-    except Exception:
-        pass
-
-    try:
-        grayscale = ImageOps.grayscale(base)
-        variants.append(np.array(grayscale))
-        inverted = ImageOps.invert(grayscale)
-        variants.append(np.array(inverted))
-    except Exception:
-        pass
-
-    try:
-        resized = base.resize((int(base.width * 1.5), int(base.height * 1.5)))
-        variants.append(np.array(resized))
-    except Exception:
-        pass
-
-    for angle in (90, -90, 180):
-        try:
-            rotated = base.rotate(angle, expand=True)
-            variants.append(np.array(rotated))
-        except Exception:
-            pass
-
-    # Ensure we at least have the original image
-    if not variants:
-        variants.append(np.array(base))
-
-    return variants
-
-
-def decode_barcode_from_image(image):
-    """Decode barcode from image using pyzbar or OpenCV with multiple preprocessing variants."""
-    try:
-        variants = _generate_image_variants(image)
-
-        if PYZBAR_AVAILABLE:
-            for variant in variants:
-                try:
-                    decoded_objects = pyzbar_decode(variant)
-                    if decoded_objects:
-                        return decoded_objects[0].data.decode("utf-8")
-                except Exception:
-                    continue
-
-        if CV2_AVAILABLE:
-            import cv2  # type: ignore
-            detector = getattr(cv2, "barcode_BarcodeDetector", None)
-            qr_detector = cv2.QRCodeDetector()
-
-            for variant in variants:
-                try:
-                    img_array = variant
-                    if detector is not None:
-                        barcode_detector = detector()
-                        retval, decoded_info, _ = barcode_detector.detectAndDecode(img_array)
-                        if retval:
-                            if isinstance(decoded_info, (list, tuple)):
-                                for info in decoded_info:
-                                    if info:
-                                        return info
-                            elif decoded_info:
-                                return decoded_info
-                except Exception:
-                    pass
-
-                try:
-                    data, points, _ = qr_detector.detectAndDecode(img_array)
-                    if data:
-                        return data
-                except Exception:
-                    continue
-    except Exception as e:
-        st.error(f"Error decoding barcode: {str(e)}")
-    return None
-
-
-def decode_barcode_from_array(array: np.ndarray):
-    try:
-        if array.ndim == 3:
-            pil_image = Image.fromarray(array[:, :, ::-1])  # BGR -> RGB
-        else:
-            pil_image = Image.fromarray(array)
-        return decode_barcode_from_image(pil_image)
-    except Exception as e:
-        st.error(f"Error decoding barcode frame: {str(e)}")
-        return None
-
 def barcode_scanner_page():
-    """Display the embedded QuaggaJS barcode scanner component."""
+    """Display the streamlit-qrcode-scanner component."""
     st.header("📸 Live Barcode Scanner")
 
-    result = quagga_scanner(key="live_barcode_scanner")
-
-    if result:
-        if "error" in result:
-            st.error(f"Scanner error: {result['error']}")
-        elif code := result.get("code"):
-            st.success(f"Detected barcode: {code}")
+    code = qrcode_scanner(key="live_barcode_scanner")
+    if code:
+        st.success(f"Detected code: {code}")
 
 def barcode_print_page():
     """Multiple barcode printing page"""
