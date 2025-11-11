@@ -234,7 +234,7 @@ def login_page():
                     "expires": (datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat(),
                 }
                 st.session_state[SESSION_KEYS["auth_token"]] = token
-                st.experimental_set_query_params(auth=token)
+                st.experimental_set_query_params()
                 st.session_state["current_page"] = "Location"
                 st.success("Login successful!")
                 st.rerun()
@@ -329,7 +329,6 @@ def check_authentication():
     if token and _validate_and_refresh_token(token):
         st.session_state[SESSION_KEYS["authenticated"]] = True
         st.session_state["logged_in"] = True
-        st.experimental_set_query_params(auth=token)
         return True
 
     # Attempt to restore from query parameters
@@ -342,7 +341,7 @@ def check_authentication():
         st.session_state[SESSION_KEYS["user_role"]] = token_info.get("role", "user")
         st.session_state[SESSION_KEYS["auth_token"]] = token_from_url
         st.session_state["logged_in"] = True
-        st.experimental_set_query_params(auth=token_from_url)
+        st.experimental_set_query_params()
         st.rerun()
         return True
 
