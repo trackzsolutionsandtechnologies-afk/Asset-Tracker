@@ -1674,6 +1674,25 @@ def asset_master_form():
                         else:
                             st.error("Failed to add asset")
     
+    with tab2:
+        st.subheader("View / Edit Assets")
+        if assets_df.empty:
+            st.info("No assets available yet. Add assets using the 'Add New Asset' tab.")
+        else:
+            st.caption("Current asset register. Use the download button to export.")
+            st.download_button(
+                "Download asset list (CSV)",
+                data=assets_df.to_csv(index=False).encode("utf-8"),
+                file_name="asset_master.csv",
+                mime="text/csv",
+                key="download_assets_csv",
+            )
+            st.dataframe(
+                assets_df,
+                use_container_width=True,
+                hide_index=True,
+            )
+
     with tab3:
         if not assets_df.empty:
             st.subheader("Asset Reports")
