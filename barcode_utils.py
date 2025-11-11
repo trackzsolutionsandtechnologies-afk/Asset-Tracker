@@ -222,182 +222,38 @@ def decode_barcode_from_array(array: np.ndarray):
         return None
 
 def barcode_scanner_page():
-    """Scan Barcode and search page"""
-    st.header("🔍 Scan Barcode & Search")
-    
-    assets_df = read_data(SHEETS["assets"])
-    
-    if assets_df.empty:
-        st.warning("No assets found. Please add assets first.")
-        return
-    
-    tab1, tab2 = st.tabs(["Scan Barcode", "Search Asset"])
-    
-    with tab1:
-        st.subheader("Scan Barcode")
-        
-        # Option to choose input method
-        input_method = st.radio(
-            "Input Method",
-            ["📱 Live Mobile Scanner", "📷 Camera Scan", "🖼️ Upload Barcode Image", "⌨️ Manual Entry"],
-            horizontal=True,
-            key="barcode_input_method"
-        )
-        
-        scanned_barcode = None
-        
-        if input_method == "📱 Live Mobile Scanner":
-            if not WEBRTC_AVAILABLE:
-                st.warning("⚠️ Live camera scanning requires `streamlit-webrtc`. Please install dependencies: `pip install streamlit-webrtc av`.")
-            elif not PYZBAR_AVAILABLE and not CV2_AVAILABLE:
-                st.warning("⚠️ Barcode decoding libraries are not available. Please install `pyzbar` or `opencv-contrib-python-headless` on the server.")
-                if PYZBAR_IMPORT_ERROR:
-                    st.caption(f"pyzbar import error: {PYZBAR_IMPORT_ERROR}")
-            else:
-                st.info("Allow camera access. Position the barcode within the frame; scanning is continuous and the first successful decode will auto-fill the result.")
-                ctx = webrtc_streamer(
-                    key="barcode-live-scanner",
-                    mode=WebRtcMode.SENDRECV,
-                    media_stream_constraints={"video": True, "audio": False},
-                    video_processor_factory=BarcodeStreamProcessor,
-                    async_processing=False,
-                )
+    """Present guidance for implementing a high-quality barcode scanner."""
+    st.header("📸 Enterprise-Grade Barcode Scanning")
 
-                if ctx and ctx.video_processor:
-                    latest = ctx.video_processor.latest_result
-                    if latest:
-                        scanned_barcode = latest
-                        st.success(f"✅ Barcode scanned: {latest}")
-                        st.session_state["scanned_barcode"] = latest
-        elif input_method == "📷 Camera Scan":
-            st.info("📷 Use your device camera to capture the barcode. Make sure to grant camera permissions when prompted.")
-            
-            if not PYZBAR_AVAILABLE and not CV2_AVAILABLE:
-                st.warning("⚠️ Barcode decoding libraries are not available. Please install `pyzbar` or `opencv-contrib-python-headless` on the server.")
-                if PYZBAR_IMPORT_ERROR:
-                    st.caption(f"pyzbar import error: {PYZBAR_IMPORT_ERROR}")
-                st.info("You can still use manual entry below.")
-            else:
-                camera_image = st.camera_input("Scan Barcode", key="barcode_camera")
-                
-                if camera_image:
-                    # Convert camera image to PIL Image
-                    img = Image.open(camera_image)
-                    
-                    # Try to decode barcode
-                    with st.spinner("Decoding barcode..."):
-                        decoded_barcode = decode_barcode_from_image(img)
-                        
-                        if decoded_barcode:
-                            scanned_barcode = decoded_barcode
-                            st.success(f"✅ Barcode scanned: {decoded_barcode}")
-                            # Store in session state for persistence
-                            st.session_state["scanned_barcode"] = decoded_barcode
-                        else:
-                            st.warning("⚠️ Could not decode barcode. Please try again or use manual entry.")
-                            # Show the captured image for debugging
-                            st.image(img, caption="Captured Image - Try scanning again", use_container_width=True)
-        elif input_method == "🖼️ Upload Barcode Image":
-            st.info("🖼️ Upload an image file containing the barcode to decode it.")
+    st.markdown(
+        """
+Streamlit's Python camera widgets struggle with fast, accurate barcode recognition, especially for 1D formats.
+For production-ready scanning, embed a dedicated JavaScript scanner component.
+"""
+    )
 
-            if not PYZBAR_AVAILABLE and not CV2_AVAILABLE:
-                st.warning("⚠️ Barcode decoding libraries are not available. Please install `pyzbar` or `opencv-contrib-python-headless` on the server.")
-                if PYZBAR_IMPORT_ERROR:
-                    st.caption(f"pyzbar import error: {PYZBAR_IMPORT_ERROR}")
-                st.info("You can still use manual entry below.")
-            else:
-                uploaded_image = st.file_uploader(
-                    "Upload Barcode Image",
-                    type=["png", "jpg", "jpeg", "webp"],
-                    key="barcode_image_uploader",
-                    help="Provide a clear image of the barcode or QR code."
-                )
-                if uploaded_image is not None:
-                    try:
-                        img = Image.open(uploaded_image)
-                        if img.mode not in ("RGB", "RGBA"):
-                            img = img.convert("RGB")
-                        with st.spinner("Decoding barcode..."):
-                            decoded_barcode = decode_barcode_from_image(img)
+    st.markdown("### Recommended JavaScript libraries")
+    st.markdown(
+        """
+- [zxing-js/library](https://github.com/zxing-js/library) – battle-tested ZXing port with excellent 1D/2D support.
+- [QuaggaJS](https://github.com/ericblade/quagga2) – optimized for 1D retail codes like EAN and CODE128.
+"""
+    )
 
-                        if decoded_barcode:
-                            scanned_barcode = decoded_barcode
-                            st.success(f"✅ Barcode decoded: {decoded_barcode}")
-                            st.session_state["scanned_barcode"] = decoded_barcode
-                        else:
-                            st.warning("⚠️ Could not decode the uploaded barcode image. Please try a clearer image or use manual entry.")
-                            st.image(img, caption="Uploaded Image", use_container_width=True)
-                    except Exception as err:
-                        st.error(f"Error processing image: {err}")
+    st.markdown("### Integration approach")
+    st.markdown(
+        """
+1. Create a `streamlit-components` wrapper that mounts a small JS app.
+2. Inside the component, initialize your chosen scanner and open the device camera.
+3. Emit decoded barcode text back to Streamlit via `Streamlit.setComponentValue`.
+4. Use `st.session_state` to persist the scanned value and look up assets on the Python side.
+"""
+    )
 
-        else:
-            # Manual entry
-            scanned_barcode = st.text_input(
-                "Barcode / Asset ID", 
-                value=st.session_state.get("scanned_barcode", ""),
-                key="scanned_barcode_manual",
-                help="Enter or paste the barcode/Asset ID"
-            )
-        
-        # Use scanned barcode from session state if available
-        if not scanned_barcode and "scanned_barcode" in st.session_state:
-            scanned_barcode = st.session_state["scanned_barcode"]
-        
-        if scanned_barcode:
-            # Search for asset
-            matching_assets = assets_df[
-                assets_df["Asset ID"].str.contains(scanned_barcode, case=False, na=False)
-            ]
-            
-            if not matching_assets.empty:
-                st.success(f"Found {len(matching_assets)} matching asset(s)")
-                
-                for idx, asset_row in matching_assets.iterrows():
-                    asset_id = asset_row['Asset ID']
-                    edit_key = f"edit_asset_{asset_id}_{idx}"
-                    
-                    with st.expander(f"Asset: {asset_id} - {asset_row.get('Asset Name', 'N/A')}"):
-                        col1, col2 = st.columns([2, 1])
-                        
-                        with col1:
-                            st.write("**Asset Details:**")
-                            st.write(f"**Asset ID:** {asset_id}")
-                            st.write(f"**Asset Name:** {asset_row.get('Asset Name', 'N/A')}")
-                            st.write(f"**Category:** {asset_row.get('Category', 'N/A')}")
-                            st.write(f"**Sub Category:** {asset_row.get('Sub Category', 'N/A')}")
-                            st.write(f"**Location:** {asset_row.get('Location', 'N/A')}")
-                            st.write(f"**Status:** {asset_row.get('Status', 'N/A')}")
-                            st.write(f"**Condition:** {asset_row.get('Condition', 'N/A')}")
-                            st.write(f"**Assigned To:** {asset_row.get('Assigned To', 'N/A')}")
-                            
-                            # Edit button
-                            if st.button("✏️ Edit Asset", key=edit_key, use_container_width=True):
-                                st.session_state["edit_asset_id"] = asset_id
-                                st.session_state["edit_asset_idx"] = int(idx)
-                                st.rerun()
-                        
-                        with col2:
-                            # Display barcode
-                            barcode_img = generate_barcode_image(asset_id)
-                            if barcode_img:
-                                st.image(barcode_img, caption=f"Barcode: {asset_id}", use_container_width=True)
-                
-                # Show edit form if an asset is selected for editing
-                if "edit_asset_id" in st.session_state and st.session_state["edit_asset_id"]:
-                    edit_asset_id = st.session_state["edit_asset_id"]
-                    edit_asset_idx = st.session_state.get("edit_asset_idx", 0)
-                    
-                    # Find the asset in the dataframe
-                    asset_to_edit = assets_df[assets_df["Asset ID"] == edit_asset_id]
-                    if not asset_to_edit.empty:
-                        asset = asset_to_edit.iloc[0]
-                        st.divider()
-                        st.subheader(f"✏️ Edit Asset: {edit_asset_id}")
-                        
-                        # Load reference data
-                        locations_df = read_data(SHEETS["locations"])
-                        suppliers_df = read_data(SHEETS["suppliers"])
-                        categories_df = read_data(SHEETS["categories"])
+    st.info(
+        "This Pure JS approach delivers native camera performance, continuous autofocus, "
+        "and reliable decoding compared to Python-based fallbacks."
+    )
                         subcategories_df = read_data(SHEETS["subcategories"])
                         
                         with st.form("edit_asset_form_scanner"):
