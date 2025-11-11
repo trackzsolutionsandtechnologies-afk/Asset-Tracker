@@ -1945,13 +1945,96 @@ def asset_master_form():
                                     st.info("No changes were saved.")
 
     with tab3:
-        if not assets_df.empty:
-            st.subheader("Asset Reports")
-            asset_counts = assets_df["Status"].value_counts().reset_index()
-            asset_counts.columns = ["Status", "Count"]
-            st.dataframe(asset_counts, hide_index=True)
-        else:
+        if assets_df.empty:
             st.info("No assets available for reporting.")
+            return
+
+        st.subheader("Asset Reports")
+
+        status_filter_options = ["All Status"] + sorted(
+            {str(val).strip() for val in assets_df.get("Status", pd.Series()).dropna()}
+        )
+        location_filter_options = ["All Locations"] + sorted(
+            {str(val).strip() for val in assets_df.get("Location", pd.Series()).dropna()}
+        )
+        assigned_filter_options = ["All Assignees"] + sorted(
+            {str(val).strip() for val in assets_df.get("Assigned To", pd.Series()).dropna()}
+        )
+
+        filter_cols = st.columns(3, gap="medium")
+        with filter_cols[0]:
+            report_status_filter = st.selectbox(
+                "Filter by Status",
+                status_filter_options,
+                key="asset_report_status_filter",
+            )
+        with filter_cols[1]:
+            report_location_filter = st.selectbox(
+                "Filter by Location",
+                location_filter_options,
+                key="asset_report_location_filter",
+            )
+        with filter_cols[2]:
+            report_assigned_filter = st.selectbox(
+                "Filter by Assigned To",
+                assigned_filter_options,
+                key="asset_report_assigned_filter",
+            )
+
+        report_search_term = st.text_input(
+            "🔍 Search assets in reports",
+            placeholder="Search by Asset ID, Name, Category, or any column...",
+            key="asset_report_search",
+        )
+
+        report_df = assets_df.copy()
+        if report_status_filter != "All Status":
+            report_df = report_df[
+                report_df.get("Status", "").astype(str).str.strip().str.lower()
+                == report_status_filter.strip().lower()
+            ]
+        if report_location_filter != "All Locations":
+            report_df = report_df[
+                report_df.get("Location", "").astype(str).str.strip().str.lower()
+                == report_location_filter.strip().lower()
+            ]
+        if report_assigned_filter != "All Assignees":
+            report_df = report_df[
+                report_df.get("Assigned To", "").astype(str).str.strip().str.lower()
+                == report_assigned_filter.strip().lower()
+            ]
+        if report_search_term:
+            report_term = report_search_term.strip().lower()
+            report_df = report_df[
+                report_df.apply(
+                    lambda row: report_term in " ".join(row.astype(str).str.lower()),
+                    axis=1,
+                )
+            ]
+
+        if report_df.empty:
+            st.info("No assets match the current report filters.")
+            return
+
+        summary_df = (
+            report_df.groupby("Status", dropna=False)["Asset ID"]
+            .count()
+            .reset_index()
+            .rename(columns={"Asset ID": "Count"})
+        )
+        st.markdown("**Summary by Status**")
+        st.dataframe(summary_df, hide_index=True, use_container_width=True)
+
+        st.markdown("**Detailed Asset Report**")
+        st.dataframe(report_df, hide_index=True, use_container_width=True)
+
+        st.download_button(
+            "Download filtered report (CSV)",
+            data=report_df.to_csv(index=False).encode("utf-8"),
+            file_name="asset_report.csv",
+            mime="text/csv",
+            key="download_asset_report_csv",
+        )
 
 
 def attachments_form():
