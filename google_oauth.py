@@ -4,7 +4,7 @@ Google OAuth utilities for authenticating end users to Google Drive.
 from __future__ import annotations
 
 import json
-from typing import Optional
+from typing import Dict, Optional
 
 import streamlit as st
 from google_auth_oauthlib.flow import Flow
@@ -12,6 +12,15 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+
+STORE_KEY = "drive_credentials_store"
+STATE_KEY = "drive_oauth_states"
+
+
+def _ensure_store() -> Dict[str, str]:
+    if STORE_KEY not in st.session_state:
+        st.session_state[STORE_KEY] = {}
+    return st.session_state[STORE_KEY]
 
 
 def _get_client_config() -> dict:
@@ -41,38 +50,45 @@ def _create_flow(state: Optional[str] = None) -> Flow:
     return flow
 
 
-def _store_credentials(creds: Credentials) -> None:
-    st.session_state["drive_credentials"] = creds.to_json()
+def _store_credentials(creds: Credentials, user_id: Optional[str]) -> None:
+    creds_json = creds.to_json()
+    store = _ensure_store()
+    key = str(user_id or "default")
+    store[key] = creds_json
 
 
-def _load_credentials_from_state() -> Optional[Credentials]:
-    stored = st.session_state.get("drive_credentials")
+def _load_credentials_from_state(user_id: Optional[str]) -> Optional[Credentials]:
+    store = _ensure_store()
+    key = str(user_id or "default")
+    stored = store.get(key)
     if not stored:
         return None
     data = json.loads(stored)
     creds = Credentials.from_authorized_user_info(data, scopes=DRIVE_SCOPES)
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
-        _store_credentials(creds)
+        _store_credentials(creds, user_id)
     if creds.valid:
         return creds
     return None
 
 
-def get_drive_credentials() -> Optional[Credentials]:
+def get_drive_credentials(user_id: Optional[str] = None) -> Optional[Credentials]:
     """Ensure the user is authenticated with Google Drive and return credentials."""
-    creds = _load_credentials_from_state()
+    creds = _load_credentials_from_state(user_id)
     if creds:
         return creds
 
     params = st.experimental_get_query_params()
-    stored_state = st.session_state.get("drive_oauth_state")
+    states = st.session_state.setdefault(STATE_KEY, {})
+    key = str(user_id or "default")
+    stored_state = states.get(key)
 
     if "code" in params:
         flow = _create_flow(state=stored_state)
         flow.fetch_token(code=params["code"][0])
         creds = flow.credentials
-        _store_credentials(creds)
+        _store_credentials(creds, user_id)
         st.experimental_set_query_params()  # Clear query params
         st.success("Google Drive connected successfully.")
         return creds
@@ -84,13 +100,16 @@ def get_drive_credentials() -> Optional[Credentials]:
         include_granted_scopes="true",
         prompt="consent",
     )
-    st.session_state["drive_oauth_state"] = state
+    states[key] = state
     st.info("Connect your Google Drive to upload attachments.")
     st.markdown(f"[Authorize Google Drive]({auth_url})")
     return None
 
 
-def disconnect_drive_credentials() -> None:
-    st.session_state.pop("drive_credentials", None)
-    st.session_state.pop("drive_oauth_state", None)
+def disconnect_drive_credentials(user_id: Optional[str] = None) -> None:
+    store = _ensure_store()
+    key = str(user_id or "default")
+    store.pop(key, None)
+    states = st.session_state.get(STATE_KEY, {})
+    states.pop(key, None)
     st.experimental_rerun()
