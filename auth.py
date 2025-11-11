@@ -240,6 +240,21 @@ def login_page():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+    st.markdown(
+        """
+        <div class="auth-form-wrapper" style="margin-top: 1.5rem;">
+            <p style="text-align:center; color: rgba(255,255,255,0.85); margin-bottom: 0.5rem;">
+                Need an account?
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("Create Account", use_container_width=True, type="secondary"):
+        st.session_state["show_register"] = True
+        st.session_state["show_forgot_password"] = False
+        st.experimental_rerun()
+
 
 def forgot_password_page():
     """Display forgot password page"""

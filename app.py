@@ -6,6 +6,7 @@ from pathlib import Path
 from streamlit_option_menu import option_menu
 from config import get_config
 from auth import login_page, forgot_password_page, check_authentication, logout, SESSION_KEYS
+from register import register_page
 from dashboard import dashboard_page
 from forms import (
     location_form,
@@ -233,9 +234,11 @@ def main():
     # Check if user is authenticated
     if not check_authentication():
         load_auth_css()
-        # Show login or forgot password page
+        # Show login, register, or forgot password page
         if st.session_state.get("show_forgot_password", False):
             forgot_password_page()
+        elif st.session_state.get("show_register", False):
+            register_page()
         else:
             login_page()
         return

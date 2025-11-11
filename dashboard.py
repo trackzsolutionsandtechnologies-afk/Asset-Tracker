@@ -5,7 +5,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from streamlit_plotly_events import plotly_events
 from google_sheets import read_data
 from config import SHEETS
 
@@ -23,58 +22,12 @@ def dashboard_page():
         st.warning("No asset data available. Please add assets to see the dashboard.")
         return
     
-    # Ensure we work on mutable copies
-    assets_df = assets_df.copy()
-    locations_df = locations_df.copy()
-    transfers_df = transfers_df.copy()
-    categories_df = categories_df.copy()
-
-    # Initialize interactive filter state
-    filters = st.session_state.setdefault("dashboard_filters", {})
-    # Remove filters for columns that no longer exist
-    invalid_filters = [col for col in filters.keys() if col not in assets_df.columns]
-    if invalid_filters:
-        for col in invalid_filters:
-            filters.pop(col, None)
-        st.session_state["dashboard_filters"] = dict(filters)
-
-    def toggle_filter(column: str, value: str):
-        """Toggle a column/value filter and rerun to refresh visuals."""
-        current_filters = st.session_state.setdefault("dashboard_filters", {})
-        if current_filters.get(column) == value:
-            current_filters.pop(column, None)
-        else:
-            current_filters[column] = value
-        st.session_state["dashboard_filters"] = dict(current_filters)
-        st.rerun()
-
-    # Section intro and filter controls
-    info_col, button_col = st.columns([3, 1])
-    with info_col:
-        st.caption(
-            "Click a slice or bar in any chart to filter the Asset Summary table. "
-            "Click the same visual again to remove that filter."
-        )
-        if filters:
-            applied = ", ".join(f"{k}: {v}" for k, v in filters.items())
-            st.info(f"Active filters → {applied}", icon="✨")
-    with button_col:
-        if st.button("Reset filters", type="secondary", use_container_width=True):
-            st.session_state["dashboard_filters"] = {}
-            st.rerun()
-
-    # Apply filters to assets data
-    filtered_assets_df = assets_df.copy()
-    for column, value in filters.items():
-        if column in filtered_assets_df.columns:
-            filtered_assets_df = filtered_assets_df[filtered_assets_df[column] == value]
-
     # Key Metrics
     st.header("Key Metrics")
     col1, col2, col3, col4 = st.columns(4)
     
-    total_assets = len(filtered_assets_df)
-    active_assets = len(filtered_assets_df[filtered_assets_df["Status"] == "Active"]) if "Status" in filtered_assets_df.columns else 0
+    total_assets = len(assets_df)
+    active_assets = len(assets_df[assets_df["Status"] == "Active"]) if "Status" in assets_df.columns else 0
     total_locations = len(locations_df) if not locations_df.empty else 0
     total_transfers = len(transfers_df) if not transfers_df.empty else 0
     
@@ -94,52 +47,28 @@ def dashboard_page():
     
     with col1:
         st.subheader("Assets by Status")
-        if "Status" in filtered_assets_df.columns:
-            status_counts = filtered_assets_df["Status"].value_counts()
+        if "Status" in assets_df.columns:
+            status_counts = assets_df["Status"].value_counts()
             fig_status = px.pie(
                 values=status_counts.values,
                 names=status_counts.index,
                 title="Asset Status Distribution"
             )
-            fig_status.update_traces(textposition="inside", textinfo="percent+label")
-            fig_status.update_layout(clickmode="event+select")
-            status_event = plotly_events(
-                fig_status,
-                click_event=True,
-                hover_event=False,
-                override_width="100%",
-                key="status_chart"
-            )
-            if status_event:
-                selected_status = status_event[0].get("label")
-                if selected_status:
-                    toggle_filter("Status", selected_status)
+            st.plotly_chart(fig_status, use_container_width=True)
         else:
             st.info("Status data not available")
     
     with col2:
         st.subheader("Assets by Condition")
-        if "Condition" in filtered_assets_df.columns:
-            condition_counts = filtered_assets_df["Condition"].value_counts()
+        if "Condition" in assets_df.columns:
+            condition_counts = assets_df["Condition"].value_counts()
             fig_condition = px.bar(
                 x=condition_counts.index,
                 y=condition_counts.values,
                 title="Assets by Condition",
                 labels={"x": "Condition", "y": "Count"}
             )
-            fig_condition.update_traces(marker_color="#5C3E94")
-            fig_condition.update_layout(clickmode="event+select")
-            condition_event = plotly_events(
-                fig_condition,
-                click_event=True,
-                hover_event=False,
-                override_width="100%",
-                key="condition_chart"
-            )
-            if condition_event:
-                selected_condition = condition_event[0].get("x")
-                if selected_condition is not None:
-                    toggle_filter("Condition", selected_condition)
+            st.plotly_chart(fig_condition, use_container_width=True)
         else:
             st.info("Condition data not available")
     
@@ -148,8 +77,8 @@ def dashboard_page():
     
     with col1:
         st.subheader("Assets by Location")
-        if "Location" in filtered_assets_df.columns and not filtered_assets_df["Location"].isna().all():
-            location_counts = filtered_assets_df["Location"].value_counts().head(10)
+        if "Location" in assets_df.columns and not assets_df["Location"].isna().all():
+            location_counts = assets_df["Location"].value_counts().head(10)
             if not location_counts.empty:
                 fig_location = px.bar(
                     x=location_counts.values,
@@ -158,19 +87,7 @@ def dashboard_page():
                     title="Top 10 Locations by Asset Count",
                     labels={"x": "Count", "y": "Location"}
                 )
-                fig_location.update_traces(marker_color="#98EECC")
-                fig_location.update_layout(clickmode="event+select")
-                location_event = plotly_events(
-                    fig_location,
-                    click_event=True,
-                    hover_event=False,
-                    override_width="100%",
-                    key="location_chart"
-                )
-                if location_event:
-                    selected_location = location_event[0].get("y")
-                    if selected_location:
-                        toggle_filter("Location", selected_location)
+                st.plotly_chart(fig_location, use_container_width=True)
             else:
                 st.info("No location data available")
         else:
@@ -178,27 +95,15 @@ def dashboard_page():
     
     with col2:
         st.subheader("Assets by Category")
-        if "Category" in filtered_assets_df.columns and not filtered_assets_df["Category"].isna().all():
-            category_counts = filtered_assets_df["Category"].value_counts().head(10)
+        if "Category" in assets_df.columns and not assets_df["Category"].isna().all():
+            category_counts = assets_df["Category"].value_counts().head(10)
             if not category_counts.empty:
                 fig_category = px.pie(
                     values=category_counts.values,
                     names=category_counts.index,
                     title="Top 10 Asset Categories"
                 )
-                fig_category.update_traces(textposition="inside", textinfo="percent+label")
-                fig_category.update_layout(clickmode="event+select")
-                category_event = plotly_events(
-                    fig_category,
-                    click_event=True,
-                    hover_event=False,
-                    override_width="100%",
-                    key="category_chart"
-                )
-                if category_event:
-                    selected_category = category_event[0].get("label")
-                    if selected_category:
-                        toggle_filter("Category", selected_category)
+                st.plotly_chart(fig_category, use_container_width=True)
             else:
                 st.info("No category data available")
         else:
