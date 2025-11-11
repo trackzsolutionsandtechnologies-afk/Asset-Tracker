@@ -342,6 +342,7 @@ def check_authentication():
         st.session_state[SESSION_KEYS["auth_token"]] = token_from_url
         st.session_state["logged_in"] = True
         st.experimental_set_query_params()
+        st.rerun()
         return True
 
     if st.session_state["logged_in"]:
