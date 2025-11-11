@@ -1728,6 +1728,8 @@ def asset_master_form():
                     == selected_assigned.strip().lower()
                 ]
 
+            edit_placeholder = st.empty()
+
             if filtered_df.empty:
                 st.info("No assets match the current filters.")
             else:
