@@ -1211,8 +1211,8 @@ def category_form():
     """Asset Category and Sub Category"""
     st.header("📂 Category Management")
     
-    ensure_sheet_headers(SHEETS["categories"], ["Category ID", "Category Name"])
-    ensure_sheet_headers(SHEETS["subcategories"], ["SubCategory ID", "Category ID", "SubCategory Name", "Category Name"])
+    _ensure_headers_once("categories", ["Category ID", "Category Name"])
+    _ensure_headers_once("subcategories", ["SubCategory ID", "Category ID", "SubCategory Name", "Category Name"])
     
     categories_df = read_data(SHEETS["categories"])
     subcategories_df = read_data(SHEETS["subcategories"])
