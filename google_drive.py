@@ -12,7 +12,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from googleapiclient.errors import HttpError
 
 from config import GOOGLE_DRIVE_FOLDER_ID
-from google_sheets import get_google_client
+from google_sheets import get_google_client, get_cached_credentials
 
 DRIVE_FILE_FIELDS = "id, name, webViewLink"
 
@@ -24,12 +24,13 @@ def get_drive_service():
     if client is None:
         return None
 
-    credentials = client.auth
+    credentials = get_cached_credentials()
+    if credentials is None:
+        st.error("Google credentials are not available. Please check configuration.")
+        return None
+
     try:
-        # Ensure we have Drive scope
-        scoped = credentials.with_scopes(
-            ["https://www.googleapis.com/auth/drive"]
-        )
+        scoped = credentials.with_scopes(["https://www.googleapis.com/auth/drive"])
     except AttributeError:
         scoped = credentials
 

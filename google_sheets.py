@@ -21,11 +21,14 @@ SCOPE = [
 _last_request_time = 0
 _min_request_interval = 1.0  # Minimum 1 second between requests
 
+_cached_credentials: Optional[Credentials] = None
+
 logger = logging.getLogger(__name__)
 
 @st.cache_resource
 def get_google_client():
     """Initialize and return Google Sheets client"""
+    global _cached_credentials
     # Ensure config is loaded from secrets
     try:
         get_config()
@@ -85,6 +88,7 @@ def get_google_client():
                         creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
                     
                     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+                    _cached_credentials = creds
                     client = gspread.authorize(creds)
                     # Clear any previous warnings since we found credentials
                     if "credentials_warning_shown" in st.session_state:
@@ -132,6 +136,7 @@ def get_google_client():
                     creds = Credentials.from_service_account_file(
                         cred_path, scopes=SCOPE
                     )
+                    _cached_credentials = creds
                     client = gspread.authorize(creds)
                     # Clear any previous warnings since we found credentials
                     if "credentials_warning_shown" in st.session_state:
@@ -150,6 +155,7 @@ def get_google_client():
             # Try to use gspread's default service account (if set up via environment)
             try:
                 client = gspread.service_account()
+                _cached_credentials = getattr(client, "auth", None)
                 return client
             except:
                 # If that fails, show warning only once with debug info
@@ -301,6 +307,11 @@ def read_data(sheet_name: str) -> pd.DataFrame:
     except Exception as e:
         st.error(f"Error reading data from {sheet_name}: {str(e)}")
         return pd.DataFrame()
+
+
+def get_cached_credentials() -> Optional[Credentials]:
+    """Return the cached Google credentials used for Sheets access."""
+    return _cached_credentials
 
 
 def ensure_sheet_headers(sheet_name: str, headers: List[str]) -> bool:
