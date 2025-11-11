@@ -127,7 +127,7 @@ def generate_assignment_id() -> str:
 
 def location_form():
     """Location"""
-    st.header("📍 Location Management")
+    st.header("📍 Location Master")
 
     expected_headers = ["Location ID", "Location Name"]
     ensure_sheet_headers(SHEETS["locations"], expected_headers)
