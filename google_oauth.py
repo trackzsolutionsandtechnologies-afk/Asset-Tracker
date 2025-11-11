@@ -7,6 +7,7 @@ import json
 from typing import Dict, Optional
 
 import streamlit as st
+import streamlit.components.v1 as components
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -73,6 +74,33 @@ def _load_credentials_from_state(user_id: Optional[str]) -> Optional[Credentials
     return None
 
 
+def _render_authorize_button(auth_url: str) -> None:
+    escaped_url = auth_url.replace("'", "\\'")
+    components.html(
+        f"""
+        <style>
+            .drive-auth-btn {{
+                background-color: #1a73e8;
+                border: none;
+                border-radius: 6px;
+                color: #ffffff;
+                cursor: pointer;
+                font-size: 0.95rem;
+                font-weight: 600;
+                padding: 0.6rem 1.4rem;
+            }}
+            .drive-auth-btn:hover {{
+                background-color: #1558b0;
+            }}
+        </style>
+        <button class="drive-auth-btn" onclick="window.top.location.href='{escaped_url}';">
+            Authorize Google Drive
+        </button>
+        """,
+        height=80,
+    )
+
+
 def get_drive_credentials(user_id: Optional[str] = None) -> Optional[Credentials]:
     """Ensure the user is authenticated with Google Drive and return credentials."""
     creds = _load_credentials_from_state(user_id)
@@ -102,31 +130,7 @@ def get_drive_credentials(user_id: Optional[str] = None) -> Optional[Credentials
     )
     states[key] = state
     st.info("Connect your Google Drive to upload attachments.")
-    st.markdown(
-        f"""
-        <style>
-            .drive-auth-btn {{
-                background-color: #1a73e8;
-                border: none;
-                border-radius: 6px;
-                color: #ffffff;
-                cursor: pointer;
-                font-size: 0.95rem;
-                font-weight: 600;
-                padding: 0.6rem 1.4rem;
-            }}
-            .drive-auth-btn:hover {{
-                background-color: #1558b0;
-            }}
-        </style>
-        <form action="{auth_url}" method="get">
-            <button type="submit" class="drive-auth-btn">
-                Authorize Google Drive
-            </button>
-        </form>
-        """,
-        unsafe_allow_html=True,
-    )
+    _render_authorize_button(auth_url)
     return None
 
 
