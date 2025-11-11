@@ -1673,7 +1673,277 @@ def asset_master_form():
                             st.rerun()
                         else:
                             st.error("Failed to add asset")
-    
+
+    with tab2:
+        st.subheader("View / Edit Assets")
+        if assets_df.empty:
+            st.info("No assets found. Add assets using the 'Add New Asset' tab.")
+        else:
+            status_filter_options = ["All Status"] + sorted(
+                {str(val).strip() for val in assets_df.get("Status", pd.Series()).dropna()}
+            )
+            location_filter_options = ["All Locations"] + sorted(
+                {str(val).strip() for val in assets_df.get("Location", pd.Series()).dropna()}
+            )
+            condition_filter_options = ["All Conditions"] + sorted(
+                {str(val).strip() for val in assets_df.get("Condition", pd.Series()).dropna()}
+            )
+
+            filter_cols = st.columns(3, gap="medium")
+            with filter_cols[0]:
+                selected_status_filter = st.selectbox(
+                    "Filter by Status",
+                    status_filter_options,
+                    key="asset_status_filter",
+                )
+            with filter_cols[1]:
+                selected_location_filter = st.selectbox(
+                    "Filter by Location",
+                    location_filter_options,
+                    key="asset_location_filter",
+                )
+            with filter_cols[2]:
+                selected_condition_filter = st.selectbox(
+                    "Filter by Condition",
+                    condition_filter_options,
+                    key="asset_condition_filter",
+                )
+
+            search_term = st.text_input(
+                "🔍 Search assets",
+                placeholder="Search by Asset ID, Name, Category, or Assigned To...",
+                key="asset_search",
+            )
+
+            filtered_df = assets_df.copy()
+            if selected_status_filter != "All Status":
+                filtered_df = filtered_df[
+                    filtered_df.get("Status", "").astype(str).str.strip().str.lower()
+                    == selected_status_filter.strip().lower()
+                ]
+            if selected_location_filter != "All Locations":
+                filtered_df = filtered_df[
+                    filtered_df.get("Location", "").astype(str).str.strip().str.lower()
+                    == selected_location_filter.strip().lower()
+                ]
+            if selected_condition_filter != "All Conditions":
+                filtered_df = filtered_df[
+                    filtered_df.get("Condition", "").astype(str).str.strip().str.lower()
+                    == selected_condition_filter.strip().lower()
+                ]
+            if search_term:
+                term = search_term.strip().lower()
+                filtered_df = filtered_df[
+                    filtered_df.apply(
+                        lambda row: term in " ".join(row.astype(str).str.lower()),
+                        axis=1,
+                    )
+                ]
+
+            if filtered_df.empty:
+                st.info("No assets match the current filters.")
+            else:
+                editor_columns = [
+                    "Asset ID",
+                    "Asset Name",
+                    "Category",
+                    "Sub Category",
+                    "Model/Serial No",
+                    "Purchase Date",
+                    "Purchase Cost",
+                    "Warranty",
+                    "Supplier",
+                    "Location",
+                    "Assigned To",
+                    "Condition",
+                    "Status",
+                    "Remarks",
+                ]
+                available_columns = [col for col in editor_columns if col in filtered_df.columns]
+                if not available_columns:
+                    st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+                else:
+                    working_df = filtered_df.copy()
+                    if "Purchase Cost" in available_columns:
+                        working_df["Purchase Cost"] = pd.to_numeric(
+                            working_df["Purchase Cost"].replace("", 0).astype(str).str.replace(",", ""),
+                            errors="coerce",
+                        ).fillna(0.0)
+                    if "Purchase Date" in available_columns:
+                        working_df["Purchase Date"] = pd.to_datetime(
+                            working_df["Purchase Date"], errors="coerce"
+                        ).dt.date
+
+                    display_df = working_df[available_columns].copy()
+
+                    st.markdown(
+                        """
+                        <style>
+                        [data-testid="stDataEditor"] thead th,
+                        [data-testid="stDataEditor"] div[role="columnheader"] {
+                            background-color: #BF092F !important;
+                            color: #1A202C !important;
+                            font-weight: 600 !important;
+                        }
+                        [data-testid="stDataEditor"] div[role="columnheader"] * {
+                            color: #1A202C !important;
+                        }
+                        [data-testid="stDataEditor"] tbody td {
+                            border-right: 1px solid #f0f0f0 !important;
+                        }
+                        [data-testid="stDataEditor"] tbody td:last-child {
+                            border-right: none !important;
+                        }
+                        [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                            display: none !important;
+                        }
+                        [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div,
+                        [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Condition"] div {
+                            border-radius: 20px;
+                            padding: 0.1rem 0.65rem;
+                            text-align: center;
+                        }
+                        </style>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                    column_config: dict[str, st.column_config.BaseColumn] = {
+                        "Asset ID": st.column_config.TextColumn("Asset ID", disabled=True),
+                        "Purchase Date": st.column_config.DateColumn(
+                            "Purchase Date", format="YYYY-MM-DD", disabled=False
+                        ),
+                        "Purchase Cost": st.column_config.NumberColumn(
+                            "Purchase Cost", format="%.2f", step=0.01, disabled=False
+                        ),
+                        "Warranty": st.column_config.TextColumn("Warranty"),
+                        "Condition": st.column_config.SelectboxColumn(
+                            "Condition",
+                            options=ASSET_CONDITION_OPTIONS,
+                        ),
+                        "Status": st.column_config.SelectboxColumn(
+                            "Status",
+                            options=ASSET_STATUS_OPTIONS,
+                        ),
+                    }
+
+                    edited_df = st.data_editor(
+                        display_df,
+                        hide_index=True,
+                        use_container_width=True,
+                        disabled=False,
+                        column_config=column_config,
+                        num_rows="dynamic",
+                        key="asset_table_editor",
+                    )
+
+                    button_cols = st.columns(2, gap="medium")
+                    with button_cols[0]:
+                        save_clicked = st.button(
+                            "Save Changes",
+                            type="primary",
+                            use_container_width=True,
+                            key="asset_save_button",
+                        )
+                    with button_cols[1]:
+                        discard_clicked = st.button(
+                            "Discard Changes",
+                            use_container_width=True,
+                            key="asset_discard_button",
+                        )
+
+                    if discard_clicked:
+                        st.session_state.pop("asset_table_editor", None)
+                        st.experimental_rerun()
+
+                    if save_clicked:
+                        if edited_df.equals(display_df):
+                            st.info("No changes detected.")
+                        else:
+                            editable_columns = [
+                                col for col in editor_columns if col != "Asset ID" and col in assets_df.columns
+                            ]
+                            if not editable_columns or "Asset ID" not in assets_df.columns:
+                                st.warning("Asset updates are unavailable because required columns are missing.")
+                            else:
+                                original_indexed = display_df.set_index("Asset ID")
+                                edited_indexed = edited_df.set_index("Asset ID")
+                                updates_applied = 0
+
+                                for asset_id, edited_row in edited_indexed.iterrows():
+                                    if asset_id not in original_indexed.index:
+                                        continue
+                                    original_row = original_indexed.loc[asset_id]
+                                    changed = False
+                                    for col in editable_columns:
+                                        if col not in edited_row or col not in original_row:
+                                            continue
+                                        new_val = edited_row[col]
+                                        old_val = original_row[col]
+                                        if isinstance(new_val, datetime):
+                                            new_val = new_val.date()
+                                        if hasattr(new_val, "isoformat"):
+                                            new_cmp = new_val.isoformat()
+                                        else:
+                                            new_cmp = "" if pd.isna(new_val) else str(new_val).strip()
+
+                                        if isinstance(old_val, datetime):
+                                            old_val = old_val.date()
+                                        if hasattr(old_val, "isoformat"):
+                                            old_cmp = old_val.isoformat()
+                                        else:
+                                            old_cmp = "" if pd.isna(old_val) else str(old_val).strip()
+
+                                        if new_cmp != old_cmp:
+                                            changed = True
+                                            break
+
+                                    if not changed:
+                                        continue
+
+                                    match_rows = assets_df[
+                                        assets_df["Asset ID"].astype(str).str.strip()
+                                        == str(asset_id).strip()
+                                    ]
+                                    if match_rows.empty:
+                                        continue
+                                    row_index = int(match_rows.index[0])
+                                    updated_series = match_rows.iloc[0].copy()
+
+                                    for col in editable_columns:
+                                        if col not in edited_row or col not in updated_series:
+                                            continue
+                                        value = edited_row[col]
+                                        if isinstance(value, datetime):
+                                            value = value.date()
+                                        if isinstance(value, pd.Timestamp):
+                                            value = value.date()
+                                        updated_series.loc[col] = value
+
+                                    column_order = list(assets_df.columns)
+                                    row_data = []
+                                    for col in column_order:
+                                        val = updated_series.get(col, "")
+                                        if isinstance(val, pd.Timestamp):
+                                            val = val.date()
+                                        if hasattr(val, "isoformat"):
+                                            val = val.isoformat()
+                                        if isinstance(val, float):
+                                            val = round(val, 2)
+                                        if pd.isna(val):
+                                            val = ""
+                                        row_data.append(val)
+
+                                    if update_data(SHEETS["assets"], row_index, row_data):
+                                        updates_applied += 1
+
+                                if updates_applied:
+                                    st.success(f"Saved {updates_applied} asset record(s).")
+                                    st.session_state.pop("asset_table_editor", None)
+                                    st.experimental_rerun()
+                                else:
+                                    st.info("No changes were saved.")
+
     with tab3:
         if not assets_df.empty:
             st.subheader("Asset Reports")
