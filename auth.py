@@ -175,10 +175,6 @@ def login_page():
         background: url("https://images.unsplash.com/photo-1517502166878-35c93a0072bb?auto=format&fit=crop&w=1920&q=80") no-repeat center center fixed !important;
         background-size: cover !important;
     }
-    div[data-testid="stAppViewPort"],
-    div[data-testid="block-container"] {
-        background: transparent !important;
-    }
     .auth-form-wrapper {
         background: rgba(255, 255, 255, 0.82);
         padding: 2.75rem 3.25rem;
