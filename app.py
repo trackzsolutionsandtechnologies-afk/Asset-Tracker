@@ -2,6 +2,7 @@
 Main Streamlit Application for Asset Tracker
 """
 import streamlit as st
+import streamlit.components.v1 as components
 import time
 from pathlib import Path
 from streamlit_option_menu import option_menu
@@ -100,14 +101,14 @@ st.markdown(
         background: #22c55e !important;
     }
 
-        button[title="Show sidebar"],
+    button[title="Show sidebar"],
     button[title="Hide sidebar"] {
         background-color: #38a169 !important;
         color: #ffffff !important;
         border-radius: 999px !important;
         border: none !important;
         box-shadow: 0 4px 12px rgba(56, 161, 105, 0.35) !important;
-        display: none !important
+        display: none !important;
     }
     button[title="Show sidebar"] svg,
     button[title="Hide sidebar"] svg { color: #ffffff !important; }
@@ -120,6 +121,7 @@ def load_custom_css() -> None:
     if css_path.exists():
         with css_path.open("r", encoding="utf-8") as css_file:
             st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
+    lock_sidebar_open()
     st.markdown(
         """
         <style>
@@ -145,6 +147,7 @@ def load_custom_css() -> None:
             border-radius: 999px !important;
             border: none !important;
             box-shadow: 0 4px 12px rgba(56, 161, 105, 0.35) !important;
+            display: none !important;
         }
         button[title="Show sidebar"] svg,
         button[title="Hide sidebar"] svg {
@@ -198,6 +201,38 @@ def load_auth_css() -> None:
     if css_path.exists():
         with css_path.open("r", encoding="utf-8") as css_file:
             st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
+
+
+def lock_sidebar_open() -> None:
+    """Ensure the sidebar stays visible and remove the toggle button."""
+    components.html(
+        """
+        <script>
+        const ensureSidebar = () => {
+            const doc = window.parent.document;
+            const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+            const collapsed = doc.querySelector('[data-testid="collapsedSidebar"]');
+            const toggleButtons = doc.querySelectorAll('button[title="Hide sidebar"], button[title="Show sidebar"]');
+            toggleButtons.forEach(btn => btn.style.display = 'none');
+            if (sidebar) {
+                sidebar.style.transform = 'translateX(0%)';
+                sidebar.style.marginLeft = '0';
+            }
+            if (collapsed) {
+                collapsed.style.transform = 'translateX(0%)';
+                collapsed.style.width = sidebar ? `${sidebar.offsetWidth}px` : '260px';
+            }
+        };
+        const init = () => {
+            ensureSidebar();
+            const observer = new MutationObserver(ensureSidebar);
+            observer.observe(window.parent.document.body, { childList: true, subtree: true });
+        };
+        window.requestAnimationFrame(init);
+        </script>
+        """,
+        height=0,
+    )
 
 
 def apply_wide_layout() -> None:
