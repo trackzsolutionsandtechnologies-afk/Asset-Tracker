@@ -78,9 +78,14 @@ def _persist_credentials(user_key: str, creds_json: str) -> None:
     row_index = find_row(SHEETS["drive_credentials"], "Username", user_key)
     row_data = [user_key, creds_json, datetime.utcnow().isoformat()]
     if row_index is None:
-        append_data(SHEETS["drive_credentials"], row_data)
+        success = append_data(SHEETS["drive_credentials"], row_data)
     else:
-        update_data(SHEETS["drive_credentials"], row_index, row_data)
+        success = update_data(SHEETS["drive_credentials"], row_index, row_data)
+    if not success:
+        st.warning(
+            "We connected to Google Drive but could not save the credential token. "
+            "Please try again or contact support."
+        )
 
 
 def _load_credentials_from_sheet(user_key: str) -> Optional[str]:
@@ -165,5 +170,7 @@ def disconnect_drive_credentials(user_id: Optional[str] = None) -> None:
     _ensure_credentials_sheet()
     row_index = find_row(SHEETS["drive_credentials"], "Username", user_key)
     if row_index is not None:
-        delete_data(SHEETS["drive_credentials"], row_index)
+        success = delete_data(SHEETS["drive_credentials"], row_index)
+        if not success:
+            st.warning("Failed to remove stored Drive credentials from Google Sheets.")
     st.experimental_rerun()
