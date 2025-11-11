@@ -66,7 +66,7 @@ def upload_file_to_drive(
     media = MediaIoBaseUpload(
         io.BytesIO(file_bytes),
         mimetype=mime_type,
-        resumable=False,
+        resumable=True,
     )
 
     file_metadata = {
@@ -75,11 +75,18 @@ def upload_file_to_drive(
     }
 
     try:
-        drive_file = (
-            service.files()
-            .create(body=file_metadata, media_body=media, fields=DRIVE_FILE_FIELDS)
-            .execute()
+        request = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields=DRIVE_FILE_FIELDS,
+            supportsAllDrives=True,
         )
+
+        drive_file = None
+        while drive_file is None:
+            status, drive_file = request.next_chunk()
+            if status and hasattr(status, "progress"):
+                st.write(f"Upload progress: {int(status.progress() * 100)}%")
 
         # Make file publicly readable via link
         service.permissions().create(
