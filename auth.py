@@ -234,6 +234,7 @@ def login_page():
                     "expires": (datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat(),
                 }
                 st.session_state[SESSION_KEYS["auth_token"]] = token
+                st.experimental_set_query_params(auth=token)
                 st.session_state["current_page"] = "Location"
                 st.success("Login successful!")
                 st.rerun()
