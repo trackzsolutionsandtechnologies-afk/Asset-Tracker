@@ -17,6 +17,11 @@ import numpy as np
 from datetime import datetime
 import subprocess
 import sys
+import streamlit as st
+import streamlit.components.v1 as components
+
+
+SCAN_COMPONENT = "streamlit_quagga_scanner"
 
 # Try to import barcode scanning libraries
 PYZBAR_AVAILABLE = False
@@ -222,38 +227,16 @@ def decode_barcode_from_array(array: np.ndarray):
         return None
 
 def barcode_scanner_page():
-    """Present guidance for implementing a high-quality barcode scanner."""
-    st.header("📸 Enterprise-Grade Barcode Scanning")
+    """Display an embedded JS barcode scanner."""
+    st.header("📸 Live Barcode Scanner")
 
-    st.markdown(
-        """
-Streamlit's Python camera widgets struggle with fast, accurate barcode recognition, especially for 1D formats.
-For production-ready scanning, embed a dedicated JavaScript scanner component.
-"""
+    scanned_value = components.iframe(
+        src="https://quaggajs.com",  # placeholder for JS scanner
+        height=600,
+        scrolling=True,
     )
 
-    st.markdown("### Recommended JavaScript libraries")
-    st.markdown(
-        """
-- [zxing-js/library](https://github.com/zxing-js/library) – battle-tested ZXing port with excellent 1D/2D support.
-- [QuaggaJS](https://github.com/ericblade/quagga2) – optimized for 1D retail codes like EAN and CODE128.
-"""
-    )
-
-    st.markdown("### Integration approach")
-    st.markdown(
-        """
-1. Create a `streamlit-components` wrapper that mounts a small JS app.
-2. Inside the component, initialize your chosen scanner and open the device camera.
-3. Emit decoded barcode text back to Streamlit via `Streamlit.setComponentValue`.
-4. Use `st.session_state` to persist the scanned value and look up assets on the Python side.
-"""
-    )
-
-    st.info(
-        "This Pure JS approach delivers native camera performance, continuous autofocus, "
-        "and reliable decoding compared to Python-based fallbacks."
-    )
+    st.write(scanned_value)
 
 def barcode_print_page():
     """Multiple barcode printing page"""
