@@ -21,6 +21,7 @@ from forms import (
     user_management_form,
 )
 from barcode_utils import barcode_scanner_page, barcode_print_page
+from contextlib import nullcontext
 
 
 
@@ -327,33 +328,44 @@ def main():
                 },
             },
         )
-    # Main content area
-    if selected == "Dashboard":
-        dashboard_page()
-    elif selected == "Location":
-        location_form()
-    elif selected == "Supplier":
-        supplier_form()
-    elif selected == "Category":
-        category_form()
-    elif selected == "Asset Master":
-        asset_master_form()
-    elif selected == "Asset Transfer":
-        asset_transfer_form()
-    elif selected == "Attachments":
-        attachments_form()
-    elif selected == "Maintenance":
-        asset_maintenance_form()
-    elif selected == "Depreciation":
-        asset_depreciation_form()
-    elif selected == "Assignment":
-        employee_assignment_form()
-    elif selected == "Users":
-        user_management_form()
-    elif selected == "Scan Barcode":
-        barcode_scanner_page()
-    elif selected == "Print Barcodes":
-        barcode_print_page()
+    if "active_page" not in st.session_state:
+        st.session_state["active_page"] = None
+
+    show_spinner = False
+    if st.session_state["active_page"] != selected:
+        show_spinner = st.session_state["active_page"] is not None
+        st.session_state["active_page"] = selected
+
+    spinner_context = st.spinner("Loading...") if show_spinner else nullcontext()
+
+    with spinner_context:
+        # Main content area
+        if selected == "Dashboard":
+            dashboard_page()
+        elif selected == "Location":
+            location_form()
+        elif selected == "Supplier":
+            supplier_form()
+        elif selected == "Category":
+            category_form()
+        elif selected == "Asset Master":
+            asset_master_form()
+        elif selected == "Asset Transfer":
+            asset_transfer_form()
+        elif selected == "Attachments":
+            attachments_form()
+        elif selected == "Maintenance":
+            asset_maintenance_form()
+        elif selected == "Depreciation":
+            asset_depreciation_form()
+        elif selected == "Assignment":
+            employee_assignment_form()
+        elif selected == "Users":
+            user_management_form()
+        elif selected == "Scan Barcode":
+            barcode_scanner_page()
+        elif selected == "Print Barcodes":
+            barcode_print_page()
 
 if __name__ == "__main__":
     main()
