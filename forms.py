@@ -1702,48 +1702,26 @@ def attachments_form():
         "Upload supporting documents or photos for an asset. Files are stored in Google Drive and the shareable link is recorded in Google Sheets."
     )
 
-    st.session_state.setdefault("attachment_asset_id_current", "")
-    st.session_state.setdefault("attachment_asset_name_current", "")
-
     tab_upload, tab_recent = st.tabs(["Upload Attachment", "Recent Attachments"])
 
     with tab_upload:
         with st.form("attachment_upload_form"):
+            selected_option = ""
             if assets_df.empty:
-                st.warning("No assets found. You can still enter the asset details manually.")
-                st.session_state["attachment_asset_id_current"] = st.session_state.get(
-                    "attachment_asset_id_current", ""
-                )
-                st.session_state["attachment_asset_name_current"] = st.session_state.get(
-                    "attachment_asset_name_current", ""
-                )
+                st.warning("No assets found. Attachments can only be uploaded once assets exist.")
             else:
                 asset_options = ["-- Select Asset --"] + [
                     f"{row.get('Asset ID', '').strip()} - {row.get('Asset Name', '').strip()}"
                     for _, row in assets_df.iterrows()
                     if str(row.get("Asset ID", "")).strip()
                 ]
-                selection = st.selectbox(
-                    "Choose an existing asset",
+                selected_option = st.selectbox(
+                    "Choose an asset *",
                     asset_options,
                     index=0,
                     key="attachment_asset_select",
                 )
-                if selection != "-- Select Asset --":
-                    parts = selection.split(" - ", 1)
-                    st.session_state["attachment_asset_id_current"] = parts[0].strip()
-                    st.session_state["attachment_asset_name_current"] = (
-                        parts[1].strip() if len(parts) > 1 else ""
-                    )
 
-            asset_id = st.text_input(
-                "Asset ID *",
-                key="attachment_asset_id_current",
-            )
-            asset_name = st.text_input(
-                "Asset Name *",
-                key="attachment_asset_name_current",
-            )
             uploaded_file = st.file_uploader(
                 "Attachment *",
                 type=["png", "jpg", "jpeg", "pdf", "doc", "docx", "xls", "xlsx"],
@@ -1754,11 +1732,11 @@ def attachments_form():
             submitted = st.form_submit_button("Upload Attachment", type="primary", use_container_width=True)
 
         if submitted:
-            if not asset_id.strip():
-                st.error("Please provide Asset ID.")
+            if assets_df.empty:
+                st.error("Cannot upload attachments because no assets are available.")
                 return
-            if not asset_name.strip():
-                st.error("Please provide Asset Name.")
+            if selected_option == "" or selected_option == "-- Select Asset --":
+                st.error("Please choose an asset before uploading.")
                 return
             if uploaded_file is None:
                 st.error("Please choose a file to upload.")
@@ -1766,8 +1744,11 @@ def attachments_form():
 
             file_bytes = uploaded_file.getvalue()
             mime_type = uploaded_file.type or "application/octet-stream"
+            parts = selected_option.split(" - ", 1)
+            asset_id = parts[0].strip()
+            asset_name = parts[1].strip() if len(parts) > 1 else ""
             timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-            safe_asset = asset_id.strip().replace(" ", "_")
+            safe_asset = asset_id.replace(" ", "_")
             drive_filename = f"{safe_asset}_{timestamp}_{uploaded_file.name}"
 
             with st.spinner("Uploading to Google Drive..."):
@@ -1791,8 +1772,8 @@ def attachments_form():
             success = append_data(SHEETS["attachments"], sheet_row)
             if success:
                 st.success("Attachment uploaded successfully!")
-                st.session_state["attachment_asset_id_current"] = ""
-                st.session_state["attachment_asset_name_current"] = ""
+                if "attachment_asset_select" in st.session_state:
+                    st.session_state["attachment_asset_select"] = "-- Select Asset --"
                 st.rerun()
             else:
                 st.error("Failed to record attachment in Google Sheets.")
