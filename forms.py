@@ -1711,7 +1711,7 @@ def attachments_form():
         return
 
     st.markdown(
-        "Upload supporting documents or photos for an asset. Files are stored in Google Drive and the shareable link is recorded in Google Sheets."
+        "Upload supporting documents or photos for an asset."
     )
 
     tab_upload, tab_recent = st.tabs(["Upload Attachment", "Recent Attachments"])
