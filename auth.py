@@ -171,20 +171,40 @@ def login_page():
     st.markdown(
     """
     <style>
+    div[data-testid="stAppViewContainer"] {
+        background: url("https://images.unsplash.com/photo-1517502166878-35c93a0072bb?auto=format&fit=crop&w=1920&q=80") no-repeat center center fixed !important;
+        background-size: cover !important;
+    }
+    .auth-form-wrapper {
+        background: rgba(255, 255, 255, 0.82);
+        padding: 2.75rem 3.25rem;
+        border-radius: 20px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.15);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+    }
     .auth-form-wrapper form[data-testid="stForm"] input {
-        background-color: #ff8000 !important;
-        color: rgba(255,255,255,0.7)  !important;
+        background-color: rgba(248, 250, 252, 0.9) !important;
+        color: #0f172a !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(148, 163, 184, 0.45) !important;
+    }
+    .auth-form-wrapper form[data-testid="stForm"] input:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
     }
     .auth-form-wrapper form button {
-        background-color: #BF092F !important;
-        border: 1px solid #BF092F !important;
+        background-color: #1d3a8c !important;
+        border: 1px solid #1d3a8c !important;
         color: #ffffff !important;
         font-weight: 600 !important;
-        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, transform 0.15s ease-in-out;
+        border-radius: 12px !important;
     }
     .auth-form-wrapper form button:hover {
-        background-color: #9c0725 !important;
-        border-color: #9c0725 !important;
+        background-color: #132867 !important;
+        border-color: #132867 !important;
+        transform: translateY(-1px);
     }
     header[data-testid="stHeader"], header {display: none !important;}
     div[data-testid="stToolbar"] {display: none !important;}
