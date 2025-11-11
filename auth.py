@@ -158,87 +158,120 @@ def reset_password(username: str, token: str, new_password: str) -> bool:
 
 
 def login_page():
-    """Display login page"""
+    """Display login page with both modern and simple layouts."""
     from app import load_auth_css  # avoid circular import at module load time
 
     load_auth_css()
 
     st.markdown(
-    """
-    <style>
-    .auth-form-wrapper form[data-testid="stForm"] input {
-        background-color: #ff8000 !important;
-        color: rgba(255,255,255,0.7)  !important;
-    }
-    .auth-form-wrapper form button {
-        background-color: #BF092F !important;
-        border: 1px solid #BF092F !important;
-        color: #ffffff !important;
-        font-weight: 600 !important;
-        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-    }
-    .auth-form-wrapper form button:hover {
-        background-color: #9c0725 !important;
-        border-color: #9c0725 !important;
-    }
-    header[data-testid="stHeader"], header {display: none !important;}
-    div[data-testid="stToolbar"] {display: none !important;}
-    button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
-    div[data-testid="stStatusWidget"],
-    button[data-testid="stActionButton"],
-    button[data-testid="stFeedbackButton"],
-    div[data-testid="stDeployStatus"],
-    div[class*="viewerBadge"],
-    a[class*="viewerBadge"] {
-        display: none !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+        """
+        <style>
+        .auth-form-wrapper form[data-testid="stForm"] input {
+            background-color: #ff8000 !important;
+            color: rgba(255,255,255,0.7)  !important;
+        }
+        .auth-form-wrapper form button {
+            background-color: #BF092F !important;
+            border: 1px solid #BF092F !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .auth-form-wrapper form button:hover {
+            background-color: #9c0725 !important;
+            border-color: #9c0725 !important;
+        }
+        header[data-testid="stHeader"], header {display: none !important;}
+        div[data-testid="stToolbar"] {display: none !important;}
+        button[kind="header"], div[data-testid="stDecoration"] {display: none !important;}
+        div[data-testid="stStatusWidget"],
+        button[data-testid="stActionButton"],
+        button[data-testid="stFeedbackButton"],
+        div[data-testid="stDeployStatus"],
+        div[class*="viewerBadge"],
+        a[class*="viewerBadge"] {
+            display: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.title("🔐 ASSET TRACKER")
 
-    st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
+    def _handle_login(username: str, password: str):
+        if authenticate_user(username, password):
+            st.session_state[SESSION_KEYS["authenticated"]] = True
+            st.session_state[SESSION_KEYS["username"]] = username
+            user_role = get_user_role(username)
+            st.session_state[SESSION_KEYS["user_role"]] = user_role
 
-    with st.form("login_form"):
-        username = st.text_input("Username", key="login_username")
-        password = st.text_input("Password", type="password", key="login_password")
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            submit_button = st.form_submit_button("Sign In", use_container_width=True, type="primary")
-        with col2:
-            forgot_password = st.form_submit_button(
-                "Forgot Password", use_container_width=True, type="secondary"
-            )
-        
-        if submit_button:
-            if authenticate_user(username, password):
-                st.session_state[SESSION_KEYS["authenticated"]] = True
-                st.session_state[SESSION_KEYS["username"]] = username
-                user_role = get_user_role(username)
-                st.session_state[SESSION_KEYS["user_role"]] = user_role
-
-                # Generate persistent auth token
-                token = secrets.token_urlsafe(32)
-                TOKEN_STORE[token] = {
-                    "username": username,
-                    "role": user_role,
-                    "expires": (datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat(),
-                }
-                st.session_state[SESSION_KEYS["auth_token"]] = token
-                st.session_state["current_page"] = "Location"
-                st.success("Login successful!")
-                st.rerun()
-            else:
-                st.error("Invalid username or password")
-        
-        if forgot_password:
-            st.session_state["show_forgot_password"] = True
+            token = secrets.token_urlsafe(32)
+            TOKEN_STORE[token] = {
+                "username": username,
+                "role": user_role,
+                "expires": (datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat(),
+            }
+            st.session_state[SESSION_KEYS["auth_token"]] = token
+            st.session_state["current_page"] = "Location"
+            st.success("Login successful!")
             st.rerun()
+        else:
+            st.error("Invalid username or password")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    def _trigger_forgot_password():
+        st.session_state["show_forgot_password"] = True
+        st.rerun()
+
+    modern_tab, simple_tab = st.tabs(["Modern Login", "Simple Login"])
+
+    with modern_tab:
+        st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
+        with st.form("login_form_modern"):
+            username = st.text_input("Username", key="login_username_modern")
+            password = st.text_input("Password", type="password", key="login_password_modern")
+            col1, col2 = st.columns([3, 1])
+
+            with col1:
+                submit_button = st.form_submit_button(
+                    "Sign In", use_container_width=True, type="primary"
+                )
+            with col2:
+                forgot_password = st.form_submit_button(
+                    "Forgot Password", use_container_width=True, type="secondary"
+                )
+
+            if submit_button:
+                _handle_login(username, password)
+
+            if forgot_password:
+                _trigger_forgot_password()
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with simple_tab:
+        st.info("This variant uses Streamlit's default layout without custom containers.")
+        with st.form("login_form_simple"):
+            simple_username = st.text_input("Username", key="login_username_simple")
+            simple_password = st.text_input(
+                "Password", type="password", key="login_password_simple"
+            )
+            col1, col2 = st.columns([3, 1])
+
+            with col1:
+                simple_submit = st.form_submit_button(
+                    "Sign In", use_container_width=True, type="primary"
+                )
+            with col2:
+                simple_forgot = st.form_submit_button(
+                    "Forgot Password", use_container_width=True, type="secondary"
+                )
+
+            if simple_submit:
+                _handle_login(simple_username, simple_password)
+
+            if simple_forgot:
+                _trigger_forgot_password()
 
 
 def forgot_password_page():
