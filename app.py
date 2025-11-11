@@ -39,11 +39,11 @@ st.markdown(
     <style>
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #e9f7ef 0%, #fefefe 100%) !important;
-        padding: 1.75rem 1.5rem 2.25rem 1.5rem !important;
+        padding: clamp(1.25rem, 5vw, 1.75rem) clamp(1rem, 6vw, 1.5rem) clamp(2rem, 6vw, 2.25rem) clamp(1rem, 6vw, 1.5rem) !important;
         border-right: 1px solid #d4e4d7 !important;
         box-shadow: 12px 0 24px rgba(0, 0, 0, 0.05);
-       min-width: 300px !important;
-       max-width: 300px !important;
+        min-width: clamp(200px, 38vw, 300px) !important;
+        max-width: clamp(200px, 38vw, 300px) !important;
     }
     [data-testid="stSidebar"] > div:first-child { padding-top: 1rem !important; }
     [data-testid="stSidebar"] .nav { gap: 0.5rem !important; }
@@ -51,10 +51,11 @@ st.markdown(
     [data-testid="stSidebar"] .nav-pills .nav-link {
         display: flex !important;
         align-items: center !important;
-        gap: 0.6rem !important;
-        padding: 0.65rem 0.95rem !important;
+        gap: clamp(0.45rem, 1.5vw, 0.6rem) !important;
+        padding: clamp(0.55rem, 1.8vw, 0.75rem) clamp(0.8rem, 2vw, 1rem) !important;
         border-radius: 14px !important;
         font-weight: 600 !important;
+        font-size: clamp(0.85rem, 2.5vw, 0.95rem) !important;
         color: #2f3e46 !important;
         background: rgba(255, 255, 255, 0.75) !important;
         border: 1px solid rgba(209, 224, 214, 0.8) !important;
@@ -62,8 +63,8 @@ st.markdown(
         backdrop-filter: blur(6px);
     }
     [data-testid="stSidebar"] .nav-pills .nav-link svg {
-        width: 1.05rem !important;
-        height: 1.05rem !important;
+        width: clamp(0.9rem, 4vw, 1.15rem) !important;
+        height: clamp(0.9rem, 4vw, 1.15rem) !important;
         color: inherit !important;
     }
     [data-testid="stSidebar"] .nav-pills .nav-link:hover {
