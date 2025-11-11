@@ -1789,7 +1789,7 @@ def attachments_form():
             if success:
                 st.success("Attachment uploaded successfully!")
                 if "attachment_asset_select" in st.session_state:
-                    st.session_state["attachment_asset_select"] = "-- Select Asset --"
+                    st.session_state.pop("attachment_asset_select", None)
                 st.rerun()
             else:
                 st.error("Failed to record attachment in Google Sheets.")
