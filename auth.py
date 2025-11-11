@@ -253,7 +253,7 @@ def login_page():
     if st.button("Create Account", use_container_width=True, type="secondary"):
         st.session_state["show_register"] = True
         st.session_state["show_forgot_password"] = False
-        st.experimental_rerun()
+        st.rerun()
 
 
 def forgot_password_page():

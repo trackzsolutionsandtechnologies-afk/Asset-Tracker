@@ -125,11 +125,11 @@ def register_page() -> None:
             st.success("Account created successfully! You can now sign in.")
             if st.button("Return to login", type="secondary"):
                 st.session_state["show_register"] = False
-                st.experimental_rerun()
+                st.rerun()
         else:
             st.error("Could not create the account. Please try again.")
 
     if st.button("Back to login", type="secondary"):
         st.session_state["show_register"] = False
-        st.experimental_rerun()
+        st.rerun()
 
