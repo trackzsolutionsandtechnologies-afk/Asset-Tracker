@@ -3784,7 +3784,7 @@ def asset_maintenance_form():
                 .unique()
                 .tolist()
             )
-                status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed", "Disposed"]
+            status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed", "Disposed"]
             filter_cols = st.columns(3, gap="medium")
             with filter_cols[0]:
                 selected_status_filter = st.selectbox(
