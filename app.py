@@ -32,7 +32,7 @@ from contextlib import nullcontext
 st.set_page_config(
     page_title="Asset Tracker",
     page_icon="📦",
-    layout="wide",
+    layout="centered",
     
     initial_sidebar_state="expanded"
 )
@@ -245,7 +245,7 @@ def apply_centered_login_layout() -> None:
 
 
 def _render_layout_styles() -> None:
-    layout_mode = st.session_state.get("layout_mode", "wide")
+    layout_mode = st.session_state.get("layout_mode", "centered")
     if layout_mode == "centered":
         css = """
         <style>

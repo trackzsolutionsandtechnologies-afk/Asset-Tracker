@@ -404,4 +404,5 @@ def logout():
             del st.session_state[key]
     if "logged_in" in st.session_state:
         st.session_state["logged_in"] = False
+    st.session_state["layout_mode"] = "centered"
     st.rerun()
