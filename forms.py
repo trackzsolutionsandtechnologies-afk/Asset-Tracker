@@ -5424,10 +5424,7 @@ def employee_assignment_form():
 
                                 new_assignee = username_value if status_value == "Assigned" else ""
                                 update_asset_assignment(asset_id_value, new_assignee, status_value)
-                                if (
-                                    asset_id_value != old_asset_id
-                                    or (old_status.lower() == "assigned" and status_value != "Assigned")
-                                ):
+                                if asset_id_value != old_asset_id:
                                     old_status_value = "" if old_status.lower() == "assigned" else old_status
                                     update_asset_assignment(old_asset_id, "", old_status_value)
                                 asset_name_value = get_assignment_asset_name(asset_id_value)
