@@ -87,7 +87,6 @@ ASSET_STATUS_OPTIONS = [
     "Retired",
     "Assigned",
     "Returned",
-    "Under Repair",
 ]
 
 def generate_location_id() -> str:
@@ -3785,7 +3784,7 @@ def asset_maintenance_form():
                 .unique()
                 .tolist()
             )
-            status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed", "Disposed"]
+                status_filter_options = ["All Status"] + ["Pending", "In Progress", "Completed", "Disposed"]
             filter_cols = st.columns(3, gap="medium")
             with filter_cols[0]:
                 selected_status_filter = st.selectbox(
@@ -4819,13 +4818,6 @@ def employee_assignment_form():
                         padding: 0.1rem 0.65rem;
                         text-align: center;
                     }
-                    [data-testid="stDataEditor"] [role="gridcell"][data-columnid="Status"] div[title="Under Repair"] {
-                        background-color: #ecc94b !important;
-                        color: #1A202C !important;
-                        border-radius: 20px;
-                        padding: 0.1rem 0.65rem;
-                        text-align: center;
-                    }
                     div[data-testid="stButton"] button:disabled,
                     div[data-testid="stButton"] button:disabled:hover,
                     div[data-testid="stButton"] button:disabled:focus {
@@ -4860,7 +4852,7 @@ def employee_assignment_form():
                     else {str(val).strip() for val in base_df.get("Issued By", pd.Series()).dropna()}
                 )
 
-                status_options_select = ["Assigned", "Returned", "Under Repair"]
+                status_options_select = ["Assigned", "Returned"]
                 condition_options_select = ["Working", "Damaged", "Used"]
 
                 editor_response = st.data_editor(
