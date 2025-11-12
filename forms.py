@@ -352,7 +352,7 @@ def location_form():
                 table_state["added_rows"] = []
             st.session_state.pop("location_table_view", None)
             st.session_state["location_pending_changes"] = False
-            st.experimental_rerun()
+            st.rerun()
 
         if save_clicked and has_changes:
             success = True
@@ -441,7 +441,7 @@ def location_form():
                 if "location_search" in st.session_state:
                     del st.session_state["location_search"]
                 st.session_state.pop("location_table_view", None)
-                st.experimental_rerun()
+                st.rerun()
 
         if (
             st.session_state.get("location_pending_changes", False)
@@ -894,7 +894,7 @@ def asset_depreciation_form():
                 table_state["added_rows"] = []
             st.session_state.pop("depreciation_table_view", None)
             st.session_state["depreciation_pending_changes"] = False
-            st.experimental_rerun()
+            st.rerun()
 
         if save_clicked and has_changes:
             success = True
@@ -1284,7 +1284,7 @@ def category_form():
                                 "category_id": generate_category_id(),
                                 "category_name": "",
                             }
-                            st.experimental_rerun()
+                            st.rerun()
                         else:
                             st.error("Failed to add category")
     
@@ -1375,7 +1375,7 @@ def category_form():
                                     "category_name": "Select category",
                                     "subcategory_name": "",
                                 }
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.error("Failed to add sub category")
     
@@ -1509,7 +1509,7 @@ def category_form():
                 table_state["added_rows"] = []
             st.session_state.pop("category_table_view", None)
             st.session_state["category_pending_changes"] = False
-            st.experimental_rerun()
+            st.rerun()
 
         if save_clicked and has_changes:
             success = True
@@ -1592,7 +1592,7 @@ def category_form():
                 st.session_state["category_pending_changes"] = False
                 st.session_state["category_save_success"] = True
                 st.session_state.pop("category_table_view", None)
-                st.experimental_rerun()
+                st.rerun()
 
         if (
             st.session_state.get("category_pending_changes", False)
@@ -1738,7 +1738,7 @@ def category_form():
                         table_state["added_rows"] = []
                     st.session_state.pop("subcategory_table_view", None)
                     st.session_state["subcategory_pending_changes"] = False
-                    st.experimental_rerun()
+                    st.rerun()
 
                 if save_clicked and has_changes:
                     success = True
@@ -1829,7 +1829,7 @@ def category_form():
                         st.session_state["subcategory_pending_changes"] = False
                         st.session_state["subcategory_save_success"] = True
                         st.session_state.pop("subcategory_table_view", None)
-                        st.experimental_rerun()
+                        st.rerun()
 
                 if (
                     st.session_state.get("subcategory_pending_changes", False)
