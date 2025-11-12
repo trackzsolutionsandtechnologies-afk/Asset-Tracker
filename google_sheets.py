@@ -269,6 +269,18 @@ def get_worksheet(sheet_name: str):
                     "Credentials",
                     "Updated At",
                 ])
+            elif sheet_name == SHEETS["asset_history"]:
+                worksheet.append_row([
+                    "Event Date",
+                    "Event Type",
+                    "Asset ID",
+                    "Asset Name",
+                    "Reference ID",
+                    "Actor",
+                    "Location / Details",
+                    "Status",
+                    "Notes",
+                ])
         
         return worksheet
     except gspread.exceptions.APIError as e:
