@@ -1354,6 +1354,18 @@ def category_form():
                     key="subcategory_form_name",
                 )
 
+                normalized_category_name = (
+                    selected_category_name
+                    if selected_category_name in category_names and selected_category_name != "Select category"
+                    else "Select category"
+                )
+                st.session_state["subcategory_form_state"] = {
+                    "auto_generate": auto_generate,
+                    "subcategory_id": subcategory_id,
+                    "category_name": normalized_category_name,
+                    "subcategory_name": subcategory_name,
+                }
+
                 submitted = st.form_submit_button("Add Sub Category", use_container_width=True, type="primary")
 
                 if submitted:
@@ -1361,6 +1373,13 @@ def category_form():
                         st.error("Please fill in all required fields")
                     elif not subcategories_df.empty and "SubCategory ID" in subcategories_df.columns and subcategory_id in subcategories_df["SubCategory ID"].values:
                         st.error("Sub Category ID already exists")
+                        if auto_generate:
+                            st.session_state["subcategory_form_state"].update(
+                                {
+                                    "subcategory_id": generate_subcategory_id(),
+                                    "subcategory_name": "",
+                                }
+                            )
                     else:
                         with st.spinner("Adding sub category..."):
                             if append_data(SHEETS["subcategories"], [subcategory_id, category_id, subcategory_name, category_name]):
