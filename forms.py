@@ -1499,16 +1499,15 @@ def category_form():
                         key="category_discard_changes",
                     )
 
-                if discard_clicked and has_changes:
-                    table_state = st.session_state.get("category_table_view")
-                    if isinstance(table_state, dict):
-                        table_state["edited_rows"] = {}
-                        table_state["edited_cells"] = {}
-                        table_state["deleted_rows"] = []
-                        table_state["added_rows"] = []
-                    st.session_state.pop("category_table_view", None)
-                    st.session_state["category_pending_changes"] = False
-                    st.experimental_rerun()
+        if discard_clicked and has_changes:
+            table_state = st.session_state.get("category_table_view")
+            if isinstance(table_state, dict):
+                table_state["edited_rows"] = {}
+                table_state["edited_cells"] = {}
+                table_state["deleted_rows"] = []
+                table_state["added_rows"] = []
+            st.session_state.pop("category_table_view", None)
+            st.session_state["category_pending_changes"] = False
 
                 if save_clicked and has_changes:
                     success = True
@@ -1583,15 +1582,14 @@ def category_form():
                                 st.error("Unable to locate category to update.")
                                 success = False
 
-                    if success:
-                        if success_messages:
-                            st.session_state["category_success_message"] = " ".join(success_messages)
-                            if "category_search" in st.session_state:
-                                del st.session_state["category_search"]
-                        st.session_state["category_pending_changes"] = False
-                        st.session_state["category_save_success"] = True
-                        st.session_state.pop("category_table_view", None)
-                        st.experimental_rerun()
+                if success:
+                    if success_messages:
+                        st.session_state["category_success_message"] = " ".join(success_messages)
+                        if "category_search" in st.session_state:
+                            del st.session_state["category_search"]
+                    st.session_state["category_pending_changes"] = False
+                    st.session_state["category_save_success"] = True
+                    st.session_state.pop("category_table_view", None)
 
                 if (
                     st.session_state.get("category_pending_changes", False)
@@ -1736,7 +1734,6 @@ def category_form():
                         table_state["added_rows"] = []
                     st.session_state.pop("subcategory_table_view", None)
                     st.session_state["subcategory_pending_changes"] = False
-                    st.experimental_rerun()
 
                 if save_clicked and has_changes:
                     success = True
@@ -1819,15 +1816,14 @@ def category_form():
                                 st.error("Unable to locate subcategory to update.")
                                 success = False
 
-                    if success:
-                        if success_messages:
-                            st.session_state["subcategory_success_message"] = " ".join(success_messages)
-                            if "subcategory_search" in st.session_state:
-                                del st.session_state["subcategory_search"]
-                        st.session_state["subcategory_pending_changes"] = False
-                        st.session_state["subcategory_save_success"] = True
-                        st.session_state.pop("subcategory_table_view", None)
-                        st.experimental_rerun()
+                if success:
+                    if success_messages:
+                        st.session_state["subcategory_success_message"] = " ".join(success_messages)
+                        if "subcategory_search" in st.session_state:
+                            del st.session_state["subcategory_search"]
+                    st.session_state["subcategory_pending_changes"] = False
+                    st.session_state["subcategory_save_success"] = True
+                    st.session_state.pop("subcategory_table_view", None)
 
                 if (
                     st.session_state.get("subcategory_pending_changes", False)
