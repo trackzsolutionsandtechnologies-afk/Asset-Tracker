@@ -282,7 +282,8 @@ def main():
             register_page()
         else:
             login_page()
-        return
+        if not check_authentication():
+            return
     
     # User is authenticated - show main application
     load_custom_css()

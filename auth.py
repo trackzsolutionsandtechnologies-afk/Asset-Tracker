@@ -163,14 +163,18 @@ def login_page():
 
     load_auth_css()
 
-    st.session_state.setdefault("login_username", "")
-    st.session_state.setdefault("login_password", "")
-    st.session_state.setdefault("login_error", "")
-
     if st.session_state.get("logged_in", False):
         st.session_state[SESSION_KEYS["authenticated"]] = True
         st.session_state.setdefault("current_page", "Dashboard")
         return
+
+    st.session_state.setdefault("login_form_state", {"username": "", "password": ""})
+    st.session_state.setdefault("login_form_version", 0)
+    st.session_state.setdefault("login_error", "")
+    form_state = st.session_state["login_form_state"]
+    form_version = st.session_state["login_form_version"]
+    username_key = f"login_username_{form_version}"
+    password_key = f"login_password_{form_version}"
 
     st.markdown(
     """
@@ -211,8 +215,8 @@ def login_page():
     st.markdown('<div class="auth-form-wrapper">', unsafe_allow_html=True)
 
     with st.form("login_form"):
-        username = st.text_input("Username", key="login_username")
-        password = st.text_input("Password", type="password", key="login_password")
+        username = st.text_input("Username", value=form_state["username"], key=username_key)
+        password = st.text_input("Password", type="password", value=form_state["password"], key=password_key)
         col1, col2 = st.columns([3, 1])
         
         with col1:
@@ -223,6 +227,8 @@ def login_page():
             )
         
         if submit_button:
+            form_state["username"] = username
+            form_state["password"] = password
             if authenticate_user(username, password):
                 st.session_state["logged_in"] = True
                 st.session_state[SESSION_KEYS["authenticated"]] = True
@@ -240,14 +246,18 @@ def login_page():
                 st.session_state[SESSION_KEYS["auth_token"]] = token
                 st.experimental_set_query_params()
                 st.session_state["current_page"] = "Location"
-                st.session_state["login_username"] = ""
-                st.session_state["login_password"] = ""
+                st.session_state["login_form_state"] = {"username": "", "password": ""}
+                st.session_state["login_form_version"] += 1
                 st.session_state["login_error"] = ""
+                return
             else:
                 st.session_state["login_error"] = "Invalid username or password"
+                form_state["password"] = ""
         
         if forgot_password:
             st.session_state["show_forgot_password"] = True
+            form_state["password"] = ""
+            st.session_state["login_error"] = ""
             return
 
     st.markdown("</div>", unsafe_allow_html=True)
