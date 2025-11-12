@@ -2043,9 +2043,12 @@ def asset_master_form():
                 with second_cols[1]:
                     model_serial = st.text_input("Model / Serial No", key=asset_form_keys["model_serial"])
                 with second_cols[2]:
+                    purchase_date_default = st.session_state.get(
+                        asset_form_keys["purchase_date"], datetime.now().date()
+                    )
                     purchase_date = st.date_input(
                         "Purchase Date",
-                        value=st.session_state.get(asset_form_keys["purchase_date"], datetime.now().date()),
+                        value=purchase_date_default,
                         key=asset_form_keys["purchase_date"],
                     )
 
