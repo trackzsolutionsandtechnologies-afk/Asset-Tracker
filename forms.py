@@ -224,7 +224,7 @@ def location_form():
         if "location_success_message" in st.session_state:
             st.success(st.session_state["location_success_message"])
             del st.session_state["location_success_message"]
-
+        
         if df.empty or "Location ID" not in df.columns:
             st.info("No locations found. Add a new location using the 'Add New Location' tab.")
             return
@@ -246,14 +246,14 @@ def location_form():
                 search_mask |= filtered_df["Location Name"].astype(str).str.contains(search_term, case=False, na=False)
             filtered_df = filtered_df[search_mask]
 
-        if filtered_df.empty:
+                if filtered_df.empty:
             if search_term:
                 st.info(f"No locations found matching '{search_term}'.")
             else:
                 st.info("No locations found. Add a new location using the 'Add New Location' tab.")
             return
-
-        st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
+            
+                st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
 
         st.markdown(
             """
@@ -376,7 +376,7 @@ def location_form():
                                     f"🗑️ Location '{target_row.get('Location Name', '')}' "
                                     f"(ID: {target_row.get('Location ID', '')}) deleted."
                                 )
-                            else:
+            else:
                                 st.error("Failed to delete location.")
                                 success = False
                         else:
@@ -415,7 +415,7 @@ def location_form():
                     ]
                     if not match_df.empty:
                         original_idx = int(match_df.index[0])
-                        column_order = list(df.columns) if not df.empty else expected_headers
+                                        column_order = list(df.columns) if not df.empty else expected_headers
                         updated_row = []
                         for col in column_order:
                             if col == "Location ID":
@@ -438,8 +438,8 @@ def location_form():
             if success:
                 st.session_state["location_pending_changes"] = False
                 st.session_state["location_save_success"] = True
-                if "location_search" in st.session_state:
-                    del st.session_state["location_search"]
+                                            if "location_search" in st.session_state:
+                                                del st.session_state["location_search"]
                 st.session_state.pop("location_table_view", None)
                 st.experimental_rerun()
 
@@ -605,11 +605,11 @@ def asset_depreciation_form():
                     selected_asset_id = ""
                     asset_record = {}
                 else:
-                    selected_asset_id = next(
-                        (asset_id for label, asset_id in asset_options if label == selection),
-                        "",
-                    )
-                    asset_record = _get_asset_record(selected_asset_id)
+                selected_asset_id = next(
+                    (asset_id for label, asset_id in asset_options if label == selection),
+                    "",
+                )
+                asset_record = _get_asset_record(selected_asset_id)
 
                 default_cost = 0.0
                 if asset_record:
@@ -1383,7 +1383,7 @@ def category_form():
         if "category_success_message" in st.session_state:
             st.success(st.session_state["category_success_message"])
             del st.session_state["category_success_message"]
-
+        
         if categories_df.empty or "Category ID" not in categories_df.columns:
             st.info("No categories found. Add a new category using the 'Add Category' tab.")
         else:
@@ -1401,14 +1401,14 @@ def category_form():
                 )
                 filtered_df = filtered_df[mask]
 
-            if filtered_df.empty:
+                if filtered_df.empty:
                 if search_term:
                     st.info(f"No categories found matching '{search_term}'.")
-                else:
+            else:
                     st.info("No categories found. Add a new category using the 'Add Category' tab.")
             else:
                 st.caption(f"Showing {len(filtered_df)} of {len(categories_df)} category(ies)")
-
+                
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
                 is_admin = str(user_role).lower() == "admin"
 
@@ -1530,14 +1530,14 @@ def category_form():
                                 ]
                                 if not match_df.empty:
                                     original_idx = int(match_df.index[0])
-                                    if delete_data(SHEETS["categories"], original_idx):
+                                if delete_data(SHEETS["categories"], original_idx):
                                         success_messages.append(
                                             f"🗑️ Category '{target_row.get('Category Name', '')}' deleted."
                                         )
-                                    else:
+                                else:
                                         st.error("Failed to delete category.")
                                         success = False
-                                else:
+            else:
                                     st.error("Unable to locate category to delete.")
                                     success = False
                             else:
@@ -1575,10 +1575,10 @@ def category_form():
                                     success_messages.append(
                                         f"✏️ Category '{category_id_value}' updated."
                                     )
-                                else:
+                                    else:
                                     st.error(f"Failed to update category '{category_id_value}'.")
                                     success = False
-                            else:
+                else:
                                 st.error("Unable to locate category to update.")
                                 success = False
 
@@ -1601,7 +1601,7 @@ def category_form():
         if "subcategory_success_message" in st.session_state:
             st.success(st.session_state["subcategory_success_message"])
             del st.session_state["subcategory_success_message"]
-
+        
         if subcategories_df.empty or "SubCategory ID" not in subcategories_df.columns:
             st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
         else:
@@ -1622,14 +1622,14 @@ def category_form():
                     mask = mask | filtered_df["Category Name"].astype(str).str.contains(search_term, case=False, na=False)
                 filtered_df = filtered_df[mask]
 
-            if filtered_df.empty:
+                if filtered_df.empty:
                 if search_term:
                     st.info(f"No subcategories found matching '{search_term}'.")
-                else:
+            else:
                     st.info("No subcategories found. Add a new subcategory using the 'Add Sub Category' tab.")
             else:
                 st.caption(f"Showing {len(filtered_df)} of {len(subcategories_df)} subcategory(ies)")
-
+                
                 user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
                 is_admin = str(user_role).lower() == "admin"
 
@@ -1756,14 +1756,14 @@ def category_form():
                                 ]
                                 if not match_df.empty:
                                     original_idx = int(match_df.index[0])
-                                    if delete_data(SHEETS["subcategories"], original_idx):
+                                if delete_data(SHEETS["subcategories"], original_idx):
                                         success_messages.append(
                                             f"🗑️ Sub Category '{target_row.get('SubCategory Name', '')}' deleted."
                                         )
-                                    else:
+                                else:
                                         st.error("Failed to delete subcategory.")
                                         success = False
-                                else:
+            else:
                                     st.error("Unable to locate subcategory to delete.")
                                     success = False
                             else:
@@ -1809,18 +1809,18 @@ def category_form():
                                     success_messages.append(
                                         f"✏️ Sub Category '{subcat_id_value}' updated."
                                     )
-                                else:
+                            else:
                                     st.error(f"Failed to update subcategory '{subcat_id_value}'.")
                                     success = False
-                            else:
+                        else:
                                 st.error("Unable to locate subcategory to update.")
                                 success = False
 
                 if success:
                     if success_messages:
                         st.session_state["subcategory_success_message"] = " ".join(success_messages)
-                        if "subcategory_search" in st.session_state:
-                            del st.session_state["subcategory_search"]
+                                            if "subcategory_search" in st.session_state:
+                                                del st.session_state["subcategory_search"]
                     st.session_state["subcategory_pending_changes"] = False
                     st.session_state["subcategory_save_success"] = True
                     st.session_state.pop("subcategory_table_view", None)
