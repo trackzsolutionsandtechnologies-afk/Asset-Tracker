@@ -237,23 +237,17 @@ def lock_sidebar_open() -> None:
 
 
 def apply_wide_layout() -> None:
-    st.markdown(
-        """
-        <style>
-        div[data-testid="block-container"] {
-            max-width: 95% !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.session_state["layout_mode"] = "wide"
 
 
 def apply_centered_login_layout() -> None:
-    st.markdown(
-        """
+    st.session_state["layout_mode"] = "centered"
+
+
+def _render_layout_styles() -> None:
+    layout_mode = st.session_state.get("layout_mode", "wide")
+    if layout_mode == "centered":
+        css = """
         <style>
         div[data-testid="block-container"] {
             max-width: 780px !important;
@@ -263,9 +257,18 @@ def apply_centered_login_layout() -> None:
             margin-right: auto !important;
         }
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+    else:
+        css = """
+        <style>
+        div[data-testid="block-container"] {
+            max-width: 95% !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+        }
+        </style>
+        """
+    st.markdown(css, unsafe_allow_html=True)
 
 
 def main():
@@ -293,6 +296,7 @@ def main():
     if not check_authentication():
         load_auth_css()
         apply_centered_login_layout()
+        _render_layout_styles()
         auth_placeholder = st.empty()
         with auth_placeholder.container():
             # Show login, register, or forgot password page
@@ -310,6 +314,7 @@ def main():
     # User is authenticated - show main application
     load_custom_css()
     apply_wide_layout()
+    _render_layout_styles()
     username = st.session_state.get(SESSION_KEYS["username"], "User")
     if isinstance(username, str):
         display_name = username.strip() or "User"
