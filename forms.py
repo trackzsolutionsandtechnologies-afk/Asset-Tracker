@@ -2044,8 +2044,6 @@ def asset_master_form():
     """Asset Master Form"""
     st.header("📦 Asset Master Management")
     
-    MAX_ATTACHMENT_CHARS = 48000  # ~35 KB base64 fits Google Sheets cell limit
-
     asset_expected_headers = [
         "Asset ID",
         "Asset Name",
@@ -2131,7 +2129,6 @@ def asset_master_form():
             "condition": _key("asset_condition"),
             "status": _key("asset_status"),
             "remarks": _key("asset_remarks"),
-            "attachment": _key("asset_attachment"),
         }
 
         st.session_state.setdefault(asset_form_keys["auto_generate"], True)
@@ -2280,36 +2277,10 @@ def asset_master_form():
                     st.empty()
 
                 remarks = st.text_area("Remarks", key=asset_form_keys["remarks"])
-                attachment_file = st.file_uploader(
-                    "Attachment (Image or File)",
-                    type=None,
-                    help="Upload related documents or images.",
-                    key=asset_form_keys["attachment"],
-                )
-
-                attachment = ""
-                attachment_too_large = False
-                if attachment_file is not None:
-                    file_content = attachment_file.getvalue()
-                    encoded = base64.b64encode(file_content).decode("utf-8")
-                    if len(encoded) > MAX_ATTACHMENT_CHARS:
-                        st.warning(
-                            "Attachment is too large to store. Please upload a smaller file (approx. < 35 KB).",
-                            icon="⚠️",
-                        )
-                        attachment = ""
-                        attachment_too_large = True
-                    else:
-                        attachment = f"data:{attachment_file.type};name={attachment_file.name};base64,{encoded}"
-
                 submitted = st.form_submit_button("Add Asset", use_container_width=True)
 
                 if submitted:
-                    if attachment_file is not None and attachment == "" and attachment_too_large:
-                        st.error(
-                            "Attachment was not uploaded because it exceeds the allowed size. Please upload a smaller file."
-                        )
-                    elif not asset_id or not asset_name:
+                    if not asset_id or not asset_name:
                         st.error("Please fill in Asset ID and Asset Name")
                     elif not assets_df.empty and asset_id in assets_df["Asset ID"].values:
                         st.error("Asset ID already exists")
@@ -2333,7 +2304,7 @@ def asset_master_form():
                             condition,
                             status,
                             remarks,
-                            attachment,
+                            "",
                         ]
                         if append_data(SHEETS["assets"], data):
                             st.success("Asset added successfully!")
