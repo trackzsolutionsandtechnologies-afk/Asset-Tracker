@@ -1397,11 +1397,21 @@ def category_form():
             }
         form_state = st.session_state["category_form_state"]
 
-        with st.form("category_form"):
+        if "category_form_key" not in st.session_state:
+            st.session_state["category_form_key"] = 0
+        form_key = st.session_state["category_form_key"]
+
+        form_id = f"category_form_{form_key}"
+        auto_key = f"category_form_auto_generate_{form_key}"
+        id_auto_key = f"category_form_category_id_auto_{form_key}"
+        id_manual_key = f"category_form_category_id_manual_{form_key}"
+        name_key = f"category_form_category_name_{form_key}"
+
+        with st.form(form_id):
             auto_generate = st.checkbox(
                 "Auto-generate Category ID",
                 value=form_state["auto_generate"],
-                key="category_form_auto_generate",
+                key=auto_key,
             )
             if auto_generate:
                 if not form_state["auto_generate"]:
@@ -1411,20 +1421,24 @@ def category_form():
                     value=form_state["category_id"],
                     disabled=True,
                     help="Auto-generated unique identifier",
-                    key="category_form_category_id_auto",
+                    key=id_auto_key,
                 )
             else:
                 category_id = st.text_input(
                     "Category ID *",
                     value="" if form_state["auto_generate"] else form_state["category_id"],
                     help="Unique identifier for the category",
-                    key="category_form_category_id_manual",
+                    key=id_manual_key,
                 )
             category_name = st.text_input(
                 "Category Name *",
                 value=form_state["category_name"],
-                key="category_form_category_name",
+                key=name_key,
             )
+
+            form_state["auto_generate"] = auto_generate
+            form_state["category_id"] = category_id
+            form_state["category_name"] = category_name
             
             submitted = st.form_submit_button("Add Category", use_container_width=True, type="primary")
             
@@ -1446,13 +1460,7 @@ def category_form():
                                 "category_id": generate_category_id(),
                                 "category_name": "",
                             }
-                            for reset_key in [
-                                "category_form_auto_generate",
-                                "category_form_category_id_auto",
-                                "category_form_category_id_manual",
-                                "category_form_category_name",
-                            ]:
-                                st.session_state.pop(reset_key, None)
+                            st.session_state["category_form_key"] += 1
                             st.rerun()
                         else:
                             st.error("Failed to add category")
