@@ -1519,6 +1519,9 @@ def category_form():
                 if has_changes:
                     st.session_state["category_save_success"] = False
 
+                save_clicked = False
+                discard_clicked = False
+
                 action_cols = st.columns([1, 1], gap="small")
                 with action_cols[0]:
                     save_clicked = st.button(
@@ -1536,7 +1539,7 @@ def category_form():
                         key="category_discard_changes",
                     )
 
-        if discard_clicked and has_changes:
+        if "discard_clicked" in locals() and discard_clicked and has_changes:
             table_state = st.session_state.get("category_table_view")
             if isinstance(table_state, dict):
                 table_state["edited_rows"] = {}
@@ -1547,7 +1550,7 @@ def category_form():
             st.session_state["category_pending_changes"] = False
             st.rerun()
 
-        if save_clicked and has_changes:
+        if "save_clicked" in locals() and save_clicked and has_changes:
             success = True
             success_messages: list[str] = []
 
