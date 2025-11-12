@@ -1486,7 +1486,9 @@ def category_form():
                     },
                 )
 
-                editor_state = st.session_state.get("category_table_view", {})
+                editor_state = st.session_state.get("category_table_view")
+                if not isinstance(editor_state, dict):
+                    editor_state = {}
                 edited_rows = deepcopy(editor_state.get("edited_rows", {}))
                 edited_cells = deepcopy(editor_state.get("edited_cells", {}))
                 deleted_rows = list(editor_state.get("deleted_rows", []))
