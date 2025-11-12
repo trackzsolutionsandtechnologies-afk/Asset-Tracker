@@ -2330,7 +2330,6 @@ def asset_master_form():
 
                     if discard_clicked:
                         st.session_state.pop("asset_table_editor", None)
-                        st.experimental_rerun()
 
                     if save_clicked:
                         if edited_df.equals(display_df):
@@ -2416,7 +2415,6 @@ def asset_master_form():
                                 if updates_applied:
                                     st.success(f"Saved {updates_applied} asset record(s).")
                                     st.session_state.pop("asset_table_editor", None)
-                                    st.experimental_rerun()
                                 else:
                                     st.info("No changes were saved.")
 
