@@ -294,7 +294,7 @@ def main():
     load_custom_css()
     apply_wide_layout()
     if st.session_state.pop("_force_app_rerun", False):
-        st.experimental_rerun()
+        st.rerun()
     username = st.session_state.get(SESSION_KEYS["username"], "User")
     if isinstance(username, str):
         display_name = username.strip() or "User"
