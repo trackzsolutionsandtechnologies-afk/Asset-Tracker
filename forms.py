@@ -2375,16 +2375,31 @@ def asset_master_form():
                     )
 
                     editor_state = st.session_state.get("asset_table_editor")
-                    edited_rows: dict[str, dict] = {}
-                    edited_cells: dict[str, dict] = {}
-                    deleted_rows: list = []
-                    added_rows: list = []
 
-                    if isinstance(editor_state, dict):
-                        edited_rows = editor_state.get("edited_rows") or {}
-                        edited_cells = editor_state.get("edited_cells") or {}
-                        deleted_rows = editor_state.get("deleted_rows") or []
-                        added_rows = editor_state.get("added_rows") or []
+                    def _state_get(state_obj, attr: str, default):
+                        if state_obj is None:
+                            return default
+                        if isinstance(state_obj, dict):
+                            return state_obj.get(attr) or default
+                        return getattr(state_obj, attr, default) or default
+
+                    edited_rows = _state_get(editor_state, "edited_rows", {})
+                    edited_cells = _state_get(editor_state, "edited_cells", {})
+                    deleted_rows = _state_get(editor_state, "deleted_rows", [])
+                    added_rows = _state_get(editor_state, "added_rows", [])
+
+                    def _normalize_idx(idx_value):
+                        try:
+                            return int(idx_value)
+                        except (TypeError, ValueError):
+                            return idx_value
+
+                    def _get_edits(source_dict, idx_value):
+                        if not source_dict:
+                            return {}
+                        if idx_value in source_dict:
+                            return source_dict[idx_value]
+                        return source_dict.get(str(idx_value), {})
 
                     has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
                     if not has_changes:
@@ -2418,100 +2433,108 @@ def asset_master_form():
                         if not has_changes or edited_df.equals(display_df):
                             st.info("No changes detected.")
                         else:
+                            if added_rows:
+                                st.warning(
+                                    "Adding new assets from this view is not supported. Please use the 'Add New Asset' tab.",
+                                    icon="ℹ️",
+                                )
+                            if deleted_rows:
+                                st.warning(
+                                    "Deleting assets from this view is not supported yet.",
+                                    icon="ℹ️",
+                                )
+
                             editable_columns = [
                                 col for col in editor_columns if col != "Asset ID" and col in assets_df.columns
                             ]
-                            if not editable_columns or "Asset ID" not in assets_df.columns:
+                            if not editable_columns or "Asset ID" not in assets_df.columns or "Asset ID" not in display_df.columns:
                                 st.warning("Asset updates are unavailable because required columns are missing.")
                             else:
-                                original_indexed = display_df.set_index("Asset ID")
-                                edited_indexed = edited_df.set_index("Asset ID")
-                                updates_applied = 0
-                                failed_updates: list[str] = []
-                                missing_assets: list[str] = []
+                                rows_to_update: set[int] = set()
+                                for idx_key in list(edited_rows.keys()) + list(edited_cells.keys()):
+                                    norm_idx = _normalize_idx(idx_key)
+                                    if isinstance(norm_idx, int):
+                                        rows_to_update.add(norm_idx)
 
-                                for asset_id, edited_row in edited_indexed.iterrows():
-                                    if asset_id not in original_indexed.index:
-                                        continue
-                                    original_row = original_indexed.loc[asset_id]
-                                    changed = False
-                                    for col in editable_columns:
-                                        if col not in edited_row or col not in original_row:
-                                            continue
-                                        new_val = edited_row[col]
-                                        old_val = original_row[col]
-                                        if isinstance(new_val, datetime):
-                                            new_val = new_val.date()
-                                        if hasattr(new_val, "isoformat"):
-                                            new_cmp = new_val.isoformat()
-                                        else:
-                                            new_cmp = "" if pd.isna(new_val) else str(new_val).strip()
-
-                                        if isinstance(old_val, datetime):
-                                            old_val = old_val.date()
-                                        if hasattr(old_val, "isoformat"):
-                                            old_cmp = old_val.isoformat()
-                                        else:
-                                            old_cmp = "" if pd.isna(old_val) else str(old_val).strip()
-
-                                        if new_cmp != old_cmp:
-                                            changed = True
-                                            break
-
-                                    if not changed:
-                                        continue
-
-                                    match_rows = assets_df[
-                                        assets_df["Asset ID"].astype(str).str.strip()
-                                        == str(asset_id).strip()
-                                    ]
-                                    if match_rows.empty:
-                                        missing_assets.append(str(asset_id))
-                                        continue
-                                    row_index = int(match_rows.index[0])
-                                    updated_series = match_rows.iloc[0].copy()
-
-                                    for col in editable_columns:
-                                        if col not in edited_row or col not in updated_series:
-                                            continue
-                                        value = edited_row[col]
-                                        if isinstance(value, datetime):
-                                            value = value.date()
-                                        if isinstance(value, pd.Timestamp):
-                                            value = value.date()
-                                        updated_series.loc[col] = value
-
-                                    column_order = list(assets_df.columns)
-                                    row_data = []
-                                    for col in column_order:
-                                        val = updated_series.get(col, "")
-                                        if isinstance(val, pd.Timestamp):
-                                            val = val.date()
-                                        if hasattr(val, "isoformat"):
-                                            val = val.isoformat()
-                                        if isinstance(val, float):
-                                            val = round(val, 2)
-                                        if pd.isna(val):
-                                            val = ""
-                                        row_data.append(val)
-
-                                    if update_data(SHEETS["assets"], row_index, row_data):
-                                        updates_applied += 1
-                                    else:
-                                        failed_updates.append(str(asset_id))
-
-                                if updates_applied or failed_updates or missing_assets:
-                                    st.session_state["asset_save_result"] = {
-                                        "updated": updates_applied,
-                                        "failed": sorted(set(failed_updates)),
-                                        "missing": sorted(set(missing_assets)),
-                                    }
-                                    if updates_applied:
-                                        st.session_state.pop("asset_table_editor", None)
-                                        st.session_state["asset_pending_changes"] = False
-                                    st.rerun()
+                                if not rows_to_update:
+                                    st.info("No changes were detected in editable columns.")
                                 else:
-                                    st.info("No changes were saved.")
+                                    updates_applied = 0
+                                    failed_updates: list[str] = []
+                                    missing_assets: list[str] = []
+
+                                    for idx in sorted(rows_to_update):
+                                        if idx >= len(display_df):
+                                            continue
+                                        source_row = display_df.iloc[idx]
+                                        asset_id_value = str(source_row.get("Asset ID", "")).strip()
+                                        if not asset_id_value:
+                                            continue
+
+                                        match_rows = assets_df[
+                                            assets_df["Asset ID"].astype(str).str.strip()
+                                            == asset_id_value
+                                        ]
+                                        if match_rows.empty:
+                                            missing_assets.append(asset_id_value)
+                                            continue
+
+                                        row_index = int(match_rows.index[0])
+                                        updated_series = match_rows.iloc[0].copy()
+
+                                        edits = dict(_get_edits(edited_rows, idx))
+                                        cell_edits = _get_edits(edited_cells, idx)
+                                        if cell_edits:
+                                            edits.update(cell_edits)
+
+                                        if not edits:
+                                            continue
+
+                                        for column, new_value in edits.items():
+                                            if column not in editable_columns:
+                                                continue
+                                            value = new_value
+                                            if isinstance(value, datetime):
+                                                value = value.date()
+                                            if isinstance(value, pd.Timestamp):
+                                                value = value.date()
+                                            updated_series.loc[column] = value
+
+                                        column_order = list(assets_df.columns)
+                                        row_data: list[Any] = []
+                                        for column in column_order:
+                                            val = updated_series.get(column, "")
+                                            if isinstance(val, pd.Timestamp):
+                                                val = val.date()
+                                            if hasattr(val, "isoformat"):
+                                                val = val.isoformat()
+                                            if isinstance(val, float):
+                                                val = round(val, 2)
+                                            if pd.isna(val):
+                                                val = ""
+                                            row_data.append(val)
+
+                                        if update_data(SHEETS["assets"], row_index, row_data):
+                                            updates_applied += 1
+                                        else:
+                                            failed_updates.append(asset_id_value)
+
+                                    if updates_applied or failed_updates or missing_assets:
+                                        st.session_state["asset_save_result"] = {
+                                            "updated": updates_applied,
+                                            "failed": sorted(set(failed_updates)),
+                                            "missing": sorted(set(missing_assets)),
+                                        }
+                                        if updates_applied and not failed_updates and not missing_assets:
+                                            st.session_state.pop("asset_table_editor", None)
+                                            st.session_state["asset_pending_changes"] = False
+                                        else:
+                                            st.session_state["asset_pending_changes"] = bool(
+                                                failed_updates or missing_assets
+                                            )
+                                        st.rerun()
+                                    else:
+                                        st.info("No changes were saved.")
 
     with tab3:
         if assets_df.empty:
