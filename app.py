@@ -32,7 +32,7 @@ from contextlib import nullcontext
 st.set_page_config(
     page_title="Asset Tracker",
     page_icon="📦",
-    layout="centered",
+    layout="wide",
     
     initial_sidebar_state="expanded"
 )
@@ -251,6 +251,23 @@ def apply_wide_layout() -> None:
     )
 
 
+def apply_centered_login_layout() -> None:
+    st.markdown(
+        """
+        <style>
+        div[data-testid="block-container"] {
+            max-width: 780px !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def main():
     """Main application function"""
     
@@ -275,6 +292,7 @@ def main():
     # Check if user is authenticated
     if not check_authentication():
         load_auth_css()
+        apply_centered_login_layout()
         auth_placeholder = st.empty()
         with auth_placeholder.container():
             # Show login, register, or forgot password page
