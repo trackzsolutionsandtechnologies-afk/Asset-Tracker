@@ -163,10 +163,14 @@ def login_page():
 
     load_auth_css()
 
+    st.session_state.setdefault("login_username", "")
+    st.session_state.setdefault("login_password", "")
+    st.session_state.setdefault("login_error", "")
+
     if st.session_state.get("logged_in", False):
         st.session_state[SESSION_KEYS["authenticated"]] = True
         st.session_state.setdefault("current_page", "Dashboard")
-        st.rerun()
+        return
 
     st.markdown(
     """
@@ -236,16 +240,20 @@ def login_page():
                 st.session_state[SESSION_KEYS["auth_token"]] = token
                 st.experimental_set_query_params()
                 st.session_state["current_page"] = "Location"
-                st.success("Login successful!")
-                st.rerun()
+                st.session_state["login_username"] = ""
+                st.session_state["login_password"] = ""
+                st.session_state["login_error"] = ""
             else:
-                st.error("Invalid username or password")
+                st.session_state["login_error"] = "Invalid username or password"
         
         if forgot_password:
             st.session_state["show_forgot_password"] = True
-            st.rerun()
+            return
 
     st.markdown("</div>", unsafe_allow_html=True)
+
+    if st.session_state.get("login_error"):
+        st.error(st.session_state["login_error"])
 
 
 def forgot_password_page():
