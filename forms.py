@@ -1359,12 +1359,14 @@ def category_form():
                     if selected_category_name in category_names and selected_category_name != "Select category"
                     else "Select category"
                 )
-                st.session_state["subcategory_form_state"] = {
-                    "auto_generate": auto_generate,
-                    "subcategory_id": subcategory_id,
-                    "category_name": normalized_category_name,
-                    "subcategory_name": subcategory_name,
-                }
+                st.session_state["subcategory_form_state"].update(
+                    {
+                        "auto_generate": auto_generate,
+                        "subcategory_id": subcategory_id,
+                        "category_name": normalized_category_name,
+                        "subcategory_name": subcategory_name,
+                    }
+                )
 
                 submitted = st.form_submit_button("Add Sub Category", use_container_width=True, type="primary")
 
@@ -1389,7 +1391,7 @@ def category_form():
                                 if "subcategory_search" in st.session_state:
                                     del st.session_state["subcategory_search"]
                                 st.session_state["subcategory_form_state"] = {
-                                    "auto_generate": auto_generate,
+                                    "auto_generate": True,
                                     "subcategory_id": generate_subcategory_id(),
                                     "category_name": "Select category",
                                     "subcategory_name": "",
