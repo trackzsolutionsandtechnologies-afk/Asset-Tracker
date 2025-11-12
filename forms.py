@@ -1446,6 +1446,13 @@ def category_form():
                                 "category_id": generate_category_id(),
                                 "category_name": "",
                             }
+                            for reset_key in [
+                                "category_form_auto_generate",
+                                "category_form_category_id_auto",
+                                "category_form_category_id_manual",
+                                "category_form_category_name",
+                            ]:
+                                st.session_state.pop(reset_key, None)
                             st.rerun()
                         else:
                             st.error("Failed to add category")
