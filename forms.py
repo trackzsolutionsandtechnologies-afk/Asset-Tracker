@@ -4616,7 +4616,7 @@ def employee_assignment_form():
             with status_col:
                 status = st.selectbox(
                     "Status",
-                    ["Assigned", "Returned", "Under Repair"],
+                    ["Assigned", "Returned"],
                     key=f"assignment_status_{form_key}",
                 )
 
