@@ -3275,6 +3275,48 @@ def asset_maintenance_form():
                 suppliers_df["Supplier Name"].dropna().astype(str).str.strip().tolist()
             )
 
+        default_service_date = datetime.now().date()
+        default_supplier_option = supplier_options[0] if supplier_options else ""
+        if default_supplier_option == "Select supplier":
+            default_supplier_option = "Select supplier"
+
+        default_form_state = {
+            "auto_generate": True,
+            "maintenance_id": generate_maintenance_id(),
+            "asset_label": asset_option_labels[0],
+            "asset_id_text": "",
+            "maintenance_type": "Preventive",
+            "service_date": default_service_date,
+            "description": "",
+            "cost": 0.0,
+            "supplier_selection": default_supplier_option,
+            "supplier_text": "",
+            "next_due_date": default_service_date,
+            "status": "Pending",
+        }
+
+        if "maintenance_form_state" not in st.session_state:
+            st.session_state["maintenance_form_state"] = default_form_state.copy()
+
+        form_state = st.session_state["maintenance_form_state"]
+        form_state.setdefault("auto_generate", True)
+        if form_state["auto_generate"] and not form_state.get("maintenance_id"):
+            form_state["maintenance_id"] = generate_maintenance_id()
+        form_state.setdefault("asset_label", asset_option_labels[0])
+        if form_state["asset_label"] not in asset_option_labels:
+            form_state["asset_label"] = asset_option_labels[0]
+        form_state.setdefault("asset_id_text", "")
+        form_state.setdefault("maintenance_type", "Preventive")
+        form_state.setdefault("service_date", default_service_date)
+        form_state.setdefault("description", "")
+        form_state.setdefault("cost", 0.0)
+        form_state.setdefault("supplier_selection", default_supplier_option)
+        if supplier_options and form_state["supplier_selection"] not in supplier_options:
+            form_state["supplier_selection"] = supplier_options[0]
+        form_state.setdefault("supplier_text", "")
+        form_state.setdefault("next_due_date", form_state["service_date"])
+        form_state.setdefault("status", "Pending")
+
         form_css = f"""
         <style>
         div[data-testid="stForm"][aria-label="maintenance_form_{form_key}"] {{
@@ -3290,96 +3332,145 @@ def asset_maintenance_form():
         with st.form(f"maintenance_form_{form_key}"):
             auto_generate = st.checkbox(
                 "Auto-generate Maintenance ID",
-                value=True,
+                value=form_state["auto_generate"],
                 key=f"maintenance_auto_{form_key}",
             )
+            if auto_generate and not form_state["auto_generate"]:
+                form_state["maintenance_id"] = generate_maintenance_id()
+            if not auto_generate and form_state["auto_generate"]:
+                form_state["maintenance_id"] = ""
+            form_state["auto_generate"] = auto_generate
+
             if auto_generate:
-                if "generated_maintenance_id" not in st.session_state:
-                    st.session_state["generated_maintenance_id"] = generate_maintenance_id()
                 maintenance_id = st.text_input(
                     "Maintenance ID *",
-                    value=st.session_state["generated_maintenance_id"],
+                    value=form_state.get("maintenance_id", generate_maintenance_id()),
                     disabled=True,
                     key=f"maintenance_id_{form_key}",
                 )
             else:
                 maintenance_id = st.text_input(
                     "Maintenance ID *",
+                    value=form_state.get("maintenance_id", ""),
                     key=f"maintenance_manual_id_{form_key}",
                 )
-                if "generated_maintenance_id" in st.session_state:
-                    del st.session_state["generated_maintenance_id"]
+            form_state["maintenance_id"] = maintenance_id
 
             asset_col, type_col, date_col = st.columns(3, gap="medium")
             if len(asset_option_labels) > 1:
                 with asset_col:
+                    asset_index = (
+                        asset_option_labels.index(form_state["asset_label"])
+                        if form_state["asset_label"] in asset_option_labels
+                        else 0
+                    )
                     asset_label_selected = st.selectbox(
                         "Asset *",
                         asset_option_labels,
+                        index=asset_index,
                         key=f"maintenance_asset_{form_key}",
                     )
                     asset_id = asset_label_to_id.get(asset_label_selected, "")
+                    form_state["asset_label"] = asset_label_selected
+                    form_state["asset_id_text"] = ""
             else:
                 asset_label_selected = None
                 with asset_col:
                     asset_id = st.text_input(
                         "Asset ID *",
+                        value=form_state.get("asset_id_text", ""),
                         key=f"maintenance_asset_text_{form_key}",
                     )
                     st.warning("No assets found. Please add assets first.")
+                    form_state["asset_id_text"] = asset_id
+                    form_state["asset_label"] = asset_option_labels[0]
 
             with type_col:
+                type_options = ["Preventive", "Breakdown", "Calibration"]
+                type_index = (
+                    type_options.index(form_state.get("maintenance_type", "Preventive"))
+                    if form_state.get("maintenance_type", "Preventive") in type_options
+                    else 0
+                )
                 maintenance_type = st.selectbox(
                     "Maintenance Type *",
-                    ["Preventive", "Breakdown", "Calibration"],
+                    type_options,
+                    index=type_index,
                     key=f"maintenance_type_{form_key}",
                 )
+                form_state["maintenance_type"] = maintenance_type
 
             with date_col:
                 service_date = st.date_input(
                     "Maintenance Date *",
-                    value=datetime.now().date(),
+                    value=form_state.get("service_date", default_service_date),
                     key=f"maintenance_service_{form_key}",
                 )
+                form_state["service_date"] = service_date
 
-            description = st.text_area("Description", key=f"maintenance_description_{form_key}")
+            description = st.text_area(
+                "Description",
+                value=form_state.get("description", ""),
+                key=f"maintenance_description_{form_key}",
+            )
+            form_state["description"] = description
 
             cost_col, supplier_col, next_due_col = st.columns(3, gap="medium")
             with cost_col:
                 cost = st.number_input(
                     "Cost",
                     min_value=0.0,
-                    value=0.0,
+                    value=float(form_state.get("cost", 0.0) or 0.0),
                     step=0.01,
                     key=f"maintenance_cost_{form_key}",
                 )
+                form_state["cost"] = cost
             with supplier_col:
-                supplier_name = None
                 if supplier_options:
+                    supplier_index = (
+                        supplier_options.index(form_state.get("supplier_selection", supplier_options[0]))
+                        if form_state.get("supplier_selection", supplier_options[0]) in supplier_options
+                        else 0
+                    )
                     supplier_name = st.selectbox(
                         "Supplier",
                         supplier_options,
+                        index=supplier_index,
                         key=f"maintenance_supplier_{form_key}",
                     )
-                    if supplier_name == "Select supplier":
-                        supplier_name = ""
+                    form_state["supplier_selection"] = supplier_name
+                    form_state["supplier_text"] = ""
+                    supplier_value = "" if supplier_name in ("", "Select supplier") else supplier_name
                 else:
                     supplier_name = st.text_input(
                         "Supplier",
+                        value=form_state.get("supplier_text", ""),
                         key=f"maintenance_supplier_text_{form_key}",
                     )
+                    form_state["supplier_text"] = supplier_name
+                    form_state["supplier_selection"] = ""
+                    supplier_value = supplier_name
             with next_due_col:
                 next_due_date = st.date_input(
                     "Next Due Date",
-                    value=service_date,
+                    value=form_state.get("next_due_date", form_state.get("service_date", default_service_date)),
                     key=f"maintenance_next_due_{form_key}",
                 )
+                form_state["next_due_date"] = next_due_date
 
+            status_options = ["Pending", "In Progress", "Completed", "Disposed"]
+            status_index = (
+                status_options.index(form_state.get("status", "Pending"))
+                if form_state.get("status", "Pending") in status_options
+                else 0
+            )
             maintenance_status = st.selectbox(
                 "Status *",
-                ["Pending", "In Progress", "Completed", "Disposed"],
+                status_options,
+                index=status_index,
                 key=f"maintenance_status_{form_key}",
             )
+            form_state["status"] = maintenance_status
 
             submitted = st.form_submit_button(
                 "Add Maintenance Record",
@@ -3395,7 +3486,7 @@ def asset_maintenance_form():
                 elif not asset_id:
                     st.error("Please provide an Asset ID")
                 else:
-                    if supplier_options and supplier_name == "":
+                    if supplier_options and supplier_value == "":
                         st.error("Please select a Supplier")
                     else:
                         data_map = {
@@ -3405,7 +3496,7 @@ def asset_maintenance_form():
                             "Maintenance Date": service_date.strftime("%Y-%m-%d"),
                             "Description": description,
                             "Cost": f"{cost:.2f}",
-                            "Supplier": supplier_name,
+                            "Supplier": supplier_value,
                             "Next Due Date": next_due_date.strftime("%Y-%m-%d") if next_due_date else "",
                             "Status": maintenance_status,
                         }
@@ -3417,8 +3508,6 @@ def asset_maintenance_form():
                         data = [data_map.get(col, "") for col in column_order]
                         with st.spinner("Saving maintenance record..."):
                             if append_data(SHEETS["maintenance"], data):
-                                if "generated_maintenance_id" in st.session_state:
-                                    del st.session_state["generated_maintenance_id"]
                                 if asset_status_col:
                                     if maintenance_status == "In Progress":
                                         _update_asset_status_for_maintenance(assets_df, asset_status_col, asset_id, "Maintenance")
@@ -3433,9 +3522,13 @@ def asset_maintenance_form():
                                 st.session_state.pop("cached_sheet_maintenance_ts", None)
                                 st.session_state.pop("cached_sheet_assets", None)
                                 st.session_state.pop("cached_sheet_assets_ts", None)
-                                st.session_state["maintenance_form_key"] += 1
                                 if "maintenance_search" in st.session_state:
                                     del st.session_state["maintenance_search"]
+                                st.session_state["maintenance_form_state"] = default_form_state.copy()
+                                st.session_state["maintenance_form_state"]["maintenance_id"] = generate_maintenance_id()
+                                st.session_state["maintenance_form_state"]["service_date"] = default_service_date
+                                st.session_state["maintenance_form_state"]["next_due_date"] = default_service_date
+                                st.session_state["maintenance_form_key"] += 1
                                 st.rerun()
                             else:
                                 st.error("Failed to save maintenance record")
