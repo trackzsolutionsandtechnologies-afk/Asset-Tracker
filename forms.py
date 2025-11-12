@@ -2083,6 +2083,9 @@ def asset_master_form():
     categories_df = read_data(SHEETS["categories"])
     subcategories_df = read_data(SHEETS["subcategories"])
     users_df = read_data(SHEETS["users"])
+    assignments_df = read_data(SHEETS["assignments"])
+    transfers_df = read_data(SHEETS["transfers"])
+    maintenance_df = read_data(SHEETS["maintenance"])
     
     def find_column(df: pd.DataFrame, targets):
         for target in targets:
@@ -2116,7 +2119,7 @@ def asset_master_form():
     condition_options = ASSET_CONDITION_OPTIONS
     status_options = ASSET_STATUS_OPTIONS
 
-    tab1, tab2, tab3 = st.tabs(["Add New Asset", "View/Edit Assets", "Reports"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Add New Asset", "View/Edit Assets", "Reports", "Asset History"])
     
     with tab1:
         
@@ -2767,6 +2770,256 @@ def asset_master_form():
             mime="text/csv",
             key="download_asset_report_csv",
         )
+
+    with tab4:
+        history_records: list[dict[str, Any]] = []
+
+        def _to_date(date_value) -> Optional[datetime]:
+            if date_value in (None, "", "nan", "NaT"):
+                return None
+            if isinstance(date_value, datetime):
+                return date_value
+            if hasattr(date_value, "to_pydatetime"):
+                try:
+                    return date_value.to_pydatetime()
+                except Exception:
+                    pass
+            str_value = str(date_value).strip()
+            if not str_value:
+                return None
+            for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y"):
+                try:
+                    return datetime.strptime(str_value, fmt)
+                except ValueError:
+                    continue
+            try:
+                parsed = pd.to_datetime(str_value, errors="coerce")
+                if pd.isna(parsed):
+                    return None
+                return parsed.to_pydatetime()
+            except Exception:
+                return None
+
+        def _safe_str(value: Any) -> str:
+            if value is None or (isinstance(value, float) and pd.isna(value)):
+                return ""
+            return str(value).strip()
+
+        asset_id_column = find_column(
+            assets_df,
+            ["asset id", "asset id / barcode", "asset id/barcode", "asset id barcode", "assetid", "asset code", "barcode"],
+        )
+        asset_name_column = find_column(assets_df, ["asset name", "name"])
+        asset_name_map: dict[str, str] = {}
+        if not assets_df.empty and asset_id_column:
+            for _, asset_row in assets_df.iterrows():
+                asset_id_value = _safe_str(asset_row.get(asset_id_column, ""))
+                if not asset_id_value:
+                    continue
+                asset_name_map[asset_id_value.lower()] = _safe_str(
+                    asset_row.get(asset_name_column, "") if asset_name_column else ""
+                )
+
+        if not assignments_df.empty:
+            for _, assignment_row in assignments_df.iterrows():
+                asset_id_value = _safe_str(assignment_row.get("Asset ID", ""))
+                if not asset_id_value:
+                    continue
+                asset_name_value = asset_name_map.get(asset_id_value.lower(), "")
+                assignment_id_value = _safe_str(assignment_row.get("Assignment ID", ""))
+                username_value = _safe_str(assignment_row.get("Username", ""))
+                issued_by_value = _safe_str(assignment_row.get("Issued By", ""))
+                status_value = _safe_str(assignment_row.get("Status", ""))
+
+                assignment_date = _to_date(assignment_row.get("Assignment Date"))
+                if assignment_date:
+                    history_records.append(
+                        {
+                            "Event Date": assignment_date,
+                            "Event Type": "Assignment",
+                            "Asset ID": asset_id_value,
+                            "Asset Name": asset_name_value,
+                            "Reference ID": assignment_id_value,
+                            "Actor": username_value,
+                            "Location / Details": "",
+                            "Status": status_value or "Assigned",
+                            "Notes": f"Issued by {issued_by_value}" if issued_by_value else "",
+                        }
+                    )
+
+                return_date = _to_date(assignment_row.get("Return Date"))
+                if return_date:
+                    history_records.append(
+                        {
+                            "Event Date": return_date,
+                            "Event Type": "Return",
+                            "Asset ID": asset_id_value,
+                            "Asset Name": asset_name_value,
+                            "Reference ID": assignment_id_value,
+                            "Actor": username_value,
+                            "Location / Details": "",
+                            "Status": "Returned",
+                            "Notes": f"Received by {issued_by_value}" if issued_by_value else "",
+                        }
+                    )
+
+        if not transfers_df.empty:
+            for _, transfer_row in transfers_df.iterrows():
+                asset_id_value = _safe_str(
+                    transfer_row.get("Asset ID", transfer_row.get("Asset", transfer_row.get("Asset Code", "")))
+                )
+                if not asset_id_value:
+                    continue
+                asset_name_value = asset_name_map.get(asset_id_value.lower(), "")
+                transfer_id_value = _safe_str(transfer_row.get("Transfer ID", transfer_row.get("ID", "")))
+                from_location = _safe_str(
+                    transfer_row.get("From Location", transfer_row.get("From", transfer_row.get("Source Location", "")))
+                )
+                to_location = _safe_str(
+                    transfer_row.get("To Location", transfer_row.get("To", transfer_row.get("Destination Location", "")))
+                )
+                approved_by = _safe_str(
+                    transfer_row.get("Approved By", transfer_row.get("Approver", transfer_row.get("Approved", "")))
+                )
+                transfer_date = _to_date(
+                    transfer_row.get("Transfer Date", transfer_row.get("Date", transfer_row.get("TransferDate", "")))
+                )
+                if transfer_date:
+                    details = " → ".join(filter(None, [from_location, to_location]))
+                    history_records.append(
+                        {
+                            "Event Date": transfer_date,
+                            "Event Type": "Transfer",
+                            "Asset ID": asset_id_value,
+                            "Asset Name": asset_name_value,
+                            "Reference ID": transfer_id_value,
+                            "Actor": approved_by,
+                            "Location / Details": details,
+                            "Status": "",
+                            "Notes": "",
+                        }
+                    )
+
+        if not maintenance_df.empty:
+            for _, maintenance_row in maintenance_df.iterrows():
+                asset_id_value = _safe_str(maintenance_row.get("Asset ID", ""))
+                if not asset_id_value:
+                    continue
+                asset_name_value = asset_name_map.get(asset_id_value.lower(), "")
+                maintenance_id_value = _safe_str(maintenance_row.get("Maintenance ID", maintenance_row.get("ID", "")))
+                maintenance_type = _safe_str(maintenance_row.get("Maintenance Type", ""))
+                supplier_value = _safe_str(maintenance_row.get("Supplier", ""))
+                status_value = _safe_str(maintenance_row.get("Status", ""))
+                description_value = _safe_str(maintenance_row.get("Description", ""))
+                maintenance_date = _to_date(
+                    maintenance_row.get("Maintenance Date", maintenance_row.get("Date", ""))
+                )
+                if maintenance_date:
+                    notes = maintenance_type
+                    if description_value:
+                        notes = f"{maintenance_type}: {description_value}" if maintenance_type else description_value
+                    history_records.append(
+                        {
+                            "Event Date": maintenance_date,
+                            "Event Type": "Maintenance",
+                            "Asset ID": asset_id_value,
+                            "Asset Name": asset_name_value,
+                            "Reference ID": maintenance_id_value,
+                            "Actor": supplier_value,
+                            "Location / Details": "",
+                            "Status": status_value,
+                            "Notes": notes,
+                        }
+                    )
+
+        if not history_records:
+            st.info("No historical events found for your assets yet.")
+        else:
+            history_df = pd.DataFrame(history_records)
+            history_df["Event Date"] = pd.to_datetime(history_df["Event Date"], errors="coerce")
+            history_df = history_df.dropna(subset=["Event Date"])
+            history_df = history_df.sort_values("Event Date", ascending=False).reset_index(drop=True)
+
+            event_types = sorted(history_df["Event Type"].unique().tolist())
+            asset_ids = sorted(history_df["Asset ID"].dropna().unique().tolist())
+            min_date = history_df["Event Date"].min().date()
+            max_date = history_df["Event Date"].max().date()
+
+            filter_cols = st.columns(4, gap="medium")
+            with filter_cols[0]:
+                selected_events = st.multiselect(
+                    "Event Type",
+                    options=event_types,
+                    default=event_types,
+                    key="asset_history_event_filter",
+                )
+            with filter_cols[1]:
+                selected_asset = st.selectbox(
+                    "Asset",
+                    options=["All Assets"] + asset_ids,
+                    key="asset_history_asset_filter",
+                )
+            with filter_cols[2]:
+                start_date = st.date_input(
+                    "Start Date",
+                    value=min_date,
+                    key="asset_history_start_date",
+                )
+            with filter_cols[3]:
+                end_date = st.date_input(
+                    "End Date",
+                    value=max_date,
+                    key="asset_history_end_date",
+                )
+
+            search_term = st.text_input(
+                "🔍 Search history",
+                placeholder="Search by reference ID, actor, notes, or status...",
+                key="asset_history_search",
+            ).strip().lower()
+
+            filtered_history = history_df.copy()
+            if selected_events:
+                filtered_history = filtered_history[filtered_history["Event Type"].isin(selected_events)]
+            if selected_asset != "All Assets":
+                filtered_history = filtered_history[filtered_history["Asset ID"] == selected_asset]
+            if start_date:
+                filtered_history = filtered_history[filtered_history["Event Date"] >= pd.Timestamp(start_date)]
+            if end_date:
+                filtered_history = filtered_history[filtered_history["Event Date"] <= pd.Timestamp(end_date)]
+            if search_term:
+                filtered_history = filtered_history[
+                    filtered_history.apply(
+                        lambda row: search_term
+                        in " ".join(
+                            [
+                                _safe_str(row.get("Reference ID", "")),
+                                _safe_str(row.get("Actor", "")),
+                                _safe_str(row.get("Location / Details", "")),
+                                _safe_str(row.get("Status", "")),
+                                _safe_str(row.get("Notes", "")),
+                            ]
+                        ).lower(),
+                        axis=1,
+                    )
+                ]
+
+            if filtered_history.empty:
+                st.warning("No history records match the current filters.")
+            else:
+                display_history = filtered_history.copy()
+                display_history["Event Date"] = display_history["Event Date"].dt.strftime("%Y-%m-%d")
+                st.dataframe(display_history, hide_index=True, use_container_width=True)
+
+                excel_buffer = BytesIO()
+                filtered_history.sort_values("Event Date").to_excel(excel_buffer, index=False)
+                st.download_button(
+                    "Download history (Excel)",
+                    data=excel_buffer.getvalue(),
+                    file_name="asset_history.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                )
 
 
 def attachments_form():
