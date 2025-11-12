@@ -2960,15 +2960,27 @@ def asset_master_form():
                     display_history["Event Date"] = display_history["Event Date"].dt.strftime("%Y-%m-%d")
                     st.dataframe(display_history, hide_index=True, use_container_width=True)
 
-                    excel_buffer = BytesIO()
-                    filtered_history.sort_values("Event Date").to_excel(excel_buffer, index=False)
-                    st.download_button(
-                        "Download history (Excel)",
-                        data=excel_buffer.getvalue(),
-                        file_name="asset_history.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True,
-                    )
+                    sorted_history = filtered_history.sort_values("Event Date")
+                    try:
+                        excel_buffer = BytesIO()
+                        sorted_history.to_excel(excel_buffer, index=False)
+                        st.download_button(
+                            "Download history (Excel)",
+                            data=excel_buffer.getvalue(),
+                            file_name="asset_history.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True,
+                        )
+                    except ModuleNotFoundError:
+                        csv_bytes = sorted_history.to_csv(index=False).encode("utf-8")
+                        st.download_button(
+                            "Download history (CSV)",
+                            data=csv_bytes,
+                            file_name="asset_history.csv",
+                            mime="text/csv",
+                            use_container_width=True,
+                        )
+                        st.info("Install the 'openpyxl' package to enable Excel downloads.", icon="ℹ️")
 
 
 def attachments_form():
