@@ -1296,6 +1296,10 @@ def category_form():
             # Clear message after showing
             del st.session_state["subcategory_success_message"]
 
+        if "subcategory_form_key" not in st.session_state:
+            st.session_state["subcategory_form_key"] = 0
+        form_key = st.session_state["subcategory_form_key"]
+
         if "subcategory_form_state" not in st.session_state:
             st.session_state["subcategory_form_state"] = {
                 "auto_generate": True,
@@ -1309,13 +1313,14 @@ def category_form():
             st.warning("Please add categories first before adding subcategories")
         else:
             category_names = ["Select category"] + categories_df["Category Name"].tolist()
-            with st.form("subcategory_form"):
+            with st.form(f"subcategory_form_{form_key}"):
                 selected_category_name = st.selectbox(
                     "Category *",
                     category_names,
                     index=category_names.index(sub_form_state["category_name"])
                     if sub_form_state["category_name"] in category_names
                     else 0,
+                    key=f"subcategory_category_select_{form_key}",
                 )
 
                 if selected_category_name != "Select category":
@@ -1328,7 +1333,7 @@ def category_form():
                 auto_generate = st.checkbox(
                     "Auto-generate Sub Category ID",
                     value=sub_form_state["auto_generate"],
-                    key="subcategory_form_auto_generate",
+                    key=f"subcategory_form_auto_generate_{form_key}",
                 )
                 if auto_generate:
                     if not sub_form_state["auto_generate"]:
@@ -1338,20 +1343,20 @@ def category_form():
                         value=sub_form_state["subcategory_id"],
                         disabled=True,
                         help="Auto-generated unique identifier",
-                        key="subcategory_form_id_auto",
+                        key=f"subcategory_form_id_auto_{form_key}",
                     )
                 else:
                     subcategory_id = st.text_input(
                         "Sub Category ID *",
                         value="" if sub_form_state["auto_generate"] else sub_form_state["subcategory_id"],
                         help="Unique identifier for the subcategory",
-                        key="subcategory_form_id_manual",
+                        key=f"subcategory_form_id_manual_{form_key}",
                     )
 
                 subcategory_name = st.text_input(
                     "Sub Category Name *",
                     value=sub_form_state["subcategory_name"],
-                    key="subcategory_form_name",
+                    key=f"subcategory_form_name_{form_key}",
                 )
 
                 normalized_category_name = (
@@ -1396,6 +1401,7 @@ def category_form():
                                     "category_name": "Select category",
                                     "subcategory_name": "",
                                 }
+                                st.session_state["subcategory_form_key"] += 1
                                 st.rerun()
                             else:
                                 st.error("Failed to add sub category")
