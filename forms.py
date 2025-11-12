@@ -995,224 +995,379 @@ def asset_depreciation_form():
 def supplier_form():
     """Supplier"""
     st.header("🚚 Supplier Management")
-    
-    df = read_data(SHEETS["suppliers"])
-    
-    tab1, tab2 = st.tabs(["Add New Supplier", "View/Edit Suppliers"])
-    
+
+    supplier_headers = ["Supplier ID", "Supplier Name"]
+    _ensure_headers_once("suppliers", supplier_headers)
+
+    suppliers_df = read_data(SHEETS["suppliers"])
+
+    tab1, tab2 = st.tabs(["Add Supplier", "View / Edit Suppliers"])
+
     with tab1:
-        
-        # Show success message if exists
         if "supplier_success_message" in st.session_state:
             st.success(st.session_state["supplier_success_message"])
-            # Clear message after showing
             del st.session_state["supplier_success_message"]
-        
-        # Initialize form key for reset
+
         if "supplier_form_key" not in st.session_state:
             st.session_state["supplier_form_key"] = 0
-        
-        with st.form(key=f"supplier_form_{st.session_state['supplier_form_key']}"):
-            auto_generate = st.checkbox("Auto-generate Supplier ID", value=True, key=f"auto_gen_sup_{st.session_state['supplier_form_key']}")
+        form_key = st.session_state["supplier_form_key"]
+
+        default_state = {
+            "auto_generate": True,
+            "supplier_id": generate_supplier_id(),
+            "supplier_name": "",
+        }
+
+        if "supplier_form_state" not in st.session_state:
+            st.session_state["supplier_form_state"] = default_state.copy()
+
+        form_state = st.session_state["supplier_form_state"]
+        form_state.setdefault("auto_generate", True)
+        form_state.setdefault("supplier_id", generate_supplier_id())
+        form_state.setdefault("supplier_name", "")
+
+        st.markdown(
+            f"""
+            <style>
+            div[data-testid="stForm"][aria-label="supplier_form_{form_key}"] {{
+                background-color: #ffffff !important;
+                padding: 1.5rem !important;
+                border-radius: 12px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.form(f"supplier_form_{form_key}"):
+            auto_generate = st.checkbox(
+                "Auto-generate Supplier ID",
+                value=form_state["auto_generate"],
+                key=f"supplier_auto_{form_key}",
+            )
+            if auto_generate and not form_state["auto_generate"]:
+                form_state["supplier_id"] = generate_supplier_id()
+            if not auto_generate and form_state["auto_generate"]:
+                form_state["supplier_id"] = ""
+            form_state["auto_generate"] = auto_generate
+
             if auto_generate:
-                # Generate ID once and store in session state
-                if "generated_supplier_id" not in st.session_state:
-                    st.session_state["generated_supplier_id"] = generate_supplier_id()
-                supplier_id = st.text_input("Supplier ID *", value=st.session_state["generated_supplier_id"], disabled=True, help="Auto-generated unique identifier", key=f"sup_id_{st.session_state['supplier_form_key']}")
+                supplier_id = st.text_input(
+                    "Supplier ID *",
+                    value=form_state.get("supplier_id", generate_supplier_id()),
+                    disabled=True,
+                    help="Auto-generated unique identifier",
+                    key=f"supplier_id_auto_{form_key}",
+                )
             else:
-                supplier_id = st.text_input("Supplier ID *", help="Unique identifier for the supplier", key=f"sup_id_manual_{st.session_state['supplier_form_key']}")
-                if "generated_supplier_id" in st.session_state:
-                    del st.session_state["generated_supplier_id"]
-            
-            supplier_name = st.text_input("Supplier Name *", key=f"sup_name_{st.session_state['supplier_form_key']}")
-            
+                supplier_id = st.text_input(
+                    "Supplier ID *",
+                    value=form_state.get("supplier_id", ""),
+                    help="Unique identifier for the supplier",
+                    key=f"supplier_id_manual_{form_key}",
+                )
+            form_state["supplier_id"] = supplier_id.strip()
+
+            supplier_name = st.text_input(
+                "Supplier Name *",
+                value=form_state.get("supplier_name", ""),
+                key=f"supplier_name_{form_key}",
+            )
+            form_state["supplier_name"] = supplier_name
+
             submitted = st.form_submit_button("Add Supplier", use_container_width=True, type="primary")
-            
+
             if submitted:
-                if not supplier_id or not supplier_name:
-                    st.error("Please fill in all required fields")
-                elif not df.empty and "Supplier ID" in df.columns and supplier_id in df["Supplier ID"].values:
-                    st.error("Supplier ID already exists")
+                supplier_id_value = form_state["supplier_id"].strip()
+                supplier_name_value = form_state["supplier_name"].strip()
+                if not supplier_id_value or not supplier_name_value:
+                    st.error("Please fill in all required fields.")
+                elif (
+                    not suppliers_df.empty
+                    and "Supplier ID" in suppliers_df.columns
+                    and supplier_id_value in suppliers_df["Supplier ID"].astype(str).values
+                ):
+                    st.error("Supplier ID already exists. Please enter a unique ID.")
                 else:
                     with st.spinner("Adding supplier..."):
-                        if append_data(SHEETS["suppliers"], [supplier_id, supplier_name]):
-                            # Clear generated supplier ID and reset form
-                            if "generated_supplier_id" in st.session_state:
-                                del st.session_state["generated_supplier_id"]
-                            # Clear search bar
-                            if "supplier_search" in st.session_state:
-                                del st.session_state["supplier_search"]
-                            # Set success message
-                            st.session_state["supplier_success_message"] = f"✅ Supplier '{supplier_name}' (ID: {supplier_id}) added successfully!"
-                            # Increment form key to reset form
+                        if append_data(SHEETS["suppliers"], [supplier_id_value, supplier_name_value]):
+                            st.session_state["supplier_success_message"] = (
+                                f"✅ Supplier '{supplier_name_value}' (ID: {supplier_id_value}) added successfully!"
+                            )
+                            st.session_state["supplier_form_state"] = default_state.copy()
+                            st.session_state["supplier_form_state"]["supplier_id"] = generate_supplier_id()
                             st.session_state["supplier_form_key"] += 1
+                            st.session_state.pop("supplier_search", None)
+                            st.session_state.pop("supplier_table_view", None)
                             st.rerun()
                         else:
-                            st.error("Failed to add supplier")
-    
+                            st.error("Failed to add supplier. Please try again.")
+
     with tab2:
-        # Show success message if exists
         if "supplier_success_message" in st.session_state:
             st.success(st.session_state["supplier_success_message"])
-            # Clear message after showing
             del st.session_state["supplier_success_message"]
-        
-        if not df.empty and "Supplier ID" in df.columns:
-            st.subheader("All Suppliers")
-            
-            # Search bar
-            search_term = st.text_input("🔍 Search Suppliers", placeholder="Search by Supplier ID or Name...", key="supplier_search")
-            
-            # Filter data based on search
-            if search_term:
-                mask = (
-                    df["Supplier ID"].astype(str).str.contains(search_term, case=False, na=False) |
-                    df["Supplier Name"].astype(str).str.contains(search_term, case=False, na=False)
+
+        user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
+        is_admin = str(user_role).lower() == "admin"
+
+        if suppliers_df.empty or "Supplier ID" not in suppliers_df.columns:
+            st.info("No suppliers found. Add a supplier using the 'Add Supplier' tab.")
+            return
+
+        search_term = st.text_input(
+            "🔍 Search Suppliers",
+            placeholder="Search by Supplier ID or Name...",
+            key="supplier_search",
+        ).strip()
+
+        filtered_df = suppliers_df.copy()
+        if search_term:
+            mask = (
+                filtered_df["Supplier ID"].astype(str).str.contains(search_term, case=False, na=False)
+                | filtered_df["Supplier Name"].astype(str).str.contains(search_term, case=False, na=False)
+            )
+            filtered_df = filtered_df[mask]
+
+        if filtered_df.empty:
+            st.info("No suppliers match the current search. Try adjusting your search terms.")
+            return
+
+        st.caption(f"Showing {len(filtered_df)} of {len(suppliers_df)} supplier(s)")
+
+        display_df = filtered_df[["Supplier ID", "Supplier Name"]].copy()
+
+        st.markdown(
+            """
+            <style>
+            [data-testid="stDataEditor"] thead th,
+            [data-testid="stDataEditor"] div[role="columnheader"] {
+                background-color: #BF092F !important;
+                color: #1A202C !important;
+                font-weight: 600 !important;
+            }
+            [data-testid="stDataEditor"] div[role="columnheader"] * {
+                color: #1A202C !important;
+            }
+            [data-testid="stDataEditor"] tbody td {
+                border-right: 1px solid #f0f0f0 !important;
+            }
+            [data-testid="stDataEditor"] tbody td:last-child {
+                border-right: none !important;
+            }
+            [data-testid="stDataEditor"] div[data-testid="stDataEditorPrimaryToolbar"] button[title*="Add row"] {
+                display: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stButton"] button:disabled,
+            div[data-testid="stButton"] button:disabled:hover,
+            div[data-testid="stButton"] button:disabled:focus {
+                background-color: #cbd5e0 !important;
+                color: #4a5568 !important;
+                border-color: #cbd5e0 !important;
+                cursor: not-allowed !important;
+                opacity: 1 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        editor_response = st.data_editor(
+            display_df,
+            hide_index=True,
+            use_container_width=True,
+            disabled=False,
+            column_config={
+                "Supplier ID": st.column_config.TextColumn("Supplier ID", disabled=True),
+                "Supplier Name": st.column_config.TextColumn("Supplier Name", disabled=False),
+            },
+            num_rows="dynamic",
+            key="supplier_table_view",
+        )
+
+        table_state = st.session_state.get("supplier_table_view")
+
+        def _state_get(state_obj, attr: str, default):
+            if state_obj is None:
+                return default
+            if isinstance(state_obj, dict):
+                return deepcopy(state_obj.get(attr) or default)
+            return deepcopy(getattr(state_obj, attr, default) or default)
+
+        edited_rows = _state_get(table_state, "edited_rows", {})
+        edited_cells = _state_get(table_state, "edited_cells", {})
+        deleted_rows = _state_get(table_state, "deleted_rows", [])
+        added_rows = _state_get(table_state, "added_rows", [])
+
+        def _normalize_idx(idx_value):
+            try:
+                return int(idx_value)
+            except (TypeError, ValueError):
+                return idx_value
+
+        def _get_edits(source_dict, idx_value):
+            if not source_dict:
+                return {}
+            if idx_value in source_dict:
+                return source_dict[idx_value]
+            return source_dict.get(str(idx_value), {})
+
+        st.session_state.setdefault("supplier_pending_changes", False)
+        st.session_state.setdefault("supplier_save_success", False)
+
+        has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+        st.session_state["supplier_pending_changes"] = has_changes
+        if has_changes:
+            st.session_state["supplier_save_success"] = False
+
+        action_cols = st.columns([1, 1], gap="small")
+        with action_cols[0]:
+            save_clicked = st.button(
+                "Save Changes",
+                type="primary",
+                use_container_width=True,
+                disabled=not has_changes,
+                key="supplier_save_changes",
+            )
+        with action_cols[1]:
+            discard_clicked = st.button(
+                "Discard Changes",
+                use_container_width=True,
+                disabled=not has_changes,
+                key="supplier_discard_changes",
+            )
+
+        if discard_clicked and has_changes:
+            if isinstance(table_state, dict):
+                table_state["edited_rows"] = {}
+                table_state["edited_cells"] = {}
+                table_state["deleted_rows"] = []
+                table_state["added_rows"] = []
+            st.session_state.pop("supplier_table_view", None)
+            st.session_state["supplier_pending_changes"] = False
+            st.rerun()
+
+        if save_clicked and has_changes:
+            success = True
+            success_messages: list[str] = []
+            warning_messages: list[str] = []
+
+            if added_rows:
+                warning_messages.append(
+                    "Adding suppliers from this view is not supported. Please use the 'Add Supplier' tab."
                 )
-                filtered_df = df[mask]
-                if filtered_df.empty:
-                    st.info(f"No suppliers found matching '{search_term}'")
-                    filtered_df = pd.DataFrame()
-            else:
-                filtered_df = df
-            
-            if not filtered_df.empty:
-                # Show count
-                st.caption(f"Showing {len(filtered_df)} of {len(df)} supplier(s)")
+                success = False
 
-                view_placeholder = st.empty()
-                edit_placeholder = st.empty()
-                
-                # Check if user is admin
-                user_role = st.session_state.get(SESSION_KEYS.get("user_role", "user_role"), "user")
-                is_admin = user_role.lower() == "admin"
-
-
-
-
-
-
-                
-                
-                # Table header - adjust columns based on admin status
-                if is_admin:
-                    header_cols = st.columns([3, 4, 1, 1, 1])
+            if deleted_rows:
+                if not is_admin:
+                    warning_messages.append("Only administrators can delete suppliers.")
+                    success = False
                 else:
-                    header_cols = st.columns([3, 4, 1, 1])
-
-                header_labels = ["**Supplier ID**", "**Supplier Name**", "**View**", "**Edit**"]
-                if is_admin:
-                    header_labels.append("**Delete**")
-
-                for col_widget, label in zip(header_cols, header_labels):
-                    with col_widget:
-                        st.write(label)
-                st.divider()
-
-                # Display table with edit/delete buttons
-                for idx, row in filtered_df.iterrows():
-                    # Get original index from df for delete/update operations
-                    # Convert to Python int to avoid JSON serialization issues
-                    if not df[df["Supplier ID"] == row.get('Supplier ID', '')].empty:
-                        original_idx = int(df[df["Supplier ID"] == row.get('Supplier ID', '')].index[0])
-                    else:
-                        original_idx = int(idx) if isinstance(idx, (int, type(pd.NA))) else 0
-
-                    if is_admin:
-                        col1, col2, col_view, col_edit, col_delete = st.columns([3, 4, 1, 1, 1])
-                    else:
-                        col1, col2, col_view, col_edit = st.columns([3, 4, 1, 1])
-
-                    with col1:
-                        st.write(row.get('Supplier ID', 'N/A'))
-                    with col2:
-                        st.write(row.get('Supplier Name', 'N/A'))
-                    with col_view:
-                        if st.button("👁️", key=f"supplier_view_{row.get('Supplier ID', idx)}", use_container_width=True, help="View details"):
-                            record = {
-                                "Supplier ID": row.get("Supplier ID", ""),
-                                "Supplier Name": row.get("Supplier Name", ""),
-                            }
-                            _open_view_modal(
-                                "supplier",
-                                f"Supplier Details: {row.get('Supplier Name', '')}",
-                                record,
-                                ["Supplier ID", "Supplier Name"],
-                            )
-                    with col_edit:
-                        edit_key = f"edit_sup_{row.get('Supplier ID', idx)}"
-                        if st.button("✏️", key=edit_key, use_container_width=True, help="Edit this supplier"):
-                            st.session_state["edit_supplier_id"] = row.get('Supplier ID', '')
-                            st.session_state["edit_supplier_idx"] = int(original_idx)  # Ensure it's a Python int
-                            st.rerun()
-                    # Only show delete button for admin users
-                    if is_admin:
-                        with col_delete:
-                            delete_key = f"delete_sup_{row.get('Supplier ID', idx)}"
-                            if st.button("🗑️", key=delete_key, use_container_width=True, help="Delete this supplier"):
-                                supplier_name_to_delete = row.get('Supplier Name', 'Unknown')
-                                supplier_id_to_delete = row.get('Supplier ID', 'Unknown')
+                    for delete_idx in sorted([_normalize_idx(idx) for idx in deleted_rows], reverse=True):
+                        if isinstance(delete_idx, int) and delete_idx < len(filtered_df):
+                            target_row = filtered_df.iloc[delete_idx]
+                            supplier_id_value = str(target_row.get("Supplier ID", "")).strip()
+                            match_df = suppliers_df[
+                                suppliers_df["Supplier ID"].astype(str).str.strip() == supplier_id_value
+                            ]
+                            if not match_df.empty:
+                                original_idx = int(match_df.index[0])
                                 if delete_data(SHEETS["suppliers"], original_idx):
-                                    # Set success message
-                                    st.session_state["supplier_success_message"] = f"✅ Supplier '{supplier_name_to_delete}' (ID: {supplier_id_to_delete}) deleted successfully!"
-                                    # Clear search bar
-                                    if "supplier_search" in st.session_state:
-                                        del st.session_state["supplier_search"]
-                                    st.rerun()
+                                    success_messages.append(
+                                        f"🗑️ Supplier '{target_row.get('Supplier Name', '')}' deleted."
+                                    )
                                 else:
-                                    st.error("Failed to delete supplier")
-                    
-                    st.divider()
-                _render_view_modal("supplier", view_placeholder)
-            elif search_term:
-                # Search returned no results, but search was performed
-                pass
-            else:
-                st.info("No suppliers found. Add a new supplier using the 'Add New Supplier' tab.")
+                                    st.error("Failed to delete supplier.")
+                                    success = False
+                            else:
+                                st.error("Unable to locate supplier for deletion.")
+                                success = False
+                        else:
+                            st.error("Unable to resolve supplier row for deletion.")
+                            success = False
 
-            # Edit form (shown when edit button is clicked)
-            if "edit_supplier_id" in st.session_state and st.session_state["edit_supplier_id"]:
-                with edit_placeholder.container():
-                    st.subheader("Edit Supplier")
-                    edit_id = st.session_state["edit_supplier_id"]
-                    edit_idx = st.session_state.get("edit_supplier_idx", 0)
-                    
-                    supplier_rows = df[df["Supplier ID"] == edit_id]
-                    if not supplier_rows.empty:
-                        supplier = supplier_rows.iloc[0]
-                        
-                        with st.form("edit_supplier_form"):
-                            new_supplier_id = st.text_input("Supplier ID", value=supplier.get("Supplier ID", ""), disabled=True)
-                            new_supplier_name = st.text_input("Supplier Name", value=supplier.get("Supplier Name", ""))
-                            
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.form_submit_button("Update Supplier", use_container_width=True):
-                                    with st.spinner("Updating supplier..."):
-                                        if update_data(SHEETS["suppliers"], edit_idx, [new_supplier_id, new_supplier_name]):
-                                            # Set success message
-                                            st.session_state["supplier_success_message"] = f"✅ Supplier '{new_supplier_name}' (ID: {new_supplier_id}) updated successfully!"
-                                            if "edit_supplier_id" in st.session_state:
-                                                del st.session_state["edit_supplier_id"]
-                                            if "edit_supplier_idx" in st.session_state:
-                                                del st.session_state["edit_supplier_idx"]
-                                            # Clear search bar
-                                            if "supplier_search" in st.session_state:
-                                                del st.session_state["supplier_search"]
-                                            st.rerun()
-                                        else:
-                                            st.error("Failed to update supplier")
-                            with col2:
-                                if st.form_submit_button("Cancel", use_container_width=True):
-                                    if "edit_supplier_id" in st.session_state:
-                                        del st.session_state["edit_supplier_id"]
-                                    if "edit_supplier_idx" in st.session_state:
-                                        del st.session_state["edit_supplier_idx"]
-                                    st.rerun()
+            rows_to_update: set[int] = set()
+            for idx_key in list(edited_rows.keys()) + list(edited_cells.keys()):
+                norm_idx = _normalize_idx(idx_key)
+                if isinstance(norm_idx, int):
+                    rows_to_update.add(norm_idx)
+
+            if success and rows_to_update:
+                column_order = list(suppliers_df.columns)
+                for idx in sorted(rows_to_update):
+                    if idx >= len(filtered_df):
+                        continue
+                    current_row = filtered_df.iloc[idx].copy()
+                    edits = dict(_get_edits(edited_rows, idx))
+                    cell_changes = _get_edits(edited_cells, idx)
+                    if cell_changes:
+                        edits.update(cell_changes)
+                    if not edits:
+                        continue
+
+                    for column, new_value in edits.items():
+                        current_row[column] = new_value
+
+                    supplier_id_value = str(current_row.get("Supplier ID", "")).strip()
+                    supplier_name_value = str(current_row.get("Supplier Name", "")).strip()
+
+                    if not supplier_id_value:
+                        continue
+
+                    match_df = suppliers_df[
+                        suppliers_df["Supplier ID"].astype(str).str.strip() == supplier_id_value
+                    ]
+                    if match_df.empty:
+                        st.error("Unable to locate supplier for update.")
+                        success = False
+                        continue
+
+                    original_idx = int(match_df.index[0])
+                    updated_row: list[str] = []
+                    for column in column_order:
+                        if column == "Supplier ID":
+                            updated_row.append(supplier_id_value)
+                        elif column == "Supplier Name":
+                            updated_row.append(supplier_name_value)
+                        else:
+                            value = match_df.iloc[0].get(column, "")
+                            if pd.isna(value):
+                                value = ""
+                            updated_row.append(str(value))
+
+                    if update_data(SHEETS["suppliers"], original_idx, updated_row):
+                        success_messages.append(f"✏️ Supplier '{supplier_id_value}' updated.")
                     else:
-                        st.warning("Selected supplier not found in data.")
-        else:
-            st.info("No suppliers found. Add a new supplier using the 'Add New Supplier' tab.")
+                        st.error(f"Failed to update supplier '{supplier_id_value}'.")
+                        success = False
+
+            if warning_messages:
+                for msg in warning_messages:
+                    st.warning(msg, icon="ℹ️")
+
+            if success and success_messages:
+                st.session_state["supplier_success_message"] = " ".join(success_messages)
+                st.session_state["supplier_pending_changes"] = False
+                st.session_state["supplier_save_success"] = True
+                st.session_state.pop("supplier_table_view", None)
+                st.session_state.pop("supplier_search", None)
+                st.rerun()
+            elif success and not success_messages:
+                st.info("No changes were saved.")
+
+        if st.session_state.get("supplier_pending_changes", False) and not st.session_state.get(
+            "supplier_save_success", False
+        ):
+            st.info("You have unsaved supplier changes. Click 'Save Changes' to apply them.", icon="✏️")
 
 def category_form():
     """Asset Category and Sub Category"""
