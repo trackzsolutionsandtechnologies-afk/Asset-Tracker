@@ -4641,12 +4641,13 @@ def employee_assignment_form():
         "Remarks",
     ]
     ensure_sheet_headers(SHEETS["assignments"], assignment_headers)
+    _ensure_headers_once("asset_history", ASSET_HISTORY_HEADERS)
 
     assignments_df = read_data(SHEETS["assignments"])
     users_df = read_data(SHEETS["users"])
     assets_df = read_data(SHEETS["assets"])
 
-    tab1, tab2 = st.tabs(["Add Assignment", "View/Edit Assignments"])
+    tab1, tab2, tab3 = st.tabs(["Add Assignment", "View/Edit Assignments", "Assignment History"])
 
     # Styles are applied globally via styles/main.css
 
@@ -5458,6 +5459,130 @@ def employee_assignment_form():
                         " ".join(messages) if messages else "✅ Assignment changes saved successfully!"
                     )
                     st.rerun()
+
+    with tab3:
+        st.subheader("Assignment History")
+
+        history_df = read_data(SHEETS["asset_history"])
+        if history_df.empty:
+            st.info("No assignment history records yet.")
+        else:
+            history_df = history_df.copy()
+
+            for column in ASSET_HISTORY_HEADERS:
+                if column not in history_df.columns:
+                    history_df[column] = ""
+
+            history_df = history_df[ASSET_HISTORY_HEADERS]
+            history_df = history_df.fillna("")
+            history_df["Event Date Parsed"] = pd.to_datetime(history_df["Event Date"], errors="coerce")
+            history_df = history_df.sort_values("Event Date Parsed", ascending=False, na_position="last").reset_index(drop=True)
+
+            formatted_dates = history_df["Event Date Parsed"].dt.strftime("%Y-%m-%d")
+            history_df["Event Date"] = formatted_dates.where(formatted_dates.notna(), history_df["Event Date"].astype(str).str.strip())
+
+            filter_cols = st.columns([2, 1, 1, 1])
+            with filter_cols[0]:
+                history_search = st.text_input(
+                    "🔍 Search history",
+                    placeholder="Search by asset, reference, or user...",
+                    key="assignment_history_search",
+                )
+            with filter_cols[1]:
+                events_available = sorted(
+                    {
+                        str(val).strip()
+                        for val in history_df.get("Event Type", pd.Series(dtype=str)).dropna()
+                        if str(val).strip()
+                    }
+                )
+                event_options = ["All events"] + events_available
+                default_event_index = event_options.index("Assignment") if "Assignment" in event_options else 0
+                selected_event = st.selectbox(
+                    "Event filter",
+                    event_options,
+                    index=default_event_index,
+                    key="assignment_history_event_filter",
+                )
+            with filter_cols[2]:
+                assets_available = sorted(
+                    {
+                        str(val).strip()
+                        for val in history_df.get("Asset ID", pd.Series(dtype=str)).dropna()
+                        if str(val).strip()
+                    }
+                )
+                asset_options = ["All assets"] + assets_available
+                selected_asset = st.selectbox(
+                    "Asset filter",
+                    asset_options,
+                    key="assignment_history_asset_filter",
+                )
+            with filter_cols[3]:
+                actors_available = sorted(
+                    {
+                        str(val).strip()
+                        for val in history_df.get("Actor", pd.Series(dtype=str)).dropna()
+                        if str(val).strip()
+                    }
+                )
+                actor_options = ["All people"] + actors_available
+                selected_actor = st.selectbox(
+                    "Actor filter",
+                    actor_options,
+                    key="assignment_history_actor_filter",
+                )
+
+            filtered_history = history_df.copy()
+
+            if selected_event != "All events":
+                filtered_history = filtered_history[
+                    filtered_history["Event Type"].astype(str).str.strip().str.lower()
+                    == selected_event.strip().lower()
+                ]
+
+            if selected_asset != "All assets":
+                filtered_history = filtered_history[
+                    filtered_history["Asset ID"].astype(str).str.strip().str.lower()
+                    == selected_asset.strip().lower()
+                ]
+
+            if selected_actor != "All people":
+                filtered_history = filtered_history[
+                    filtered_history["Actor"].astype(str).str.strip().str.lower()
+                    == selected_actor.strip().lower()
+                ]
+
+            if history_search:
+                search_term = history_search.strip().lower()
+                if search_term:
+                    filtered_history = filtered_history[
+                        filtered_history.apply(
+                            lambda row: search_term in " ".join(row.astype(str).str.lower()),
+                            axis=1,
+                        )
+                    ]
+
+            if filtered_history.empty:
+                st.info("No history records match the current filters.")
+            else:
+                filtered_history = filtered_history.reset_index(drop=True)
+                display_columns_order = [
+                    "Event Date",
+                    "Event Type",
+                    "Asset ID",
+                    "Asset Name",
+                    "Reference ID",
+                    "Actor",
+                    "Location / Details",
+                    "Status",
+                    "Notes",
+                ]
+                available_columns = [col for col in display_columns_order if col in filtered_history.columns]
+                display_df = filtered_history[available_columns].copy()
+
+                st.caption(f"Showing {len(filtered_history)} of {len(history_df)} history record(s)")
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
 
 
 def user_management_form():
