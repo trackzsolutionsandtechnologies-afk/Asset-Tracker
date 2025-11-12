@@ -246,14 +246,14 @@ def location_form():
                 search_mask |= filtered_df["Location Name"].astype(str).str.contains(search_term, case=False, na=False)
             filtered_df = filtered_df[search_mask]
 
-                if filtered_df.empty:
-            if search_term:
+            if filtered_df.empty:
                 st.info(f"No locations found matching '{search_term}'.")
-            else:
+                return
+            st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
+        else:
+            if filtered_df.empty:
                 st.info("No locations found. Add a new location using the 'Add New Location' tab.")
-            return
-            
-                st.caption(f"Showing {len(filtered_df)} of {len(df)} location(s)")
+                return
 
         st.markdown(
             """
