@@ -4462,6 +4462,19 @@ def employee_assignment_form():
             return
         if asset_id_col is None:
             return
+
+        def _normalize_status_for_asset(raw_status: str | None) -> str | None:
+            if raw_status is None:
+                return None
+            status_str = str(raw_status).strip()
+            if not status_str:
+                return ""
+            if status_str.lower() == "returned":
+                return "Active"
+            return status_str
+
+        status_to_store = _normalize_status_for_asset(status_value)
+
         try:
             match = assets_df[
                 assets_df[asset_id_col].astype(str).str.strip().str.lower()
@@ -4474,8 +4487,8 @@ def employee_assignment_form():
             asset_series = match.iloc[0].copy()
             if asset_assigned_col:
                 asset_series.loc[asset_assigned_col] = assignee_value
-            if asset_status_col and status_value is not None:
-                asset_series.loc[asset_status_col] = status_value
+            if asset_status_col and status_to_store is not None:
+                asset_series.loc[asset_status_col] = status_to_store
             asset_series = asset_series.reindex(column_order, fill_value="")
 
             row_data: list[str] = []
@@ -4493,8 +4506,8 @@ def employee_assignment_form():
             if update_data(SHEETS["assets"], row_index, row_data):
                 if asset_assigned_col:
                     assets_df.at[row_index, asset_assigned_col] = assignee_value
-                if asset_status_col and status_value is not None:
-                    assets_df.at[row_index, asset_status_col] = status_value
+                if asset_status_col and status_to_store is not None:
+                    assets_df.at[row_index, asset_status_col] = status_to_store
         except Exception as err:
             st.warning(f"Unable to update asset assignment: {err}")
 
