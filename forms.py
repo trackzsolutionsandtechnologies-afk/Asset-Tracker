@@ -2263,6 +2263,23 @@ def asset_master_form():
             if filtered_df.empty:
                 st.info("No assets match the current filters.")
             else:
+                save_result = st.session_state.pop("asset_save_result", None)
+                if save_result:
+                    updated_count = int(save_result.get("updated", 0) or 0)
+                    failed_assets = save_result.get("failed") or []
+                    missing_assets = save_result.get("missing") or []
+
+                    if updated_count:
+                        st.success(f"Saved {updated_count} asset record(s).")
+                    if failed_assets:
+                        asset_list = ", ".join(map(str, failed_assets))
+                        st.error(f"Failed to update {len(failed_assets)} asset(s): {asset_list}.")
+                    if missing_assets:
+                        missing_list = ", ".join(map(str, missing_assets))
+                        st.warning(
+                            f"Unable to locate {len(missing_assets)} asset(s) while saving: {missing_list}."
+                        )
+
                 editor_columns = [
                     "Asset ID",
                     "Asset Name",
@@ -2357,6 +2374,24 @@ def asset_master_form():
                         key="asset_table_editor",
                     )
 
+                    editor_state = st.session_state.get("asset_table_editor")
+                    edited_rows: dict[str, dict] = {}
+                    edited_cells: dict[str, dict] = {}
+                    deleted_rows: list = []
+                    added_rows: list = []
+
+                    if isinstance(editor_state, dict):
+                        edited_rows = editor_state.get("edited_rows") or {}
+                        edited_cells = editor_state.get("edited_cells") or {}
+                        deleted_rows = editor_state.get("deleted_rows") or []
+                        added_rows = editor_state.get("added_rows") or []
+
+                    has_changes = bool(edited_rows or edited_cells or deleted_rows or added_rows)
+                    if not has_changes:
+                        has_changes = not edited_df.equals(display_df)
+
+                    st.session_state["asset_pending_changes"] = has_changes
+
                     button_cols = st.columns(2, gap="medium")
                     with button_cols[0]:
                         save_clicked = st.button(
@@ -2364,19 +2399,23 @@ def asset_master_form():
                             type="primary",
                             use_container_width=True,
                             key="asset_save_button",
+                            disabled=not has_changes,
                         )
                     with button_cols[1]:
                         discard_clicked = st.button(
                             "Discard Changes",
                             use_container_width=True,
                             key="asset_discard_button",
+                            disabled=not has_changes,
                         )
 
                     if discard_clicked:
                         st.session_state.pop("asset_table_editor", None)
+                        st.session_state["asset_pending_changes"] = False
+                        st.rerun()
 
                     if save_clicked:
-                        if edited_df.equals(display_df):
+                        if not has_changes or edited_df.equals(display_df):
                             st.info("No changes detected.")
                         else:
                             editable_columns = [
@@ -2388,6 +2427,8 @@ def asset_master_form():
                                 original_indexed = display_df.set_index("Asset ID")
                                 edited_indexed = edited_df.set_index("Asset ID")
                                 updates_applied = 0
+                                failed_updates: list[str] = []
+                                missing_assets: list[str] = []
 
                                 for asset_id, edited_row in edited_indexed.iterrows():
                                     if asset_id not in original_indexed.index:
@@ -2425,6 +2466,7 @@ def asset_master_form():
                                         == str(asset_id).strip()
                                     ]
                                     if match_rows.empty:
+                                        missing_assets.append(str(asset_id))
                                         continue
                                     row_index = int(match_rows.index[0])
                                     updated_series = match_rows.iloc[0].copy()
@@ -2455,10 +2497,19 @@ def asset_master_form():
 
                                     if update_data(SHEETS["assets"], row_index, row_data):
                                         updates_applied += 1
+                                    else:
+                                        failed_updates.append(str(asset_id))
 
-                                if updates_applied:
-                                    st.success(f"Saved {updates_applied} asset record(s).")
-                                    st.session_state.pop("asset_table_editor", None)
+                                if updates_applied or failed_updates or missing_assets:
+                                    st.session_state["asset_save_result"] = {
+                                        "updated": updates_applied,
+                                        "failed": sorted(set(failed_updates)),
+                                        "missing": sorted(set(missing_assets)),
+                                    }
+                                    if updates_applied:
+                                        st.session_state.pop("asset_table_editor", None)
+                                        st.session_state["asset_pending_changes"] = False
+                                    st.rerun()
                                 else:
                                     st.info("No changes were saved.")
 
