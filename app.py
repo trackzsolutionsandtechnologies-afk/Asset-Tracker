@@ -275,15 +275,19 @@ def main():
     # Check if user is authenticated
     if not check_authentication():
         load_auth_css()
-        # Show login, register, or forgot password page
-        if st.session_state.get("show_forgot_password", False):
-            forgot_password_page()
-        elif st.session_state.get("show_register", False):
-            register_page()
-        else:
-            login_page()
+        auth_placeholder = st.empty()
+        with auth_placeholder.container():
+            # Show login, register, or forgot password page
+            if st.session_state.get("show_forgot_password", False):
+                forgot_password_page()
+            elif st.session_state.get("show_register", False):
+                register_page()
+            else:
+                login_page()
         if not check_authentication():
             return
+        auth_placeholder.empty()
+        st.experimental_rerun()
     
     # User is authenticated - show main application
     load_custom_css()
