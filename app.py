@@ -287,11 +287,14 @@ def main():
         if not check_authentication():
             return
         auth_placeholder.empty()
-        st.experimental_rerun()
+        st.session_state["_force_app_rerun"] = True
+        return
     
     # User is authenticated - show main application
     load_custom_css()
     apply_wide_layout()
+    if st.session_state.pop("_force_app_rerun", False):
+        st.experimental_rerun()
     username = st.session_state.get(SESSION_KEYS["username"], "User")
     if isinstance(username, str):
         display_name = username.strip() or "User"
