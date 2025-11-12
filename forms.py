@@ -148,6 +148,13 @@ def location_form():
             pass
 
     df = read_data(SHEETS["locations"])
+    retry_flag = "location_data_retry"
+    if df.empty and not st.session_state.get(retry_flag, False):
+        st.session_state[retry_flag] = True
+        read_data.clear()
+        st.rerun()
+    if not df.empty and st.session_state.get(retry_flag):
+        st.session_state.pop(retry_flag, None)
     if not df.empty:
         column_map = {}
         for col in df.columns:
